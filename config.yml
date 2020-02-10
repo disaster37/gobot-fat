@@ -1,0 +1,12 @@
+fat:
+  id: "fat"
+  name: "fat"
+  pin:
+    captor:
+      water_security_top: "1"
+      water_security_under: "2"
+      water_top: "3"
+      water_under: "4"
+    relay:
+      barrel_motor: "5"
+      washing_pump: "6"
