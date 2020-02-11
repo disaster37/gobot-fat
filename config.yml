@@ -3,10 +3,10 @@ fat:
   name: "fat"
   pin:
     captor:
-      water_security_top: "1"
-      water_security_under: "2"
-      water_top: "3"
-      water_under: "4"
+      water_security_top: "6"
+      water_security_under: "7"
+      water_top: "4"
+      water_under: "5"
     relay:
-      barrel_motor: "5"
-      washing_pump: "6"
+      barrel_motor: "3"
+      washing_pump: "2"

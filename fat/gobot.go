@@ -1,40 +1,42 @@
 package fat
 
 import (
+	"context"
 	"time"
 
-	"gobot.io/x/gobot"
-	"gobot.io/x/gobot/drivers/gpio"
-	"gobot.io/x/gobot/platforms/firmata"
 	"github.com/disaster37/gobot-fat/models"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"gobot.io/x/gobot"
+	"gobot.io/x/gobot/drivers/gpio"
+	"gobot.io/x/gobot/platforms/firmata"
+	"gobot.io/x/gobot/platforms/firmata/client"
 )
 
 type FATHandler struct {
-	state *models.FAT
-	arduino  *firmata.Adaptor
-	robot *gobot.Robot
-	captorWaterTop *gpio.ButtonDriver
-	captorWaterUnder *gpio.ButtonDriver
-	captorWaterSecurityTop *gpio.ButtonDriver
+	state                    *models.FAT
+	arduino                  *firmata.Adaptor
+	robot                    *gobot.Robot
+	captorWaterTop           *gpio.ButtonDriver
+	captorWaterUnder         *gpio.ButtonDriver
+	captorWaterSecurityTop   *gpio.ButtonDriver
 	captorWaterSecurityUnder *gpio.ButtonDriver
-	relayBarrelMotor *gpio.RelayDriver
-	relayWashingPump *gpio.RelayDriver
+	relayBarrelMotor         *gpio.RelayDriver
+	relayWashingPump         *gpio.RelayDriver
 }
 
 func NewFAT(adaptor string, configHandler *viper.Viper, fatState *models.FAT) *FATHandler {
-	arduino := firmata.NewAdaptor(adaptor)
+	arduino := firmata.NewAdaptor(adaptor, client.InputPullup)
 
-	fatHandler := &FATHandler {
-		state: fatState,
-		arduino: arduino,
-		captorWaterSecurityTop: gpio.NewButtonDriver(arduino, configHandler.GetString("fat.pin.captor.water_security_top")),
+	fatHandler := &FATHandler{
+		state:                    fatState,
+		arduino:                  arduino,
+		captorWaterSecurityTop:   gpio.NewButtonDriver(arduino, configHandler.GetString("fat.pin.captor.water_security_top")),
 		captorWaterSecurityUnder: gpio.NewButtonDriver(arduino, configHandler.GetString("fat.pin.captor.water_security_under")),
-		captorWaterTop: gpio.NewButtonDriver(arduino, configHandler.GetString("fat.pin.captor.water_top")),
-		captorWaterUnder: gpio.NewButtonDriver(arduino, configHandler.GetString("fat.pin.captor.water_under")),
-		relayBarrelMotor: gpio.NewRelayDriver(arduino, configHandler.GetString("fat.pin.relay.barrel_motor")),
-		relayWashingPump: gpio.NewRelayDriver(arduino, configHandler.GetString("fat.pin.relay.washing_pump")),
+		captorWaterTop:           gpio.NewButtonDriver(arduino, configHandler.GetString("fat.pin.captor.water_top")),
+		captorWaterUnder:         gpio.NewButtonDriver(arduino, configHandler.GetString("fat.pin.captor.water_under")),
+		relayBarrelMotor:         gpio.NewRelayDriver(arduino, configHandler.GetString("fat.pin.relay.barrel_motor")),
+		relayWashingPump:         gpio.NewRelayDriver(arduino, configHandler.GetString("fat.pin.relay.washing_pump")),
 	}
 
 	fatHandler.robot = gobot.NewRobot(
@@ -61,14 +63,31 @@ func (h *FATHandler) work() {
 
 	var err error
 
+	log.Info("Fat handler is running.")
+
+	//Read some value to init state
+	h.state.IsEmergencyStopped = false
+	h.state.IsSecurity = false
+	h.state.IsStopped = false
+	h.state.IsWashed = false
+	h.state.IsStarted = true
+	log.Infof("FAT is initialized: mode auto")
+
 	// Manage captor for whashing
-	h.captorWaterTop.On(gpio.ButtonPush, func(data interface{}){
-		err = h.wash()
-		if err != nil {
-			log.Errorf("Error during whashing: %s", err)
-		}
+	h.captorWaterTop.On(gpio.ButtonPush, func(data interface{}) {
+		log.Debugf("CaptorWaterTop pushed: %v", data)
+
+		h.robot.After(context.Background(), 0, func() {
+			err = h.wash()
+			if err != nil {
+				log.Errorf("Error during whashing: %s", err)
+			}
+		})
+
 	})
 	h.captorWaterUnder.On(gpio.ButtonPush, func(data interface{}) {
+		log.Debugf("CaptorWaterUnder pushed")
+
 		err = h.wash()
 		if err != nil {
 			log.Errorf("Error during whashing: %s", err)
@@ -111,13 +130,12 @@ func (h *FATHandler) wash() (err error) {
 
 }
 
-
 func (h *FATHandler) stopWashing() {
 	err := h.relayWashingPump.Off()
 	if err != nil {
 		log.Errorf("Error when stop relay for whashing pump: %s", err)
 	}
-	
+
 	err = h.relayBarrelMotor.Off()
 	if err != nil {
 		log.Errorf("Error when stop relay for barrelMotor: %s", err)
