@@ -1,7 +1,10 @@
-package fat
+package pbf
 
 import (
+	"time"
+
 	log "github.com/sirupsen/logrus"
+	"gobot.io/x/gobot"
 )
 
 // StartWashingPump permit to run washing pump
@@ -14,12 +17,31 @@ func (h *FATHandler) StartWashingPump() (err error) {
 
 	log.Debug("Washing pump not started because of state not permit it")
 
+	return
+
 }
 
 // StopWashingPump permit to stop whashing pump
-func (h *FATHandler) StopWashingPump() (err error) {
+// It will try while not stopped
+func (h *FATHandler) StopWashingPump() {
 	log.Debug("Stop whashing pump")
-	return h.relayWashingPump.Off()
+
+	gobot.After(0, func() {
+		isStopped := false
+		for isStopped == false {
+			err := h.relayWashingPump.Off()
+			if err != nil {
+				log.Errorf("Error when stop whashing pump: %s", err)
+				time.Sleep(1 * time.Second)
+			} else {
+				isStopped = true
+			}
+		}
+
+		log.Info("Stop whashing pump successfully")
+
+	})
+
 }
 
 // StartBarrelMotor permit to start barrel motor
@@ -35,33 +57,23 @@ func (h *FATHandler) StartBarrelMotor() (err error) {
 }
 
 // StopBarrelMotor permit to stop barrel motor
-func (h *FATHandler) StopBarrelMotor() (err error) {
+// It will try while is not stopped
+func (h *FATHandler) StopBarrelMotor() {
 	log.Debug("Stop barrel motor")
-	return h.relayBarrelMotor.Off()
-}
 
-// SwitchOnGreenLed display green led
-func (h *FATHandler) SwitchOnGreenLed() (err error) {
+	gobot.After(0, func() {
+		isStopped := false
+		for isStopped == false {
+			err := h.relayBarrelMotor.Off()
+			if err != nil {
+				log.Errorf("Error when stop barrel motor: %s", err)
+				time.Sleep(1 * time.Second)
+			} else {
+				isStopped = true
+			}
+		}
 
-	return
+		log.Info("Stop barrel motor successfully")
 
-}
-
-// SwitchOffGreenLed not display green led
-func (h *FATHandler) SwitchOffGreenLed() (err error) {
-
-	return
-
-}
-
-// SwitchOnRedLed display red led
-func (h *FATHandler) SwitchOnRedLed() (err error) {
-
-	return
-
-}
-
-// SwitchOffRedLed not display red led
-func (h *FATHandler) SwitchOffRedLed() (err error) {
-	return
+	})
 }

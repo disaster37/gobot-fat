@@ -1,6 +1,7 @@
-package fat
+package pbf
 
 import (
+	"context"
 	"time"
 
 	"github.com/disaster37/gobot-fat/models"
@@ -11,6 +12,7 @@ import (
 	"gobot.io/x/gobot/platforms/firmata"
 )
 
+// FATHandler manage all i/o on FAT
 type FATHandler struct {
 	state                    *models.FAT
 	arduino                  *firmata.Adaptor
@@ -21,22 +23,71 @@ type FATHandler struct {
 	captorWaterSecurityUnder *gpio.ButtonDriver
 	relayBarrelMotor         *gpio.RelayDriver
 	relayWashingPump         *gpio.RelayDriver
+	ledRed                   *gpio.LedDriver
+	ledGreen                 *gpio.LedDriver
 }
 
-func NewFAT(adaptor string, configHandler *viper.Viper, fatState *models.FAT) *FATHandler {
+// NewFAT create handler to manage FAT
+func NewFAT(adaptor string, configHandler *viper.Viper, fatState *models.FAT) (fatHandler *FATHandler, err error) {
 	arduino := firmata.NewAdaptor(adaptor)
 
-	fatHandler := &FATHandler{
+	// Initialise i/o
+	fatHandler = &FATHandler{
 		state:                    fatState,
 		arduino:                  arduino,
-		captorWaterSecurityTop:   gpio.NewButtonDriver(arduino, configHandler.GetString("fat.pin.captor.water_security_top")),
-		captorWaterSecurityUnder: gpio.NewButtonDriver(arduino, configHandler.GetString("fat.pin.captor.water_security_under")),
+		captorWaterSecurityTop:   gpio.NewDirectPinDriver(arduino, configHandler.GetString("fat.pin.captor.water_security_top")),
+		captorWaterSecurityUnder: gpio.NewDirectPinDriver(arduino, configHandler.GetString("fat.pin.captor.water_security_under")),
 		captorWaterTop:           gpio.NewButtonDriver(arduino, configHandler.GetString("fat.pin.captor.water_top")),
 		captorWaterUnder:         gpio.NewButtonDriver(arduino, configHandler.GetString("fat.pin.captor.water_under")),
 		relayBarrelMotor:         gpio.NewRelayDriver(arduino, configHandler.GetString("fat.pin.relay.barrel_motor")),
 		relayWashingPump:         gpio.NewRelayDriver(arduino, configHandler.GetString("fat.pin.relay.washing_pump")),
+		ledGreen:                 gpio.NewLedDriver(arduino, configHandler.GetString("fat.pin.led.green")),
+		ledRed:                   gpio.NewLedDriver(arduino, configHandler.GetString("fat.pin.led.red")),
 	}
 
+	// Set INPUT_PULLUP on some captor
+	err = fatHandler.captorWaterSecurityTop.SetInputPullup()
+	if err != nil {
+		return err
+	}
+	err = fatHandler.captorWaterSecurityUnder.SetInputPullup()
+	if err != nil {
+		return err
+	}
+	err = fatHandler.captorWaterTop.SetInputPullup()
+	if err != nil {
+		return err
+	}
+	err = fatHandler.captorWaterUnder.SetInputPullup()
+	if err != nil {
+		return err
+	}
+
+	// Manage default state for button and Captor that work like button
+	fatHandler.captorWaterUnder.DefaultState = 0
+	fatHandler.captorWaterTop.DefaultState = 1
+
+	// Manage default relay state
+	err = fatHandler.relayBarrelMotor.Off()
+	if err != nil {
+		return err
+	}
+	err = fatHandler.relayWashingPump.Off()
+	if err != nil {
+		return err
+	}
+
+	// Manage default led state
+	err = fatHandler.ledGreen.Off()
+	if err != nil {
+		return err
+	}
+	err = fatHandler.ledRed.Off()
+	if err != nil {
+		return err
+	}
+
+	// Initialize robot
 	fatHandler.robot = gobot.NewRobot(
 		fatHandler.state.Name,
 		[]gobot.Connection{fatHandler.arduino},
@@ -45,14 +96,17 @@ func NewFAT(adaptor string, configHandler *viper.Viper, fatState *models.FAT) *F
 			fatHandler.captorWaterSecurityUnder,
 			fatHandler.captorWaterTop,
 			fatHandler.captorWaterUnder,
+			fatHandler.relayBarrelMotor,
+			fatHandler.relayWashingPump,
 		},
 		fatHandler.work,
 	)
 
-	return fatHandler
+	return
 
 }
 
+// Start permit to run robot
 func (h *FATHandler) Start() {
 	h.robot.Start()
 }
@@ -60,6 +114,16 @@ func (h *FATHandler) Start() {
 func (h *FATHandler) work() {
 
 	var err error
+
+	log.Info("Fat handler is running.")
+
+	//Read some value to init state
+	h.state.IsEmergencyStopped = false
+	h.state.IsSecurity = false
+	h.state.IsStopped = false
+	h.state.IsWashed = false
+	h.state.IsStarted = true
+	log.Infof("FAT is initialized: mode auto")
 
 	// Manage captor for whashing
 	h.captorWaterTop.On(gpio.ButtonPush, func(data interface{}) {
@@ -69,6 +133,8 @@ func (h *FATHandler) work() {
 		}
 	})
 	h.captorWaterUnder.On(gpio.ButtonPush, func(data interface{}) {
+		log.Debugf("CaptorWaterUnder pushed")
+
 		err = h.wash()
 		if err != nil {
 			log.Errorf("Error during whashing: %s", err)
