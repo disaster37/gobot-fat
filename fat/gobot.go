@@ -10,12 +10,11 @@ import (
 	"gobot.io/x/gobot"
 	"gobot.io/x/gobot/drivers/gpio"
 	"gobot.io/x/gobot/platforms/firmata"
-	"gobot.io/x/gobot/platforms/firmata/client"
 )
 
 type FATHandler struct {
 	state                    *models.FAT
-	arduino                  *firmata.Adaptor
+	arduino                  *firmata.TCPAdaptor
 	robot                    *gobot.Robot
 	captorWaterTop           *gpio.ButtonDriver
 	captorWaterUnder         *gpio.ButtonDriver
@@ -26,7 +25,8 @@ type FATHandler struct {
 }
 
 func NewFAT(adaptor string, configHandler *viper.Viper, fatState *models.FAT) *FATHandler {
-	arduino := firmata.NewAdaptor(adaptor, client.InputPullup)
+	//arduino := firmata.NewAdaptor(adaptor)
+	arduino := firmata.NewTCPAdaptor("192.168.0.113:3030")
 
 	fatHandler := &FATHandler{
 		state:                    fatState,
@@ -37,6 +37,12 @@ func NewFAT(adaptor string, configHandler *viper.Viper, fatState *models.FAT) *F
 		captorWaterUnder:         gpio.NewButtonDriver(arduino, configHandler.GetString("fat.pin.captor.water_under")),
 		relayBarrelMotor:         gpio.NewRelayDriver(arduino, configHandler.GetString("fat.pin.relay.barrel_motor")),
 		relayWashingPump:         gpio.NewRelayDriver(arduino, configHandler.GetString("fat.pin.relay.washing_pump")),
+	}
+
+	// Put some captor in INPUT_PULLUP
+	err := fatHandler.captorWaterTop.SetInputPullup()
+	if err != nil {
+		panic(err)
 	}
 
 	fatHandler.robot = gobot.NewRobot(
@@ -92,6 +98,7 @@ func (h *FATHandler) work() {
 		if err != nil {
 			log.Errorf("Error during whashing: %s", err)
 		}
+
 	})
 
 }
