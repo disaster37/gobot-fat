@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/disaster37/gobot-fat/fat"
+	"github.com/disaster37/gobot-fat/dfp"
 	"github.com/disaster37/gobot-fat/models"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -28,11 +28,15 @@ func main() {
 		panic(err)
 	}
 
-	fatState := models.NewFATState()
-	fatState.Name = configHandler.GetString("fat.name")
-	fatState.ID = configHandler.GetString("fat.id")
+	dfpState := models.NewDFPState()
+	dfpState.Name = configHandler.GetString("fat.name")
+	dfpState.ID = configHandler.GetString("fat.id")
+	dfpState.IsAuto = true
 
-	fatHandler := fat.NewFAT("/dev/ttyUSB0", configHandler, fatState)
+	dfpHandler, err := dfp.NewDFP(configHandler.GetString("fat.port"), configHandler, dfpState)
+	if err != nil {
+		panic(err)
+	}
 
-	fatHandler.Start()
+	dfpHandler.Start()
 }

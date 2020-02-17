@@ -1,10 +1,14 @@
 fat:
   id: "fat"
   name: "fat"
+  port: "/dev/ttyUSB0"
+  washing:
+    wait_time_washing_pump: 5
+    duration: 10
   pin:
     captor:
-      water_security_top: "8"
-      water_security_under: "7"
+      water_security_top: "12"
+      water_security_under: "13"
       water_top: "10"
       water_under: "9"
       dht11: ""
@@ -18,3 +22,4 @@ fat:
       auto: "6"
       stop: "7"
       emergency_stop: "8"
+      wash: "11"
