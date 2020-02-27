@@ -1,14 +1,20 @@
 package models
 
+import (
+	"time"
+)
+
 // DFP  describe the current state of drum filter pond
 type DFP struct {
-	ID                 string `json:"id"`
-	Name               string `json:"name"`
-	IsWashed           bool   `json:"is_running"`
-	IsAuto             bool   `json:"is_started"`
-	IsStopped          bool   `json:"is_stopped"`
-	IsSecurity         bool   `json:"is_security"`
-	IsEmergencyStopped bool   `json:"is_emmergency"`
+	ID                 string      `json:"id"`
+	Name               string      `json:"name"`
+	IsWashed           bool        `json:"is_running"`
+	IsAuto             bool        `json:"is_started"`
+	IsStopped          bool        `json:"is_stopped"`
+	IsSecurity         bool        `json:"is_security"`
+	IsEmergencyStopped bool        `json:"is_emmergency"`
+	LastWashing        time.Time   `json:"last_washing"`
+	WashingHistory     []time.Time `json:"washing_history"`
 }
 
 // NewDFPState return new PBF handler
@@ -86,4 +92,28 @@ func (h *DFP) CanStartMotor() bool {
 		return true
 	}
 	return false
+}
+
+// LastWashDurationSecond return the number of second from now to last wash
+func (h *DFP) LastWashDurationSecond() uint64 {
+	return uint64(time.Now().Sub(h.LastWashing).Seconds())
+}
+
+// AverageDurationSecond compute average duration
+func (h *DFP) AverageDurationSecond() uint64 {
+	if len(h.WashingHistory) > 0 {
+		totalDuration := uint64(0)
+		for i := 0; i < len(h.WashingHistory); i++ {
+			if (i + 1) < len(h.WashingHistory) {
+				totalDuration = totalDuration + uint64(h.WashingHistory[i+1].Sub(h.WashingHistory[i]).Seconds())
+			} else {
+				totalDuration = totalDuration + uint64(h.WashingHistory[0].Sub(h.WashingHistory[i]).Seconds())
+			}
+		}
+
+		return (totalDuration / uint64(len(h.WashingHistory)))
+	}
+
+	return 0
+
 }

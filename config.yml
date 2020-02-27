@@ -5,6 +5,8 @@ fat:
   washing:
     wait_time_washing_pump: 5
     duration: 10
+    wait_time_between_wash: 300
+    history_size: 10
   pin:
     captor:
       water_security_top: "12"
@@ -23,3 +25,5 @@ fat:
       stop: "7"
       emergency_stop: "8"
       wash: "11"
+      force_washing_pump: "22"
+      force_barrel_motor: "23"

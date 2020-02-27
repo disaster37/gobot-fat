@@ -1,6 +1,8 @@
 package dfp
 
 import (
+	"time"
+
 	"github.com/disaster37/gobot-fat/models"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -27,6 +29,8 @@ type DFPHandler struct {
 	buttonStop               *gpio.ButtonDriver
 	buttonEmergencyStop      *gpio.ButtonDriver
 	buttonWash               *gpio.ButtonDriver
+	buttonForceWashingPump   *gpio.ButtonDriver
+	buttonForceBarrelMotor   *gpio.ButtonDriver
 	gobot.Eventer
 }
 
@@ -52,9 +56,12 @@ func NewDFP(adaptor string, configHandler *viper.Viper, pbfState *models.DFP) (d
 		buttonStop:               gpio.NewButtonDriver(arduino, configHandler.GetString("fat.pin.button.stop")),
 		buttonEmergencyStop:      gpio.NewButtonDriver(arduino, configHandler.GetString("fat.pin.button.emergency_stop")),
 		buttonWash:               gpio.NewButtonDriver(arduino, configHandler.GetString("fat.pin.button.wash")),
+		buttonForceWashingPump:   gpio.NewButtonDriver(arduino, configHandler.GetString("fat.pin.button.force_washing_pump")),
+		buttonForceBarrelMotor:   gpio.NewButtonDriver(arduino, configHandler.GetString("fat.pin.button.force_barrel_motor")),
 	}
 
 	// Set INPUT_PULLUP on some captor
+
 	err = dfpHandler.captorWaterSecurityTop.SetInputPullup()
 	if err != nil {
 		return
@@ -87,11 +94,17 @@ func NewDFP(adaptor string, configHandler *viper.Viper, pbfState *models.DFP) (d
 	if err != nil {
 		return
 	}
+	err = dfpHandler.buttonForceWashingPump.SetInputPullup()
+	if err != nil {
+		return
+	}
+	err = dfpHandler.buttonForceBarrelMotor.SetInputPullup()
+	if err != nil {
+		return
+	}
 
 	// Manage default state for button and Captor that work like button
-	dfpHandler.captorWaterUnder.DefaultState = 0
 	dfpHandler.captorWaterTop.DefaultState = 1
-	dfpHandler.captorWaterSecurityUnder.DefaultState = 0
 	//dfpHandler.captorWaterSecurityTop.DefaultState = 1
 
 	// Set event
@@ -110,6 +123,12 @@ func NewDFP(adaptor string, configHandler *viper.Viper, pbfState *models.DFP) (d
 		dfpHandler.state.Name,
 		[]gobot.Connection{dfpHandler.arduino},
 		[]gobot.Device{
+			dfpHandler.buttonForceWashingPump,
+			dfpHandler.buttonForceBarrelMotor,
+			dfpHandler.buttonWash,
+			dfpHandler.buttonAuto,
+			dfpHandler.buttonStop,
+			dfpHandler.buttonEmergencyStop,
 			dfpHandler.captorWaterSecurityTop,
 			dfpHandler.captorWaterSecurityUnder,
 			dfpHandler.captorWaterTop,
@@ -118,15 +137,11 @@ func NewDFP(adaptor string, configHandler *viper.Viper, pbfState *models.DFP) (d
 			dfpHandler.relayWashingPump,
 			dfpHandler.ledGreen,
 			dfpHandler.ledRed,
-			dfpHandler.buttonAuto,
-			dfpHandler.buttonStop,
-			dfpHandler.buttonEmergencyStop,
-			dfpHandler.buttonWash,
 		},
 		dfpHandler.work,
 	)
 
-	log.Info("DFP initialized successfully")
+	log.Infof("Robot %s initialized successfully", dfpHandler.state.Name)
 
 	return
 
@@ -139,8 +154,31 @@ func (h *DFPHandler) Start() {
 
 func (h *DFPHandler) work() {
 
+	// Stop motors
 	h.StopWashingPump()
 	h.StopBarrelMotor()
+
+	// Led handler
+	h.HandleRedLed()
+	h.HandleGreenLed()
+
+	time.Sleep(1 * time.Second)
+
+	// Halt button than can keep on position
+	h.buttonAuto.Halt()
+	h.buttonStop.Halt()
+	h.buttonEmergencyStop.Halt()
+
+	// Button handler
+	h.HandleButtonEmergencyStop()
+	h.HandleButtonStop()
+	h.HandleButtonAuto()
+	h.HandleButtonWash()
+	h.HandleButtonForceMotor()
+
+	// Captor handler
+	h.HandleSecurityWaterCaptor()
+	h.HandleWaterCaptor()
 
 	// Manage default led state
 	h.ledGreen.Off()
@@ -150,19 +188,10 @@ func (h *DFPHandler) work() {
 	h.HandleStopMotor()
 	h.HandleWash()
 
-	// Led handler
-	h.HandleRedLed()
-	h.HandleGreenLed()
+	// Start button than can keep position
+	h.buttonAuto.Start()
+	h.buttonStop.Start()
+	h.buttonEmergencyStop.Start()
 
-	// Captor handler
-	h.HandleSecurityWaterCaptor()
-	h.HandleWaterCaptor()
-
-	// Button handler
-	h.HandleButtonEmergencyStop()
-	h.HandleButtonStop()
-	h.HandleButtonAuto()
-	h.HandleButtonWash()
-
-	log.Info("DFP started successfully")
+	log.Infof("Robot %s started successfully", h.state.Name)
 }

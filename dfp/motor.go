@@ -8,16 +8,16 @@ import (
 
 // StartWashingPump permit to run washing pump
 // The pump start only if no emergency and no security
-func (h *DFPHandler) StartWashingPump() (err error) {
+func (h *DFPHandler) StartWashingPump() {
 	if h.state.CanStartMotor() {
 		log.Debug("Start whashing pump")
-		return h.relayWashingPump.On()
+		err := h.relayWashingPump.On()
+		if err != nil {
+			log.Errorf("Error appear when try to start washing pump: %s", err)
+		}
+	} else {
+		log.Debug("Washing pump not started because of state not permit it")
 	}
-
-	log.Debug("Washing pump not started because of state not permit it")
-
-	return
-
 }
 
 // StopWashingPump permit to stop whashing pump
@@ -42,14 +42,17 @@ func (h *DFPHandler) StopWashingPump() {
 
 // StartBarrelMotor permit to start barrel motor
 // The motor start only if not emmergency and no security
-func (h *DFPHandler) StartBarrelMotor() (err error) {
+func (h *DFPHandler) StartBarrelMotor() {
 	if h.state.CanStartMotor() {
 		log.Debug("Start barrel motor")
-		return h.relayBarrelMotor.On()
+		err := h.relayBarrelMotor.On()
+		if err != nil {
+			log.Errorf("Error appear when try to start barrel motor: %s", err)
+		}
+	} else {
+		log.Debug("Barrel motor not started because of state not permit it")
 	}
-	log.Debug("Barrel motor not started because of state not permit it")
 
-	return
 }
 
 // StopBarrelMotor permit to stop barrel motor
@@ -74,16 +77,10 @@ func (h *DFPHandler) StopBarrelMotor() {
 // HandleWash permit to run one washing cycle
 func (h *DFPHandler) HandleWash() {
 	h.On(WashingEvent, func(data interface{}) {
-		err := h.StartWashingPump()
-		if err != nil {
-			log.Errorf("Faild to start washing pump: %s", err)
-		}
+		h.StartWashingPump()
 		time.Sleep(time.Second * time.Duration(h.config.GetInt("fat.washing.wait_time_washing_pump")))
 
-		err = h.StartBarrelMotor()
-		if err != nil {
-			log.Errorf("Faild to start barrel motor: %s", err)
-		}
+		h.StartBarrelMotor()
 		time.Sleep(time.Second * time.Duration(h.config.GetInt("fat.washing.duration")))
 
 		h.StopWashingPump()
@@ -91,7 +88,9 @@ func (h *DFPHandler) HandleWash() {
 
 		if h.state.IsWashed {
 			h.state.IsWashed = false
+			h.state.LastWashing = time.Now()
 			h.Publish(UnWashingEvent, data)
+			log.Infof("Average duration: %d", h.state.AverageDurationSecond())
 		}
 
 	})

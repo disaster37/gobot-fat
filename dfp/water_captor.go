@@ -54,7 +54,7 @@ func (h *DFPHandler) HandleWaterCaptor() {
 	// Top captor
 	h.captorWaterTop.On(gpio.ButtonPush, func(data interface{}) {
 		log.Infof("Captor water top pushed")
-		if h.state.CanWash() && h.state.IsAuto {
+		if h.state.CanWash() && h.state.IsAuto && (h.state.LastWashDurationSecond() > h.config.GetUint64("fat.washing.wait_time_between_wash")) {
 			h.state.IsWashed = true
 			h.Publish(WashingEvent, data)
 		}
@@ -67,7 +67,7 @@ func (h *DFPHandler) HandleWaterCaptor() {
 	// Under captor
 	h.captorWaterUnder.On(gpio.ButtonPush, func(data interface{}) {
 		log.Infof("Captor water under pushed")
-		if h.state.CanWash() && h.state.IsAuto {
+		if h.state.CanWash() && h.state.IsAuto && (h.state.LastWashDurationSecond() > h.config.GetUint64("fat.washing.wait_time_between_wash")) {
 			h.state.IsWashed = true
 			h.Publish(WashingEvent, data)
 		}

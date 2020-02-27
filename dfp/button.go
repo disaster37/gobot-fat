@@ -74,3 +74,33 @@ func (h *DFPHandler) HandleButtonEmergencyStop() {
 		h.state.IsEmergencyStopped = false
 	})
 }
+
+// HandleButtonForceMotor manage the button that permit to force to start motors
+func (h *DFPHandler) HandleButtonForceMotor() {
+
+	// Force washing pump
+	h.buttonForceWashingPump.On(gpio.ButtonPush, func(data interface{}) {
+		log.Infof("Button force washing pump is pushed")
+		if h.state.CanStartMotor() {
+			h.StartWashingPump()
+		}
+	})
+
+	h.buttonForceWashingPump.On(gpio.ButtonRelease, func(data interface{}) {
+		log.Infof("Button force washing pump is released")
+		h.StopWashingPump()
+	})
+
+	// Force barrel motor
+	h.buttonForceBarrelMotor.On(gpio.ButtonPush, func(data interface{}) {
+		log.Infof("Button force barrel motor is pushed")
+		if h.state.CanStartMotor() {
+			h.StartBarrelMotor()
+		}
+	})
+
+	h.buttonForceBarrelMotor.On(gpio.ButtonRelease, func(data interface{}) {
+		log.Infof("Button force barrel motor is released")
+		h.StopBarrelMotor()
+	})
+}
