@@ -1,4 +1,7 @@
-fat:
+server:
+  address: ":4040"
+
+dfp:
   id: "fat"
   name: "fat"
   port: "/dev/ttyUSB0"

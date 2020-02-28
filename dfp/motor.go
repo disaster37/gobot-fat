@@ -74,46 +74,40 @@ func (h *DFPHandler) StopBarrelMotor() {
 	log.Info("Stop barrel motor successfully")
 }
 
-// HandleWash permit to run one washing cycle
-func (h *DFPHandler) HandleWash() {
-	h.On(WashingEvent, func(data interface{}) {
-		h.StartWashingPump()
-		time.Sleep(time.Second * time.Duration(h.config.GetInt("fat.washing.wait_time_washing_pump")))
+// HandleMotor manage the motor state
+func (h *DFPHandler) HandleMotor() {
+	h.eventer.On("stateChange", func (data interface{}) {
+		event := data.(string)
 
-		h.StartBarrelMotor()
-		time.Sleep(time.Second * time.Duration(h.config.GetInt("fat.washing.duration")))
+		log.Debugf("Receive event %s", event)
 
-		h.StopWashingPump()
-		h.StopBarrelMotor()
+		// Stop motors
+		if h.state.IsStopped() || h.state.IsEmergencyStopped() || h.state.IsSecurity() {
+			h.StopMotors()
+		} else if h.state.ShouldWash() {
+			log.Info("Start washing cycle")
+			h.state.UnsetShouldWash()
+			h.state.SetWashed()
+			h.StartWashingPump()
+			time.Sleep(time.Second * time.Duration(h.config.GetInt("fat.washing.wait_time_washing_pump")))
 
-		if h.state.IsWashed {
-			h.state.IsWashed = false
-			h.state.LastWashing = time.Now()
-			h.Publish(UnWashingEvent, data)
-			log.Infof("Average duration: %d", h.state.AverageDurationSecond())
+			h.StartBarrelMotor()
+			time.Sleep(time.Second * time.Duration(h.config.GetInt("fat.washing.duration")))
+
+			h.StopWashingPump()
+			h.StopBarrelMotor()
+
+			if h.state.IsWashed() {
+				h.state.UnsetWashed()
+				h.state.UpdateLastWashing()
+			}
 		}
-
 	})
 }
 
-// HandleStopMotor manage the stop motor events
-func (h *DFPHandler) HandleStopMotor() {
-
-	// Stop event
-	h.On(StopEvent, func(data interface{}) {
-		h.StopWashingPump()
-		h.StopBarrelMotor()
-	})
-
-	// Security event
-	h.On(SecurityEvent, func(data interface{}) {
-		h.StopWashingPump()
-		h.StopBarrelMotor()
-	})
-
-	// Emergency stop
-	h.On(EmergencyStopEvent, func(data interface{}) {
-		h.StopWashingPump()
-		h.StopBarrelMotor()
-	})
+// StopMotors stop all motors
+func (h *DFPHandler) StopMotors() {
+	log.Info("Stop all motors")
+	h.StopWashingPump()
+	h.StopBarrelMotor()
 }

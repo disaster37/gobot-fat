@@ -8,70 +8,51 @@ import (
 // HandleButtonWash manage wash button
 func (h *DFPHandler) HandleButtonWash() {
 	h.buttonWash.On(gpio.ButtonPush, func(data interface{}) {
-		log.Infof("Button wash is pushed")
-		if h.state.CanWash() {
-			h.state.IsWashed = true
-			h.Publish(WashingEvent, data)
-		}
+		log.Debugf("Button wash is pushed")
+		h.state.SetShouldWash()
 	})
 
 	h.buttonWash.On(gpio.ButtonRelease, func(data interface{}) {
-		log.Infof("Button wash is released")
+		log.Debugf("Button wash is released")
 	})
 }
 
 // HandleButtonAuto manage auto button
 func (h *DFPHandler) HandleButtonAuto() {
 	h.buttonAuto.On(gpio.ButtonPush, func(data interface{}) {
-		log.Infof("Button auto is pushed")
-		h.state.IsAuto = true
-		h.Publish(AutoEvent, data)
+		log.Debugf("Button auto is pushed")
+		h.state.SetAuto()
 	})
 
 	h.buttonAuto.On(gpio.ButtonRelease, func(data interface{}) {
-		log.Infof("Button auto is released")
-		h.state.IsAuto = false
-		h.Publish(UnAutoEvent, data)
+		log.Debugf("Button auto is released")
+		h.state.UnsetAuto()
 	})
 }
 
 // HandleButtonStop manage stop button
 func (h *DFPHandler) HandleButtonStop() {
 	h.buttonStop.On(gpio.ButtonPush, func(data interface{}) {
-		log.Infof("Button stop is pushed")
-		if h.state.CanSetStop() {
-			h.state.IsWashed = false
-			h.Publish(StopEvent, data)
-		}
-		h.state.IsStopped = true
+		log.Debugf("Button stop is pushed")
+		h.state.SetStop()
 	})
 
 	h.buttonStop.On(gpio.ButtonRelease, func(data interface{}) {
-		log.Infof("Button stop is released")
-		if h.state.CanUnsetStop() {
-			h.Publish(UnStopEvent, data)
-		}
-		h.state.IsStopped = false
+		log.Debugf("Button stop is released")
+		h.state.UnsetStop()
 	})
 }
 
 // HandleButtonEmergencyStop manage emergency stop button
 func (h *DFPHandler) HandleButtonEmergencyStop() {
 	h.buttonEmergencyStop.On(gpio.ButtonPush, func(data interface{}) {
-		log.Infof("Button emergency stop is pushed")
-		if h.state.CanSetEmergencyStop() {
-			h.state.IsWashed = false
-			h.Publish(EmergencyStopEvent, data)
-		}
-		h.state.IsEmergencyStopped = true
+		log.Debugf("Button emergency stop is pushed")
+		h.state.SetEmergencyStop()
 	})
 
 	h.buttonEmergencyStop.On(gpio.ButtonRelease, func(data interface{}) {
-		log.Infof("Button emergency stop is released")
-		if h.state.CanUnsetEmergencyStop() {
-			h.Publish(UnEmergencyStopEvent, data)
-		}
-		h.state.IsEmergencyStopped = false
+		log.Debugf("Button emergency stop is released")
+		h.state.UnsetEmergencyStop()
 	})
 }
 
@@ -80,27 +61,23 @@ func (h *DFPHandler) HandleButtonForceMotor() {
 
 	// Force washing pump
 	h.buttonForceWashingPump.On(gpio.ButtonPush, func(data interface{}) {
-		log.Infof("Button force washing pump is pushed")
-		if h.state.CanStartMotor() {
-			h.StartWashingPump()
-		}
+		log.Debugf("Button force washing pump is pushed")
+		h.StartWashingPump()
 	})
 
 	h.buttonForceWashingPump.On(gpio.ButtonRelease, func(data interface{}) {
-		log.Infof("Button force washing pump is released")
+		log.Debugf("Button force washing pump is released")
 		h.StopWashingPump()
 	})
 
 	// Force barrel motor
 	h.buttonForceBarrelMotor.On(gpio.ButtonPush, func(data interface{}) {
-		log.Infof("Button force barrel motor is pushed")
-		if h.state.CanStartMotor() {
-			h.StartBarrelMotor()
-		}
+		log.Debugf("Button force barrel motor is pushed")
+		h.StartBarrelMotor()
 	})
 
 	h.buttonForceBarrelMotor.On(gpio.ButtonRelease, func(data interface{}) {
-		log.Infof("Button force barrel motor is released")
+		log.Debugf("Button force barrel motor is released")
 		h.StopBarrelMotor()
 	})
 }

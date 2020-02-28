@@ -13,7 +13,7 @@ import (
 
 // DFPHandler manage all i/o on FAT
 type DFPHandler struct {
-	state                    *models.DFP
+	state                    *models.DFPState
 	arduino                  *firmata.Adaptor
 	config                   *viper.Viper
 	robot                    *gobot.Robot
@@ -31,37 +31,38 @@ type DFPHandler struct {
 	buttonWash               *gpio.ButtonDriver
 	buttonForceWashingPump   *gpio.ButtonDriver
 	buttonForceBarrelMotor   *gpio.ButtonDriver
-	gobot.Eventer
+	eventer gobot.Eventer
 }
 
 // NewDFP create handler to manage FAT
-func NewDFP(adaptor string, configHandler *viper.Viper, pbfState *models.DFP) (dfpHandler *DFPHandler, err error) {
-	arduino := firmata.NewAdaptor(adaptor)
+func NewDFP(configHandler *viper.Viper) (dfpHandler *DFPHandler, err error) {
+	arduino := firmata.NewAdaptor(configHandler.GetString("dfp.port"))
+	eventer := gobot.NewEventer()
 
 	// Initialise i/o
 	dfpHandler = &DFPHandler{
-		state:                    pbfState,
+		state:                    models.NewDFPState(configHandler.GetString("dfp.id"), configHandler.GetString("dfp.name"), eventer),
 		arduino:                  arduino,
 		config:                   configHandler,
-		Eventer:                  gobot.NewEventer(),
-		captorWaterSecurityTop:   gpio.NewButtonDriver(arduino, configHandler.GetString("fat.pin.captor.water_security_top")),
-		captorWaterSecurityUnder: gpio.NewButtonDriver(arduino, configHandler.GetString("fat.pin.captor.water_security_under")),
-		captorWaterTop:           gpio.NewButtonDriver(arduino, configHandler.GetString("fat.pin.captor.water_top")),
-		captorWaterUnder:         gpio.NewButtonDriver(arduino, configHandler.GetString("fat.pin.captor.water_under")),
-		relayBarrelMotor:         gpio.NewRelayDriver(arduino, configHandler.GetString("fat.pin.relay.barrel_motor")),
-		relayWashingPump:         gpio.NewRelayDriver(arduino, configHandler.GetString("fat.pin.relay.washing_pump")),
-		ledGreen:                 gpio.NewLedDriver(arduino, configHandler.GetString("fat.pin.led.green")),
-		ledRed:                   gpio.NewLedDriver(arduino, configHandler.GetString("fat.pin.led.red")),
-		buttonAuto:               gpio.NewButtonDriver(arduino, configHandler.GetString("fat.pin.button.auto")),
-		buttonStop:               gpio.NewButtonDriver(arduino, configHandler.GetString("fat.pin.button.stop")),
-		buttonEmergencyStop:      gpio.NewButtonDriver(arduino, configHandler.GetString("fat.pin.button.emergency_stop")),
-		buttonWash:               gpio.NewButtonDriver(arduino, configHandler.GetString("fat.pin.button.wash")),
-		buttonForceWashingPump:   gpio.NewButtonDriver(arduino, configHandler.GetString("fat.pin.button.force_washing_pump")),
-		buttonForceBarrelMotor:   gpio.NewButtonDriver(arduino, configHandler.GetString("fat.pin.button.force_barrel_motor")),
+		eventer:                  eventer,
+		captorWaterSecurityTop:   gpio.NewButtonDriver(arduino, configHandler.GetString("dfp.pin.captor.water_security_top")),
+		captorWaterSecurityUnder: gpio.NewButtonDriver(arduino, configHandler.GetString("dfp.pin.captor.water_security_under")),
+		captorWaterTop:           gpio.NewButtonDriver(arduino, configHandler.GetString("dfp.pin.captor.water_top")),
+		captorWaterUnder:         gpio.NewButtonDriver(arduino, configHandler.GetString("dfp.pin.captor.water_under")),
+		relayBarrelMotor:         gpio.NewRelayDriver(arduino, configHandler.GetString("dfp.pin.relay.barrel_motor")),
+		relayWashingPump:         gpio.NewRelayDriver(arduino, configHandler.GetString("dfp.pin.relay.washing_pump")),
+		ledGreen:                 gpio.NewLedDriver(arduino, configHandler.GetString("dfp.pin.led.green")),
+		ledRed:                   gpio.NewLedDriver(arduino, configHandler.GetString("dfp.pin.led.red")),
+		buttonAuto:               gpio.NewButtonDriver(arduino, configHandler.GetString("dfp.pin.button.auto")),
+		buttonStop:               gpio.NewButtonDriver(arduino, configHandler.GetString("dfp.pin.button.stop")),
+		buttonEmergencyStop:      gpio.NewButtonDriver(arduino, configHandler.GetString("dfp.pin.button.emergency_stop")),
+		buttonWash:               gpio.NewButtonDriver(arduino, configHandler.GetString("dfp.pin.button.wash")),
+		buttonForceWashingPump:   gpio.NewButtonDriver(arduino, configHandler.GetString("dfp.pin.button.force_washing_pump")),
+		buttonForceBarrelMotor:   gpio.NewButtonDriver(arduino, configHandler.GetString("dfp.pin.button.force_barrel_motor")),
 	}
 
 	// Set INPUT_PULLUP on some captor
-
+	/*
 	err = dfpHandler.captorWaterSecurityTop.SetInputPullup()
 	if err != nil {
 		return
@@ -102,21 +103,14 @@ func NewDFP(adaptor string, configHandler *viper.Viper, pbfState *models.DFP) (d
 	if err != nil {
 		return
 	}
+	*/
 
 	// Manage default state for button and Captor that work like button
 	dfpHandler.captorWaterTop.DefaultState = 1
 	//dfpHandler.captorWaterSecurityTop.DefaultState = 1
 
 	// Set event
-	dfpHandler.AddEvent(StopEvent)
-	dfpHandler.AddEvent(UnStopEvent)
-	dfpHandler.AddEvent(SecurityEvent)
-	dfpHandler.AddEvent(UnSecurityEvent)
-	dfpHandler.AddEvent(EmergencyStopEvent)
-	dfpHandler.AddEvent(UnEmergencyStopEvent)
-	dfpHandler.AddEvent(AutoEvent)
-	dfpHandler.AddEvent(WashingEvent)
-	dfpHandler.AddEvent(UnWashingEvent)
+	dfpHandler.eventer.AddEvent("stateChange")
 
 	// Initialize robot
 	dfpHandler.robot = gobot.NewRobot(
@@ -141,10 +135,15 @@ func NewDFP(adaptor string, configHandler *viper.Viper, pbfState *models.DFP) (d
 		dfpHandler.work,
 	)
 
-	log.Infof("Robot %s initialized successfully", dfpHandler.state.Name)
+	log.Infof("Robot %s initialized successfully", dfpHandler.state.Name())
 
 	return
 
+}
+
+// State return the current state
+func (h *DFPHandler) State() *models.DFPState {
+	return h.state
 }
 
 // Start permit to run robot
@@ -157,6 +156,10 @@ func (h *DFPHandler) work() {
 	// Stop motors
 	h.StopWashingPump()
 	h.StopBarrelMotor()
+
+	// Manage default led state
+	h.ledGreen.Off()
+	h.ledRed.Off()
 
 	// Led handler
 	h.HandleRedLed()
@@ -180,13 +183,9 @@ func (h *DFPHandler) work() {
 	h.HandleSecurityWaterCaptor()
 	h.HandleWaterCaptor()
 
-	// Manage default led state
-	h.ledGreen.Off()
-	h.ledRed.Off()
-
+	
 	// Motor handler
-	h.HandleStopMotor()
-	h.HandleWash()
+	h.HandleMotor()
 
 	// Start button than can keep position
 	h.buttonAuto.Start()

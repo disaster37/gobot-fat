@@ -12,81 +12,32 @@ import (
 // Else the LED must be switch off
 func (h *DFPHandler) HandleRedLed() {
 
-	// Set Mode security
-	h.On(SecurityEvent, func(data interface{}) {
-		err := h.ledRed.On()
-		if err != nil {
-			log.Errorf("Error appear when switch on red led: %s", err)
-		}
-		time.Sleep(1 * time.Second)
+	// Compute LED state
+	h.eventer.On("stateChange", func(data interface{}) {
 
-		err = h.ledRed.Off()
-		if err != nil {
-			log.Errorf("Error appear when switch off red led: %s", err)
-		}
-		time.Sleep(1 * time.Second)
-	})
-
-	// Unset mode security
-	// Only if not on emergency state and not in stopped mode
-	h.On(UnSecurityEvent, func(data interface{}) {
-		err := h.ledRed.Off()
-		if err != nil {
-			log.Errorf("Error appear when remove toogle on red led: %s", err)
-		}
-	})
-
-	// Set stop mode
-	// Only if not on emergency state and not on security mode
-	h.On(StopEvent, func(data interface{}) {
-		err := h.ledRed.On()
-		if err != nil {
-			log.Errorf("Error appear when switch on red led: %s", err)
-		}
-	})
-
-	// Unset stop mode
-	// Only if not on emergency
-	h.On(UnStopEvent, func(data interface{}) {
-		if !h.state.IsSecurity {
-			err := h.ledRed.Off()
+		// Turn on LED when emergency or stop mode
+		if h.state.IsStopped() || h.state.IsEmergencyStopped() {
+			err := h.ledRed.On()
 			if err != nil {
-				log.Errorf("Error appear when switch off red led: %s", err)
+				log.Errorf("Error appear when turn on red led: %s", err)
+			}
+		} else if h.state.IsSecurity() {
+			// Blink led when security mode
+			for h.state.IsSecurity() {
+				err := h.ledRed.Toggle()
+				if err != nil {
+					log.Errorf("Error appear when toggle red led: %s", err)
+				}
+				time.Sleep(1 * time.Second)
 			}
 		} else {
-			err := h.ledRed.Toggle()
-			if err != nil {
-				log.Errorf("Error appear when toogle red led: %s", err)
-			}
-		}
-
-	})
-
-	// Set emergency stop mode
-	h.On(EmergencyStopEvent, func(data interface{}) {
-		err := h.ledRed.On()
-		if err != nil {
-			log.Errorf("Error appear when switch on red led: %s", err)
-		}
-	})
-
-	// Unset emergency stop mode
-	// Switch off led only if not on security or not in stopped mode
-	h.On(UnEmergencyStopEvent, func(data interface{}) {
-
-		if !h.state.IsStopped && !h.state.IsSecurity {
+			// Turn of LED
 			err := h.ledRed.Off()
 			if err != nil {
-				log.Errorf("Error appear when switch off red led: %s", err)
-			}
-		} else if !h.state.IsStopped && h.state.IsSecurity {
-			err := h.ledRed.Toggle()
-			if err != nil {
-				log.Errorf("Error appear when toogle red led: %s", err)
+				log.Errorf("Error appear when turn off red led: %s", err)
 			}
 		}
 	})
-
 }
 
 // HandleGreenLed manage the state of green led
@@ -95,60 +46,29 @@ func (h *DFPHandler) HandleRedLed() {
 // Else, green led if switch off
 func (h *DFPHandler) HandleGreenLed() {
 
-	// Mode auto is set
-	h.On(AutoEvent, func(data interface{}) {
-		if !h.state.IsWashed {
+	// Compute LED state
+	h.eventer.On("stateChange", func(data interface{}) {
+
+		// Blink LED when washing
+		if h.state.IsWashed() {
+			for h.state.IsWashed() {
+				err := h.ledGreen.Toggle()
+				if err != nil {
+					log.Errorf("Error appear when toggle green led: %s", err)
+				}
+				time.Sleep(1 * time.Second)
+			}
+		} else if h.state.IsAuto() {
+			// Turn on LED when auto
 			err := h.ledGreen.On()
 			if err != nil {
-				log.Errorf("Error appear when switch on green led: %s", err)
-			}
-		}
-	})
-
-	// Mode auto is unset
-	h.On(UnAutoEvent, func(data interface{}) {
-		if !h.state.IsWashed {
-			err := h.ledGreen.Off()
-			if err != nil {
-				log.Errorf("Error appear when switch off green led: %s", err)
-			}
-		}
-	})
-
-	finishedGreenLedSwicthOnSwitchOff := false
-
-	// Washing mode is set
-	h.On(WashingEvent, func(data interface{}) {
-		log.Info("Wash event fired")
-		for h.state.IsWashed == true {
-			finishedGreenLedSwicthOnSwitchOff = false
-			err := h.ledGreen.Toggle()
-			if err != nil {
-				log.Errorf("Error appear when toogle green led: %s", err)
-			}
-			time.Sleep(1 * time.Second)
-			finishedGreenLedSwicthOnSwitchOff = true
-		}
-
-	})
-
-	// Washing mode is unset
-	h.On(UnWashingEvent, func(data interface{}) {
-		log.Info("Unwash event fired")
-
-		// Wait switch on and switch off cycle is finished
-		for finishedGreenLedSwicthOnSwitchOff != true {
-			time.Sleep(1 * time.Millisecond)
-		}
-		if h.state.IsAuto {
-			err := h.ledGreen.On()
-			if err != nil {
-				log.Errorf("Error appear when switch on green led")
+				log.Errorf("Error appear when turn on green led: %s", err)
 			}
 		} else {
+			// Turn off LED when auto is disabled
 			err := h.ledGreen.Off()
 			if err != nil {
-				log.Errorf("Error appear when switch of green led")
+				log.Errorf("Error appear when turn off green led: %s", err)
 			}
 		}
 	})
