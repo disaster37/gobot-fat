@@ -31,7 +31,7 @@ type DFPHandler struct {
 	buttonWash               *gpio.ButtonDriver
 	buttonForceWashingPump   *gpio.ButtonDriver
 	buttonForceBarrelMotor   *gpio.ButtonDriver
-	eventer gobot.Eventer
+	eventer                  gobot.Eventer
 }
 
 // NewDFP create handler to manage FAT
@@ -62,7 +62,6 @@ func NewDFP(configHandler *viper.Viper) (dfpHandler *DFPHandler, err error) {
 	}
 
 	// Set INPUT_PULLUP on some captor
-	/*
 	err = dfpHandler.captorWaterSecurityTop.SetInputPullup()
 	if err != nil {
 		return
@@ -103,7 +102,6 @@ func NewDFP(configHandler *viper.Viper) (dfpHandler *DFPHandler, err error) {
 	if err != nil {
 		return
 	}
-	*/
 
 	// Manage default state for button and Captor that work like button
 	dfpHandler.captorWaterTop.DefaultState = 1
@@ -153,6 +151,11 @@ func (h *DFPHandler) Start() {
 
 func (h *DFPHandler) work() {
 
+	// Debug
+	h.eventer.On("stateChange", func(data interface{}) {
+		log.Debugf("state: %s", h.state)
+	})
+
 	// Stop motors
 	h.StopWashingPump()
 	h.StopBarrelMotor()
@@ -183,7 +186,6 @@ func (h *DFPHandler) work() {
 	h.HandleSecurityWaterCaptor()
 	h.HandleWaterCaptor()
 
-	
 	// Motor handler
 	h.HandleMotor()
 

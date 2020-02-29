@@ -76,7 +76,44 @@ func (h *DFPHandler) StopBarrelMotor() {
 
 // HandleMotor manage the motor state
 func (h *DFPHandler) HandleMotor() {
-	h.eventer.On("stateChange", func (data interface{}) {
+
+	//Handle washing
+	h.eventer.On("stateChange", func(data interface{}) {
+		event := data.(string)
+
+		log.Debugf("Receive event %s", event)
+
+		if h.state.ShouldWash() && h.state.CanWash() {
+			log.Info("Start washing cycle")
+			h.state.SetWashed()
+
+			// Start washing pump and wait
+			h.StartWashingPump()
+			time.Sleep(time.Second * time.Duration(h.config.GetInt("dfp.washing.wait_time_washing_pump")))
+			if !h.state.CanStartMotor() || !h.state.ShouldWash() {
+				return
+			}
+
+			// Start barrel motor and wait
+			h.StartBarrelMotor()
+			time.Sleep(time.Second * time.Duration(h.config.GetInt("dfp.washing.duration")))
+			if !h.state.CanStartMotor() || !h.state.ShouldWash() {
+				return
+			}
+
+			h.StopWashingPump()
+			h.StopBarrelMotor()
+
+			if h.state.IsWashed() {
+				h.state.UnsetShouldWash()
+				h.state.UnsetWashed()
+				h.state.UpdateLastWashing()
+			}
+		}
+	})
+
+	// Handle stop
+	h.eventer.On("stateChange", func(data interface{}) {
 		event := data.(string)
 
 		log.Debugf("Receive event %s", event)
@@ -84,23 +121,6 @@ func (h *DFPHandler) HandleMotor() {
 		// Stop motors
 		if h.state.IsStopped() || h.state.IsEmergencyStopped() || h.state.IsSecurity() {
 			h.StopMotors()
-		} else if h.state.ShouldWash() {
-			log.Info("Start washing cycle")
-			h.state.UnsetShouldWash()
-			h.state.SetWashed()
-			h.StartWashingPump()
-			time.Sleep(time.Second * time.Duration(h.config.GetInt("fat.washing.wait_time_washing_pump")))
-
-			h.StartBarrelMotor()
-			time.Sleep(time.Second * time.Duration(h.config.GetInt("fat.washing.duration")))
-
-			h.StopWashingPump()
-			h.StopBarrelMotor()
-
-			if h.state.IsWashed() {
-				h.state.UnsetWashed()
-				h.state.UpdateLastWashing()
-			}
 		}
 	})
 }

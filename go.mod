@@ -12,3 +12,5 @@ require (
 	gobot.io/x/gobot v1.14.0
 
 )
+
+replace gobot.io/x/gobot => github.com/disaster37/gobot v1.14.1-0.20200214195251-3e9e12582a3d

@@ -5,10 +5,10 @@ import (
 
 	"github.com/disaster37/gobot-fat/dfp"
 	"github.com/disaster37/gobot-fat/middleware"
+	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
-	"github.com/labstack/echo/v4"
 )
 
 func main() {
@@ -29,7 +29,6 @@ func main() {
 		panic(err)
 	}
 
-
 	// Init and start DFP robot
 	dfpHandler, err := dfp.NewDFP(configHandler)
 	if err != nil {
@@ -42,5 +41,5 @@ func main() {
 	middL := middleware.InitMiddleware()
 	e.Use(middL.CORS)
 
-	log.Fatal(e.Start(viper.GetString("server.address")))
+	//log.Fatal(e.Start(viper.GetString("server.address")))
 }

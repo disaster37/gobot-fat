@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"time"
 
 	"gobot.io/x/gobot"
@@ -10,12 +11,12 @@ import (
 type DFPState struct {
 	id                 string    `json:"id"`
 	name               string    `json:"name"`
-	isWashed           bool      `json:"is_running"`
-	shouldWash		   bool	 `json:"should_wash"`
+	isWashed           bool      `json:"is_washed"`
+	shouldWash         bool      `json:"should_wash"`
 	isAuto             bool      `json:"is_started"`
 	isStopped          bool      `json:"is_stopped"`
 	isSecurity         bool      `json:"is_security"`
-	isEmergencyStopped bool      `json:"is_emmergency"`
+	isEmergencyStopped bool      `json:"is_emmergency_stopped"`
 	lastWashing        time.Time `json:"last_washing"`
 	eventer            gobot.Eventer
 }
@@ -26,13 +27,31 @@ func NewDFPState(ID string, name string, eventer gobot.Eventer) *DFPState {
 		id:                 ID,
 		name:               name,
 		isWashed:           false,
-		shouldWash: false,
+		shouldWash:         false,
 		isAuto:             false,
 		isStopped:          false,
 		isSecurity:         false,
 		isEmergencyStopped: false,
 		eventer:            eventer,
 	}
+}
+
+func (h *DFPState) String() string {
+	temp := map[string]interface{}{
+		"id":                   h.ID(),
+		"name":                 h.Name(),
+		"is_washed":            h.IsWashed(),
+		"should_wash":          h.ShouldWash(),
+		"is_auto":              h.IsAuto(),
+		"is_stopped":           h.IsStopped(),
+		"is_security":          h.IsSecurity(),
+		"is_emergency_stopped": h.IsEmergencyStopped(),
+	}
+	data, err := json.Marshal(temp)
+	if err != nil {
+		panic(err)
+	}
+	return string(data)
 }
 
 // ID return the robot ID
@@ -130,6 +149,8 @@ func (h *DFPState) SetSecurity() {
 func (h *DFPState) UnsetSecurity() {
 	if h.IsSecurity() {
 		h.isSecurity = false
+		h.shouldWash = false
+		h.isWashed = false
 		h.eventer.Publish("stateChange", "isNotSecurity")
 	}
 }
@@ -163,6 +184,8 @@ func (h *DFPState) SetStop() {
 func (h *DFPState) UnsetStop() {
 	if h.IsStopped() {
 		h.isStopped = false
+		h.shouldWash = false
+		h.isWashed = false
 		h.eventer.Publish("stateChange", "isNotStop")
 	}
 }
@@ -179,6 +202,8 @@ func (h *DFPState) SetEmergencyStop() {
 // UnsetEmergencyStop set emergency state to false
 func (h *DFPState) UnsetEmergencyStop() {
 	if h.IsEmergencyStopped() {
+		h.shouldWash = false
+		h.isWashed = false
 		h.isEmergencyStopped = false
 		h.eventer.Publish("stateChange", "isNotEmergencyStop")
 	}
