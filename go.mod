@@ -3,9 +3,11 @@ module github.com/disaster37/gobot-fat
 go 1.12
 
 require (
+	github.com/elastic/go-elasticsearch/v7 v7.6.0
 	github.com/labstack/echo/v4 v4.1.11
 	github.com/onsi/ginkgo v1.12.0 // indirect
 	github.com/onsi/gomega v1.9.0 // indirect
+	github.com/pkg/errors v0.8.1
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/viper v1.6.1
 	github.com/x-cray/logrus-prefixed-formatter v0.5.2

@@ -1,6 +1,5 @@
 server:
   address: ":4040"
-
 dfp:
   id: "fat"
   name: "fat"

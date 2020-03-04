@@ -29,6 +29,14 @@ func main() {
 		panic(err)
 	}
 
+	// Init and start API
+	e := echo.New()
+	middL := middleware.InitMiddleware()
+	e.Use(middL.CORS)
+	go func() {
+		log.Fatal(e.Start(configHandler.GetString("server.address")))
+	}()
+
 	// Init and start DFP robot
 	dfpHandler, err := dfp.NewDFP(configHandler)
 	if err != nil {
@@ -36,10 +44,4 @@ func main() {
 	}
 	dfpHandler.Start()
 
-	// Init and start API
-	e := echo.New()
-	middL := middleware.InitMiddleware()
-	e.Use(middL.CORS)
-
-	//log.Fatal(e.Start(viper.GetString("server.address")))
 }
