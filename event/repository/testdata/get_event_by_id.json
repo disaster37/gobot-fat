@@ -1,0 +1,17 @@
+{
+    "_index": "test",
+    "_type": "_doc",
+    "_id": "AWs7q3ABfD3eE7afoQ4E",
+    "_version": 1,
+    "_seq_no": 2,
+    "_primary_term": 1,
+    "found": true,
+    "_source": {
+        "source_id": "gobot_dfp",
+        "source_name": "Drum Filter Pond",
+        "type": "temperature",
+        "kind": "captor",
+        "temperature": 12.9,
+        "timestamp": "2020-02-06T10:40:12.000Z"
+    }
+}

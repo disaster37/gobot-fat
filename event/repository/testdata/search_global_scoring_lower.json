@@ -1,0 +1,33 @@
+{
+    "took": 5,
+    "timed_out": false,
+    "_shards": {
+        "total": 1,
+        "successful": 1,
+        "skipped": 0,
+        "failed": 0
+    },
+    "hits": {
+        "total": {
+            "value": 1,
+            "relation": "eq"
+        },
+        "max_score": 0.5,
+        "hits": [
+            {
+                "_index": "test",
+                "_type": "_doc",
+                "_id": "AWs7q3ABfD3eE7afoQ4E",
+                "_score": 1.0,
+                "_source": {
+                    "source_id": "gobot_dfp",
+                    "source_name": "Drum Filter Pond",
+                    "type": "temperature",
+                    "kind": "captor",
+                    "temperature": 12.9,
+                    "timestamp": "2020-02-06T10:40:12.000Z"
+                }
+            }
+        ]
+    }
+}

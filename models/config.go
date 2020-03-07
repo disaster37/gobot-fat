@@ -26,4 +26,7 @@ type DFPConfig struct {
 
 	// StartWashingPumpBeforeWashingInSeconds is the time in seconds witch we start washing pump before run washing cycle
 	StartWashingPumpBeforeWashingInSeconds int `json:"start_washing_pump_before_washing_in_seconds" validate:"required"`
+
+	Version int64 `json:"version"`
+	updated time.Time `json:"updated"`
 }

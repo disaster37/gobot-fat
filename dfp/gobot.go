@@ -194,5 +194,5 @@ func (h *DFPHandler) work() {
 	h.buttonStop.Start()
 	h.buttonEmergencyStop.Start()
 
-	log.Infof("Robot %s started successfully", h.state.Name)
+	log.Infof("Robot %s started successfully", h.state.Name())
 }
