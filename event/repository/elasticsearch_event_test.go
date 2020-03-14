@@ -12,19 +12,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type MockTransport struct {
-	Response    *http.Response
-	RoundTripFn func(req *http.Request) (*http.Response, error)
-}
-
-func (t *MockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	return t.RoundTripFn(req)
-}
-
 func TestGetByID(t *testing.T) {
 
 	// When Document found
-	mocktrans := &MockTransport{
+	mocktrans := &helper.MockTransport{
 		Response: &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       helper.Fixture("get_event_by_id.json"),
@@ -46,7 +37,7 @@ func TestGetByID(t *testing.T) {
 	assert.Equal(t, 12.9, event.Temperature)
 
 	// When document not found
-	mocktrans = &MockTransport{
+	mocktrans = &helper.MockTransport{
 		Response: &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       helper.Fixture("get_event_by_id_not_found.json"),
@@ -64,7 +55,7 @@ func TestGetByID(t *testing.T) {
 func TestSearch(t *testing.T) {
 
 	// When Document found
-	mocktrans := &MockTransport{
+	mocktrans := &helper.MockTransport{
 		Response: &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       helper.Fixture("search.json"),
@@ -93,7 +84,7 @@ func TestSearch(t *testing.T) {
 	assert.Equal(t, 12.9, events[0].Temperature)
 
 	// When search not found
-	mocktrans = &MockTransport{
+	mocktrans = &helper.MockTransport{
 		Response: &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       helper.Fixture("search_not_found.json"),
@@ -108,7 +99,7 @@ func TestSearch(t *testing.T) {
 	assert.Empty(t, events)
 
 	// When max scoring lower than minimal scoring
-	mocktrans = &MockTransport{
+	mocktrans = &helper.MockTransport{
 		Response: &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       helper.Fixture("search_global_scoring_lower.json"),
@@ -123,7 +114,7 @@ func TestSearch(t *testing.T) {
 	assert.Empty(t, events)
 
 	// When document scoring lower than minimal scoring
-	mocktrans = &MockTransport{
+	mocktrans = &helper.MockTransport{
 		Response: &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       helper.Fixture("search_scoring_lower.json"),
@@ -141,7 +132,7 @@ func TestSearch(t *testing.T) {
 func TestFetch(t *testing.T) {
 
 	// When fetch without pagination
-	mocktrans := &MockTransport{
+	mocktrans := &helper.MockTransport{
 		Response: &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       helper.Fixture("search.json"),
@@ -164,7 +155,7 @@ func TestFetch(t *testing.T) {
 	assert.Equal(t, 12.9, events[0].Temperature)
 
 	// When fetch with pagination
-	mocktrans = &MockTransport{
+	mocktrans = &helper.MockTransport{
 		Response: &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       helper.Fixture("fetch_with_pagination.json"),
@@ -187,7 +178,7 @@ func TestFetch(t *testing.T) {
 	assert.Equal(t, 12.9, events[0].Temperature)
 
 	// When fetch without document
-	mocktrans = &MockTransport{
+	mocktrans = &helper.MockTransport{
 		Response: &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       helper.Fixture("search_not_found.json"),
@@ -204,7 +195,7 @@ func TestFetch(t *testing.T) {
 }
 
 func TestStore(t *testing.T) {
-	mocktrans := &MockTransport{
+	mocktrans := &helper.MockTransport{
 		Response: &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       helper.Fixture("store.json"),
@@ -232,7 +223,7 @@ func TestStore(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	mocktrans := &MockTransport{
+	mocktrans := &helper.MockTransport{
 		Response: &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       helper.Fixture("store.json"),
@@ -261,7 +252,7 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	mocktrans := &MockTransport{
+	mocktrans := &helper.MockTransport{
 		Response: &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       helper.Fixture("delete.json"),

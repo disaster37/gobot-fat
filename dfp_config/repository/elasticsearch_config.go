@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	configID = "dfp"
+	configIDElasticsearch = "dfp"
 )
 
 type elasticsearchDFPConfigRepository struct {
@@ -31,13 +31,12 @@ func NewElasticsearchDFPConfigRepository(conn *elastic.Client, index string) DFP
 	}
 }
 
-
 // Get retrive the current config for DFP
 func (h *elasticsearchDFPConfigRepository) Get(ctx context.Context) (*models.DFPConfig, error) {
 
 	res, err := h.Conn.Get(
 		h.Index,
-		configID,
+		configIDElasticsearch,
 		h.Conn.Get.WithContext(ctx),
 		h.Conn.Get.WithPretty(),
 	)
@@ -53,7 +52,7 @@ func (h *elasticsearchDFPConfigRepository) Get(ctx context.Context) (*models.DFP
 
 	log.Debugf("Config: %+v", config)
 
-	if config.ID == "" {
+	if config.Version == 0 {
 		return nil, nil
 	}
 
@@ -61,14 +60,14 @@ func (h *elasticsearchDFPConfigRepository) Get(ctx context.Context) (*models.DFP
 }
 
 // Update create or update config for DFP
-func(h * elasticsearchDFPConfigRepository) Update(ctx context.Context, config *models.DFPConfig) error {
-	
+func (h *elasticsearchDFPConfigRepository) Update(ctx context.Context, config *models.DFPConfig) error {
+
 	if config == nil {
 		return errors.New("Config can't be null")
 	}
 	log.Debugf("Config: %s", config)
 
-	config.Updated = time.Now()
+	config.UpdatedAt = time.Now()
 	config.Version++
 
 	data, err := json.Marshal(config)
@@ -80,7 +79,7 @@ func(h * elasticsearchDFPConfigRepository) Update(ctx context.Context, config *m
 	res, err := h.Conn.Index(
 		h.Index,
 		b,
-		h.Conn.Index.WithDocumentID(configID),
+		h.Conn.Index.WithDocumentID(configIDElasticsearch),
 		h.Conn.Index.WithContext(ctx),
 		h.Conn.Index.WithPretty(),
 	)

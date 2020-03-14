@@ -1,0 +1,19 @@
+{
+    "_index": "test",
+    "_type": "_doc",
+    "_id": "AWs7q3ABfD3eE7afoQ4E",
+    "_version": 1,
+    "_seq_no": 2,
+    "_primary_term": 1,
+    "found": true,
+    "_source": {
+        "force_washing_duration": 180,
+        "force_washing_duration_when_frozen": 60,
+        "temperature_threshold_when_frozen": -5,
+        "wait_time_between_washing": 15,
+        "washing_duration": 10,
+        "start_washing_pump_before_washing": 5,
+        "version": 1,
+        "updated_at": "2020-02-06T10:40:12.000Z"
+    }
+}
