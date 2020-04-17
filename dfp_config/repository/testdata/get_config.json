@@ -13,6 +13,9 @@
         "wait_time_between_washing": 15,
         "washing_duration": 10,
         "start_washing_pump_before_washing": 5,
+        "auto": true,
+        "stopped": true,
+        "security_disabled": false,
         "version": 1,
         "updated_at": "2020-02-06T10:40:12.000Z"
     }

@@ -19,7 +19,7 @@ type sqlDFPConfigRepository struct {
 }
 
 // NewSQLDFPConfigRepository will create an object that implement DFPConfig.Repository interface
-func NewSQLDFPConfigRepository(conn *gorm.DB) DFPConfig.Repository {
+func NewSQLDFPConfigRepository(conn *gorm.DB) dfpconfig.Repository {
 	return &sqlDFPConfigRepository{
 		Conn: conn,
 	}
@@ -30,6 +30,9 @@ func (h *sqlDFPConfigRepository) Get(ctx context.Context) (*models.DFPConfig, er
 	config := &models.DFPConfig{}
 	err := h.Conn.First(config, configIDSQL).Error
 	if err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			return nil, nil
+		}
 		return nil, err
 	}
 
@@ -48,6 +51,25 @@ func (h *sqlDFPConfigRepository) Update(ctx context.Context, config *models.DFPC
 	config.Version++
 
 	err := h.Conn.Save(config).Error
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (h *sqlDFPConfigRepository) Create(ctx context.Context, config *models.DFPConfig) error {
+
+	if config == nil {
+		return errors.New("Config can't be null")
+	}
+	log.Debugf("Config: %s", config)
+
+	config.ID = configIDSQL
+	config.UpdatedAt = time.Now()
+	config.Version = 1
+
+	err := h.Conn.Create(config).Error
 	if err != nil {
 		return err
 	}

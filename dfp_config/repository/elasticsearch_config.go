@@ -24,7 +24,7 @@ type elasticsearchDFPConfigRepository struct {
 }
 
 // NewElasticsearchDFPConfigRepository will create an object that implement DFPConfig.Repository interface
-func NewElasticsearchDFPConfigRepository(conn *elastic.Client, index string) DFPConfig.Repository {
+func NewElasticsearchDFPConfigRepository(conn *elastic.Client, index string) dfpconfig.Repository {
 	return &elasticsearchDFPConfigRepository{
 		Conn:  conn,
 		Index: index,
@@ -87,7 +87,23 @@ func (h *elasticsearchDFPConfigRepository) Update(ctx context.Context, config *m
 		return err
 	}
 
+	defer res.Body.Close()
+
+	// Check if query found
+	if res.IsError() {
+		return errors.Errorf("Error when read response: %s", res.String())
+	}
+
 	log.Debugf("Response: %s", res.String())
 
 	return nil
+}
+
+// Create permit to create new config
+func (h *elasticsearchDFPConfigRepository) Create(ctx context.Context, config *models.DFPConfig) error {
+	if config == nil {
+		return errors.New("Config can't be null")
+	}
+	config.Version = 0
+	return h.Update(ctx, config)
 }

@@ -1,14 +1,18 @@
 server:
-  address: ":4040"
+  address: ':4040'
+  username: 'gobot'
+  password: 'gobot'
+context:
+  timeout: 30
+elasticsearch:
+  urls:
+    - 'https://elasticsearch.webcenter.fr'
+  username: 'gobot'
+  password: 'G@b@t$36'
 dfp:
   id: "fat"
   name: "fat"
   port: "/dev/ttyUSB0"
-  washing:
-    wait_time_washing_pump: 5
-    duration: 10
-    wait_time_between_wash: 300
-    history_size: 10
   pin:
     captor:
       water_security_top: "12"
