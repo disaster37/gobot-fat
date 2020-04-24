@@ -33,3 +33,14 @@ dfp:
       wash: "11"
       force_washing_pump: "22"
       force_barrel_motor: "23"
+tfp:
+  name: 'filter'
+  address: '192.168.0.191:3030'
+  pin:
+    relay:
+      pond_pomp: '0'
+      waterfall_pomp: '1'
+      pond_bubble: '2'
+      filter_bubble: '3'
+      uvc1: '4'
+      uvc2: '5'
