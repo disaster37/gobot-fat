@@ -2,22 +2,26 @@ package usecase
 
 import (
 	"context"
+	"time"
 
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/tfp"
+	tfpconfig "github.com/disaster37/gobot-fat/tfp_config"
 	log "github.com/sirupsen/logrus"
 )
 
 type tfpUsecase struct {
-	tfp   tfp.Gobot
-	state tfp.Repository
+	tfp    tfp.Gobot
+	state  tfp.Repository
+	config tfpconfig.Usecase
 }
 
 // NewTFPUsecase will create new tfpUsecase object of tfp.Usecase interface
-func NewTFPUsecase(handler tfp.Gobot, repo tfp.Repository) tfp.Usecase {
+func NewTFPUsecase(handler tfp.Gobot, repo tfp.Repository, config tfpconfig.Usecase) tfp.Usecase {
 	return &tfpUsecase{
-		tfp:   handler,
-		state: repo,
+		tfp:    handler,
+		state:  repo,
+		config: config,
 	}
 }
 
@@ -178,4 +182,68 @@ func (h *tfpUsecase) StartRobot(ctx context.Context) error {
 // StopRobot stop the robot that manage the TFP
 func (h *tfpUsecase) StopRobot(ctx context.Context) error {
 	return h.tfp.Stop()
+}
+
+// UVC1BlisterStatus return true if UVC1 blister not greather than the max time of use
+func (h *tfpUsecase) UVC1BlisterStatus(ctx context.Context) (bool, error) {
+	// Get actual config
+	config, err := h.config.Get(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	if int64(time.Since(config.UVC1BlisterTime).Hours()) < config.UVC1BlisterMaxTime {
+		return true, nil
+	}
+
+	return false, nil
+}
+
+// UVC2BlisterStatus return true if UVC2 blister not greather than the max time of use
+func (h *tfpUsecase) UVC2BlisterStatus(ctx context.Context) (bool, error) {
+	// Get actual config
+	config, err := h.config.Get(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	if int64(time.Since(config.UVC2BlisterTime).Hours()) < config.UVC2BlisterMaxTime {
+		return true, nil
+	}
+
+	return false, nil
+}
+
+// UVC1BlisterNew update the date when blister changed
+func (h *tfpUsecase) UVC1BlisterNew(ctx context.Context) error {
+	config, err := h.config.Get(ctx)
+	if err != nil {
+		return err
+	}
+
+	config.UVC1BlisterTime = time.Now()
+
+	err = h.config.Update(ctx, config)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// UVC2BlisterNew update the date when blister changed
+func (h *tfpUsecase) UVC2BlisterNew(ctx context.Context) error {
+	config, err := h.config.Get(ctx)
+	if err != nil {
+		return err
+	}
+
+	config.UVC2BlisterTime = time.Now()
+
+	err = h.config.Update(ctx, config)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -5,7 +5,7 @@ import (
 
 	"github.com/disaster37/gobot-fat/event"
 	"github.com/disaster37/gobot-fat/tfp"
-	"github.com/disaster37/gobot-fat/tfp_config"
+	tfpconfig "github.com/disaster37/gobot-fat/tfp_config"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"gobot.io/x/gobot"
@@ -16,7 +16,7 @@ import (
 // DFPHandler manage all i/o on FAT
 type TFPHandler struct {
 	stateRepository    tfp.Repository
-	arduino            *firmata.TCPAdaptor
+	arduino            gobot.Adaptor
 	configUsecase      tfpconfig.Usecase
 	eventUsecase       event.Usecase
 	robot              *gobot.Robot
@@ -44,8 +44,8 @@ func NewTFP(configHandler *viper.Viper, configUsecase tfpconfig.Usecase, eventUs
 		relayPompWaterfall: gpio.NewRelayDriver(arduino, configHandler.GetString("tfp.pin.relay.waterfall_pomp")),
 		relayBubblePond:    gpio.NewRelayDriver(arduino, configHandler.GetString("tfp.pin.relay.pond_bubble")),
 		relayBubbleFilter:  gpio.NewRelayDriver(arduino, configHandler.GetString("tfp.pin.relay.filter_bubble")),
-		relayUVC1:          gpio.NewRelayDriver(arduino, configHandler.GetString("tfp.pin.relay.uvc1")),
-		relayUVC2:          gpio.NewRelayDriver(arduino, configHandler.GetString("tfp.pin.relay.uvc2")),
+		relayUVC1:          gpio.NewRelayDriver(arduino, "6"),
+		relayUVC2:          gpio.NewRelayDriver(arduino, "7"),
 	}
 
 	// Set event
@@ -78,14 +78,12 @@ func (h *TFPHandler) Start() {
 }
 
 func (h *TFPHandler) start() {
-	err := h.robot.Start()
+	err := h.robot.Start(false)
 	for err != nil {
 		log.Errorf("Error when start Robot %s: %s", h.stateRepository.State().Name, err.Error())
 		time.Sleep(10 * time.Second)
 		err = h.robot.Start()
 	}
-
-	log.Infof("Robot %s started successfully", h.stateRepository.State().Name)
 }
 
 // Stop permit to stop robot

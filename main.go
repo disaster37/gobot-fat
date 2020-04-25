@@ -18,6 +18,7 @@ import (
 	eventUsecase "github.com/disaster37/gobot-fat/event/usecase"
 	dfpMiddleware "github.com/disaster37/gobot-fat/middleware"
 	"github.com/disaster37/gobot-fat/models"
+	tfpHttpDeliver "github.com/disaster37/gobot-fat/tfp/delivery/http"
 	tfpGobot "github.com/disaster37/gobot-fat/tfp/gobot"
 	tfpRepo "github.com/disaster37/gobot-fat/tfp/repository"
 	tfpUsecase "github.com/disaster37/gobot-fat/tfp/usecase"
@@ -133,7 +134,7 @@ func main() {
 		panic("Failed to init TFP gobot")
 	}
 	dfpUsecase := dfpUsecase.NewDFPUsecase(dfpGobot, dfpRepo)
-	tfpUsecase := tfpUsecase.NewTFPUsecase(tfpGobot, tfpRepo)
+	tfpUsecase := tfpUsecase.NewTFPUsecase(tfpGobot, tfpRepo, tfpConfigUsecase)
 
 	// Init config if needed
 	ctx := context.Background()
@@ -198,12 +199,19 @@ func main() {
 	// Init delivery
 	dfpConfigHttpDeliver.NewDFPConfigHandler(api, dfpConfigUsecase)
 	tfpConfigHttpDeliver.NewTFPConfigHandler(api, tfpConfigUsecase)
+	tfpHttpDeliver.NewTFPHandler(api, tfpUsecase)
 
 	// Run robots
-	dfpUsecase.StartRobot(ctx)
+	//dfpUsecase.StartRobot(ctx)
+	log.Debug(dfpUsecase)
 	tfpUsecase.StartRobot(ctx)
 
 	// Run web server
 	e.Start(configHandler.GetString("server.address"))
+
+	// Stop Robots
+	tfpUsecase.StopRobot(ctx)
+
+	log.Info("End of program")
 
 }
