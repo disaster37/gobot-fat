@@ -11,9 +11,6 @@ import (
 type TFPConfig struct {
 	gorm.Model
 
-	// EmergencyStopped is true if DFP must be stopped
-	EmergencyStopped bool `json:"emergency_stopped" gorm:"column:emergency_stopped" validate:"required"`
-
 	// UVC1Running is true if UVC1 running
 	UVC1Running bool `json:"uvc1_running" gorm:"column:uvc1_running" validate:"required"`
 
@@ -32,8 +29,20 @@ type TFPConfig struct {
 	// FilterBubbleRunning is true if filter bubble running
 	FilterBubbleRunning bool `json:"filter_bubble_running" gorm:"column:filter_bubble_running" validate:"required"`
 
-	// SecurityDisabled is true if security is disabled
-	SecurityDisabled bool `json:"security_disabled" gorm:"column:security_disabled" validate:"required"`
+	// UVC1BlisterTime is the time usage of UVC1 blister
+	UVC1BlisterTime time.Time
+
+	// UVC2BlisterTime is the time usage of UVC2 blister
+	UVC2BlisterTime time.Time
+
+	// UVC1BlisterMaxTime is the max usage in hour of UVC1 blister
+	UVC1BlisterMaxTime int64
+
+	// UVC1BlisterMaxTime is the max usage in hour of UVC2 blister
+	UVC2BlisterMaxTime int64
+
+	// BacteriumTime is the time when introduce bacterium to power off UVC during 48h
+	BacteriumTime time.Time
 
 	// Version of configuration
 	Version int64 `json:"version" gorm:"column:version;type:bigint" validate:"required"`

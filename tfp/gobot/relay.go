@@ -32,12 +32,14 @@ func (h *TFPHandler) StartPondPump() error {
 	} else {
 		log.Debug("Pond pump not started because of state not permit it")
 	}
+
+	return nil
 }
 
 // StartUVC1 permit to run UVC1
 // The UVC start only if no emergency and no security
 func (h *TFPHandler) StartUVC1() error {
-	if h.stateRepository.CanStartRelay() {
+	if h.stateRepository.CanStartRelay() && h.stateRepository.State().PondPumpRunning {
 		log.Debug("Start UVC1")
 		err := h.relayUVC1.On()
 		if err != nil {
@@ -58,12 +60,14 @@ func (h *TFPHandler) StartUVC1() error {
 	} else {
 		log.Debug("UVC1 not started because of state not permit it")
 	}
+
+	return nil
 }
 
 // StartUVC2 permit to run UVC2
 // The UVC start only if no emergency and no security
 func (h *TFPHandler) StartUVC2() error {
-	if h.stateRepository.CanStartRelay() {
+	if h.stateRepository.CanStartRelay() && h.stateRepository.State().PondPumpRunning {
 		log.Debug("Start UVC2")
 		err := h.relayUVC2.On()
 		if err != nil {
@@ -84,9 +88,11 @@ func (h *TFPHandler) StartUVC2() error {
 	} else {
 		log.Debug("UVC2 not started because of state not permit it")
 	}
+
+	return nil
 }
 
-// StartWashingPump permit to run washing pump
+// StartPondPumpWithUVC permit to start pond pump with UVC
 // The pump start only if no emergency and no security
 func (h *TFPHandler) StartPondPumpWithUVC() error {
 	if h.stateRepository.CanStartRelay() {
@@ -107,6 +113,8 @@ func (h *TFPHandler) StartPondPumpWithUVC() error {
 	} else {
 		log.Debug("Pond pump with UVC not started because of state not permit it")
 	}
+
+	return nil
 }
 
 // StopUVC1 permit to stop UVC1
@@ -138,6 +146,7 @@ func (h *TFPHandler) StopUVC1() {
 	}
 
 	log.Info("Stop UVC1 successfully")
+
 }
 
 // StopUVC2 permit to stop UVC2
@@ -230,6 +239,8 @@ func (h *TFPHandler) StartWaterfallPump() error {
 		log.Debug("Waterfall pump not started because of state not permit it")
 	}
 
+	return nil
+
 }
 
 // StopWaterfallPump permit to stop waterfall pump
@@ -287,6 +298,8 @@ func (h *TFPHandler) StartPondBubble() error {
 	} else {
 		log.Debug("Pond bubble not started because of state not permit it")
 	}
+
+	return nil
 
 }
 
@@ -346,6 +359,8 @@ func (h *TFPHandler) StartFilterBubble() error {
 		log.Debug("Filter bubble not started because of state not permit it")
 	}
 
+	return nil
+
 }
 
 // StopFilterBubble permit to stop filter bubble
@@ -390,7 +405,7 @@ func (h *TFPHandler) HandleRelay() {
 
 		// Stop relais
 		if h.stateRepository.State().IsEmergencyStopped {
-			h.StopMotors()
+			h.StopRelais()
 		}
 	})
 
@@ -401,11 +416,61 @@ func (h *TFPHandler) HandleRelay() {
 		log.Debugf("Receive event %s", event)
 
 		// Stop pump
-		if (h.stateRepository.State().IsSecurity && !h.stateRepository.State().IsDisableSecurity) {
+		if h.stateRepository.State().IsSecurity && !h.stateRepository.State().IsDisableSecurity {
 			h.StopPondPump()
 			h.StopWaterfallPump()
 		}
 	})
+
+	// Handle relay
+	h.eventer.On("stateChange", func(data interface{}) {
+		event := data.(string)
+
+		log.Debugf("Receive event %s", event)
+
+		// Manage pond pump
+		if h.stateRepository.State().PondPumpRunning {
+			h.StartPondPump()
+		} else {
+			h.StopPondPump()
+		}
+
+		// Manage UVC1
+		if h.stateRepository.State().UVC1Running {
+			h.StartUVC1()
+		} else {
+			h.StopUVC1()
+		}
+
+		// Manage UVC2
+		if h.stateRepository.State().UVC2Running {
+			h.StartUVC2()
+		} else {
+			h.StopUVC2()
+		}
+
+		// Manage waterfall pump
+		if h.stateRepository.State().WaterfallPumpRunning {
+			h.StartWaterfallPump()
+		} else {
+			h.StopWaterfallPump()
+		}
+
+		// Manage pond bubble
+		if h.stateRepository.State().PondBubbleRunning {
+			h.StartPondBubble()
+		} else {
+			h.StopPondBubble()
+		}
+
+		// Manage filter bubble
+		if h.stateRepository.State().PondBubbleRunning {
+			h.StartFilterBubble()
+		} else {
+			h.StopFilterBubble()
+		}
+	})
+
 }
 
 // StopRelais stop all relais

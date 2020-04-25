@@ -10,8 +10,8 @@ elasticsearch:
   username: 'gobot'
   password: 'G@b@t$36'
 dfp:
-  id: "fat"
-  name: "fat"
+  id: "dfp"
+  name: "dfp"
   port: "/dev/ttyUSB0"
   pin:
     captor:
@@ -34,7 +34,8 @@ dfp:
       force_washing_pump: "22"
       force_barrel_motor: "23"
 tfp:
-  name: 'filter'
+  id: 'tfp'
+  name: 'tfp'
   address: '192.168.0.191:3030'
   pin:
     relay:
@@ -42,5 +43,5 @@ tfp:
       waterfall_pomp: '1'
       pond_bubble: '2'
       filter_bubble: '3'
-      uvc1: '4'
-      uvc2: '5'
+      uvc1: 'A1'
+      uvc2: 'A2'

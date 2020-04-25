@@ -1,132 +1,183 @@
 package repository
 
 import (
-	"time"
+	"context"
 
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/tfp"
+	"github.com/disaster37/gobot-fat/tfp_config"
 	"gobot.io/x/gobot"
 )
 
 type tfpRepository struct {
 	state   *models.TFPState
 	eventer gobot.Eventer
+	config  tfpconfig.Usecase
 }
 
 // NewTFPRepository instanciate TFPRepository interface
-func NewTFPRepository(state *models.TFPState, eventer gobot.Eventer) tfp.Repository {
+func NewTFPRepository(state *models.TFPState, eventer gobot.Eventer, config tfpconfig.Usecase) tfp.Repository {
 	return &tfpRepository{
 		state:   state,
 		eventer: eventer,
+		config:  config,
 	}
 }
 
-func (h *ftpRepository) StartPondPump() (bool, error) {
+func (h *tfpRepository) StartPondPump() error {
 	if !h.state.PondPumpRunning {
 		h.state.PondPumpRunning = true
 		h.eventer.Publish("stateChange", "pondPumpRunning")
-		return true, nil
+
+		// Update config
+		err := h.updateConfig()
+
+		return err
 	}
-	return false, nil
+	return nil
 }
 
-func (h *ftpRepository) StopPondPump() (bool, error) {
+func (h *tfpRepository) StopPondPump() error {
 	if h.state.PondPumpRunning {
 		h.state.PondPumpRunning = false
 		h.eventer.Publish("stateChange", "pondPumpStopped")
-		return true, nil
+
+		// Update config
+		err := h.updateConfig()
+
+		return err
 	}
-	return false, nil
+	return nil
 }
 
-func (h *ftpRepository) StartWaterfallPump() (bool, error) {
+func (h *tfpRepository) StartWaterfallPump() error {
 	if !h.state.WaterfallPumpRunning {
 		h.state.WaterfallPumpRunning = true
 		h.eventer.Publish("stateChange", "waterfallPumpRunning")
-		return true, nil
+
+		// Update config
+		err := h.updateConfig()
+
+		return err
 	}
-	return false, nil
+	return nil
 }
 
-func (h *ftpRepository) StopWaterfallPump() (bool, error) {
+func (h *tfpRepository) StopWaterfallPump() error {
 	if h.state.WaterfallPumpRunning {
 		h.state.WaterfallPumpRunning = false
 		h.eventer.Publish("stateChange", "waterfallPumpStopped")
-		return true, nil
+
+		// Update config
+		err := h.updateConfig()
+
+		return err
 	}
-	return false, nil
+	return nil
 }
 
-func (h *ftpRepository) StartUVC1() (bool, error) {
+func (h *tfpRepository) StartUVC1() error {
 	if !h.state.UVC1Running {
 		h.state.UVC1Running = true
 		h.eventer.Publish("stateChange", "uvc1Running")
-		return true, nil
+
+		// Update config
+		err := h.updateConfig()
+
+		return err
 	}
-	return false, nil
+	return nil
 }
 
-func (h *ftpRepository) StopUVC1() (bool, error) {
+func (h *tfpRepository) StopUVC1() error {
 	if h.state.UVC1Running {
 		h.state.UVC1Running = false
 		h.eventer.Publish("stateChange", "uvc1Stopped")
-		return true, nil
+
+		// Update config
+		err := h.updateConfig()
+
+		return err
 	}
-	return false, nil
+	return nil
 }
 
-func (h *ftpRepository) StartUVC2() (bool, error) {
+func (h *tfpRepository) StartUVC2() error {
 	if !h.state.UVC2Running {
 		h.state.UVC2Running = true
 		h.eventer.Publish("stateChange", "uvc2Running")
-		return true, nil
+
+		// Update config
+		err := h.updateConfig()
+
+		return err
 	}
-	return false, nil
+	return nil
 }
 
-func (h *ftpRepository) StopUVC2() (bool, error) {
+func (h *tfpRepository) StopUVC2() error {
 	if h.state.UVC2Running {
 		h.state.UVC2Running = false
 		h.eventer.Publish("stateChange", "uvc2Stopped")
-		return true, nil
+
+		// Update config
+		err := h.updateConfig()
+
+		return err
 	}
-	return false, nil
+	return nil
 }
 
-func (h *ftpRepository) StartPondBubble() (bool, error) {
+func (h *tfpRepository) StartPondBubble() error {
 	if !h.state.PondBubbleRunning {
 		h.state.PondBubbleRunning = true
 		h.eventer.Publish("stateChange", "pondBubbleRunning")
-		return true, nil
+
+		// Update config
+		err := h.updateConfig()
+
+		return err
 	}
-	return false, nil
+	return nil
 }
 
-func (h *ftpRepository) StopPondBubble() (bool, error) {
+func (h *tfpRepository) StopPondBubble() error {
 	if h.state.PondBubbleRunning {
 		h.state.PondBubbleRunning = false
 		h.eventer.Publish("stateChange", "pondBubbleStopped")
-		return true, nil
+
+		// Update config
+		err := h.updateConfig()
+
+		return err
 	}
-	return false, nil
+	return nil
 }
 
-func (h *ftpRepository) StartFilterBubble() (bool, error) {
+func (h *tfpRepository) StartFilterBubble() error {
 	if !h.state.FilterBubbleRunning {
 		h.state.FilterBubbleRunning = true
 		h.eventer.Publish("stateChange", "filterBubbleRunning")
-		return true, nil
+
+		// Update config
+		err := h.updateConfig()
+
+		return err
 	}
-	return false, nil
+	return nil
 }
 
-func (h *ftpRepository) StopFilterBubble() (bool, error) {
+func (h *tfpRepository) StopFilterBubble() error {
 	if h.state.FilterBubbleRunning {
 		h.state.FilterBubbleRunning = false
 		h.eventer.Publish("stateChange", "filterBubbleStopped")
-		return true, nil
+
+		// Update config
+		err := h.updateConfig()
+
+		return err
 	}
-	return false, nil
+	return nil
 }
 
 // CanStartRelay handle if relay can be started
@@ -144,4 +195,26 @@ func (h *tfpRepository) String() string {
 
 func (h *tfpRepository) State() *models.TFPState {
 	return h.state
+}
+
+func (h *tfpRepository) updateConfig() error {
+	ctx := context.Background()
+	config, err := h.config.Get(ctx)
+	if err != nil {
+		return err
+	}
+
+	config.PondPumpRunning = h.State().PondPumpRunning
+	config.UVC1Running = h.State().UVC1Running
+	config.UVC2Running = h.State().UVC2Running
+	config.PondBubbleRunning = h.State().PondBubbleRunning
+	config.FilterBubbleRunning = h.State().FilterBubbleRunning
+	config.WaterfallPumpRunning = h.State().WaterfallPumpRunning
+
+	err = h.config.Update(ctx, config)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

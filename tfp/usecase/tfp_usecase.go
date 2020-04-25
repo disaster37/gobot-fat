@@ -5,32 +5,28 @@ import (
 
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/tfp"
-	"github.com/disaster37/gobot-fat/tfp_config"
 	log "github.com/sirupsen/logrus"
 )
 
 type tfpUsecase struct {
-	tfp    tfp.Gobot
-	state  tfp.Repository
-	config tfpconfig.Usecase
+	tfp   tfp.Gobot
+	state tfp.Repository
 }
 
 // NewTFPUsecase will create new tfpUsecase object of tfp.Usecase interface
-func NewTFPUsecase(handler tfp.Gobot, repo tfp.Repository, config tfpconfig.Usecase) tfp.Usecase {
+func NewTFPUsecase(handler tfp.Gobot, repo tfp.Repository) tfp.Usecase {
 	return &tfpUsecase{
-		tfp:    handler,
-		state:  repo,
-		config: config,
+		tfp:   handler,
+		state: repo,
 	}
 }
 
 func (h *tfpUsecase) PondPump(ctx context.Context, status bool) error {
-	var isUpdate bool
 	var err error
 	if status {
 		// Start ond pump
 		log.Debugf("Start pond pump is required by API")
-		isUpdate, err = h.state.StartPondPump()
+		err = h.state.StartPondPump()
 		if err != nil {
 			return err
 		}
@@ -38,35 +34,23 @@ func (h *tfpUsecase) PondPump(ctx context.Context, status bool) error {
 	} else {
 		// Unset stop
 		log.Debugf("Stop pond pump is required by API")
-		isUpdate, err = h.state.StopPondPump()
+		err = h.state.StopPondPump()
 		h.tfp.StopPondPump()
 	}
 
 	if err != nil {
 		return err
 	}
-	if isUpdate {
-		config, err := h.config.Get(ctx)
-		if err != nil {
-			return err
-		}
-		config.PondPumpRunning = status
-		err = h.config.Update(ctx, config)
-		if err != nil {
-			return err
-		}
-	}
 
 	return nil
 }
 
 func (h *tfpUsecase) WaterfallPump(ctx context.Context, status bool) error {
-	var isUpdate bool
 	var err error
 	if status {
 		// Start ond pump
 		log.Debugf("Start waterfall pump is required by API")
-		isUpdate, err = h.state.StartWaterfallPump()
+		err = h.state.StartWaterfallPump()
 		if err != nil {
 			return err
 		}
@@ -74,35 +58,23 @@ func (h *tfpUsecase) WaterfallPump(ctx context.Context, status bool) error {
 	} else {
 		// Unset stop
 		log.Debugf("Stop waterfall pump is required by API")
-		isUpdate, err = h.state.StopWaterfallPump()
+		err = h.state.StopWaterfallPump()
 		h.tfp.StopWaterfallPump()
 	}
 
 	if err != nil {
 		return err
 	}
-	if isUpdate {
-		config, err := h.config.Get(ctx)
-		if err != nil {
-			return err
-		}
-		config.WaterfallPumpRunning = status
-		err = h.config.Update(ctx, config)
-		if err != nil {
-			return err
-		}
-	}
 
 	return nil
 }
 
 func (h *tfpUsecase) UVC1(ctx context.Context, status bool) error {
-	var isUpdate bool
 	var err error
 	if status {
 		// Start ond pump
 		log.Debugf("Start UVC1 is required by API")
-		isUpdate, err = h.state.StartUVC1()
+		err = h.state.StartUVC1()
 		if err != nil {
 			return err
 		}
@@ -110,35 +82,23 @@ func (h *tfpUsecase) UVC1(ctx context.Context, status bool) error {
 	} else {
 		// Unset stop
 		log.Debugf("Stop UVC1 is required by API")
-		isUpdate, err = h.state.StopUVC1()
+		err = h.state.StopUVC1()
 		h.tfp.StopUVC1()
 	}
 
 	if err != nil {
 		return err
 	}
-	if isUpdate {
-		config, err := h.config.Get(ctx)
-		if err != nil {
-			return err
-		}
-		config.UVC1Running = status
-		err = h.config.Update(ctx, config)
-		if err != nil {
-			return err
-		}
-	}
 
 	return nil
 }
 
 func (h *tfpUsecase) UVC2(ctx context.Context, status bool) error {
-	var isUpdate bool
 	var err error
 	if status {
 		// Start ond pump
 		log.Debugf("Start UVC2 is required by API")
-		isUpdate, err = h.state.StartUVC2()
+		err = h.state.StartUVC2()
 		if err != nil {
 			return err
 		}
@@ -146,35 +106,23 @@ func (h *tfpUsecase) UVC2(ctx context.Context, status bool) error {
 	} else {
 		// Unset stop
 		log.Debugf("Stop UVC2 is required by API")
-		isUpdate, err = h.state.StopUVC2()
+		err = h.state.StopUVC2()
 		h.tfp.StopUVC2()
 	}
 
 	if err != nil {
 		return err
 	}
-	if isUpdate {
-		config, err := h.config.Get(ctx)
-		if err != nil {
-			return err
-		}
-		config.UVC2Running = status
-		err = h.config.Update(ctx, config)
-		if err != nil {
-			return err
-		}
-	}
 
 	return nil
 }
 
 func (h *tfpUsecase) PondBubble(ctx context.Context, status bool) error {
-	var isUpdate bool
 	var err error
 	if status {
 		// Start ond pump
 		log.Debugf("Start pond bubble is required by API")
-		isUpdate, err = h.state.StartPondBubble()
+		err = h.state.StartPondBubble()
 		if err != nil {
 			return err
 		}
@@ -182,57 +130,34 @@ func (h *tfpUsecase) PondBubble(ctx context.Context, status bool) error {
 	} else {
 		// Unset stop
 		log.Debugf("Stop pond bubble is required by API")
-		isUpdate, err = h.state.StopPondBubble()
+		err = h.state.StopPondBubble()
 		h.tfp.StopPondBubble()
 	}
 
 	if err != nil {
 		return err
 	}
-	if isUpdate {
-		config, err := h.config.Get(ctx)
-		if err != nil {
-			return err
-		}
-		config.PondBubbleRunning = status
-		err = h.config.Update(ctx, config)
-		if err != nil {
-			return err
-		}
-	}
 
 	return nil
 }
 
 func (h *tfpUsecase) FilterBubble(ctx context.Context, status bool) error {
-	var isUpdate bool
 	var err error
 	if status {
 		log.Debugf("Start filter bubble is required by API")
-		isUpdate, err = h.state.StartFilterBubble()
+		err = h.state.StartFilterBubble()
 		if err != nil {
 			return err
 		}
 		err = h.tfp.StartFilterBubble()
 	} else {
 		log.Debugf("Stop filter bubble is required by API")
-		isUpdate, err = h.state.StopFilterBubble()
+		err = h.state.StopFilterBubble()
 		h.tfp.StopFilterBubble()
 	}
 
 	if err != nil {
 		return err
-	}
-	if isUpdate {
-		config, err := h.config.Get(ctx)
-		if err != nil {
-			return err
-		}
-		config.FilterBubbleRunning = status
-		err = h.config.Update(ctx, config)
-		if err != nil {
-			return err
-		}
 	}
 
 	return nil

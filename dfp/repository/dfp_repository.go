@@ -1,9 +1,11 @@
 package repository
 
 import (
+	"context"
 	"time"
 
 	"github.com/disaster37/gobot-fat/dfp"
+	"github.com/disaster37/gobot-fat/dfp_config"
 	"github.com/disaster37/gobot-fat/models"
 	"gobot.io/x/gobot"
 )
@@ -11,163 +13,205 @@ import (
 type dfpRepository struct {
 	state   *models.DFPState
 	eventer gobot.Eventer
+	config  dfpconfig.Usecase
 }
 
 // NewDFPRepository instanciate DFPRepository interface
-func NewDFPRepository(state *models.DFPState, eventer gobot.Eventer) dfp.Repository {
+func NewDFPRepository(state *models.DFPState, eventer gobot.Eventer, config dfpconfig.Usecase) dfp.Repository {
 	return &dfpRepository{
 		state:   state,
 		eventer: eventer,
+		config:  config,
 	}
 }
 
 // SetWashed set washed state to true
-func (h *dfpRepository) SetWashed() (bool, error) {
+func (h *dfpRepository) SetWashed() error {
 	if !h.state.IsWashed {
 		h.state.IsWashed = true
 		h.eventer.Publish("stateChange", "isWashed")
-		return true, nil
+		return nil
 	}
-	return false, nil
+	return nil
 }
 
 // SetShouldWash set should wash state
-func (h *dfpRepository) SetShouldWash() (bool, error) {
+func (h *dfpRepository) SetShouldWash() error {
 	if !h.state.ShouldWash {
 		h.state.ShouldWash = true
 		h.eventer.Publish("stateChange", "shouldWash")
-		return true, nil
+		return nil
 	}
-	return false, nil
+	return nil
 }
 
 // UnsetShouldWash unset should wash state
-func (h *dfpRepository) UnsetShouldWash() (bool, error) {
+func (h *dfpRepository) UnsetShouldWash() error {
 	if h.state.ShouldWash {
 		h.state.ShouldWash = false
 		h.eventer.Publish("stateChange", "shouldNotWash")
-		return true, nil
+		return nil
 	}
-	return false, nil
+	return nil
 }
 
 // UnsetWashed set washed state to false
-func (h *dfpRepository) UnsetWashed() (bool, error) {
+func (h *dfpRepository) UnsetWashed() error {
 	if h.state.IsWashed {
 		h.state.IsWashed = false
 		h.eventer.Publish("stateChange", "isNotWashed")
-		return true, nil
+		return nil
 	}
-	return false, nil
+	return nil
 }
 
 // SetSecurity set security state to true
-func (h *dfpRepository) SetSecurity() (bool, error) {
+func (h *dfpRepository) SetSecurity() error {
 	if !h.state.IsSecurity {
 		h.state.IsSecurity = true
 		h.state.IsWashed = false
 		h.eventer.Publish("stateChange", "isSecurity")
-		return true, nil
+
+		// Save config
+		err := h.updateConfig()
+
+		return err
 	}
-	return false, nil
+	return nil
 }
 
 // UnsetSecurity set security state to false
-func (h *dfpRepository) UnsetSecurity() (bool, error) {
+func (h *dfpRepository) UnsetSecurity() error {
 	if h.state.IsSecurity {
 		h.state.IsSecurity = false
 		h.state.ShouldWash = false
 		h.state.IsWashed = false
 		h.eventer.Publish("stateChange", "isNotSecurity")
-		return true, nil
+
+		// Save config
+		err := h.updateConfig()
+
+		return err
 	}
-	return false, nil
+	return nil
 }
 
 // SetAuto set auto state to true
-func (h *dfpRepository) SetAuto() (bool, error) {
+func (h *dfpRepository) SetAuto() error {
 	if !h.state.IsAuto {
 		h.state.IsAuto = true
 		h.eventer.Publish("stateChange", "isAuto")
-		return true, nil
+
+		// Save config
+		err := h.updateConfig()
+
+		return err
 	}
-	return false, nil
+	return nil
 }
 
 // UnsetAuto set auto state to false
-func (h *dfpRepository) UnsetAuto() (bool, error) {
+func (h *dfpRepository) UnsetAuto() error {
 	if h.state.IsAuto {
 		h.state.IsAuto = false
 		h.eventer.Publish("stateChange", "isNotAuto")
-		return true, nil
+
+		// Save config
+		err := h.updateConfig()
+
+		return err
 	}
-	return false, nil
+	return nil
 }
 
 // SetStop set stop state to true
-func (h *dfpRepository) SetStop() (bool, error) {
+func (h *dfpRepository) SetStop() error {
 	if !h.state.IsStopped {
 		h.state.IsWashed = false
 		h.state.IsStopped = true
 		h.eventer.Publish("stateChange", "isStop")
-		return true, nil
+
+		// Save config
+		err := h.updateConfig()
+
+		return err
 	}
-	return false, nil
+	return nil
 }
 
 // UnsetStop set stop state to false
-func (h *dfpRepository) UnsetStop() (bool, error) {
+func (h *dfpRepository) UnsetStop() error {
 	if h.state.IsStopped {
 		h.state.IsStopped = false
 		h.state.ShouldWash = false
 		h.state.IsWashed = false
 		h.eventer.Publish("stateChange", "isNotStop")
-		return true, nil
+
+		// Save config
+		err := h.updateConfig()
+
+		return err
 	}
-	return false, nil
+	return nil
 }
 
 // SetEmergencyStop set emergency state to true
-func (h *dfpRepository) SetEmergencyStop() (bool, error) {
+func (h *dfpRepository) SetEmergencyStop() error {
 	if !h.state.IsEmergencyStopped {
 		h.state.IsWashed = false
 		h.state.IsEmergencyStopped = true
 		h.eventer.Publish("stateChange", "isEmergencyStop")
-		return true, nil
+
+		// Save config
+		err := h.updateConfig()
+
+		return err
 	}
-	return false, nil
+	return nil
 }
 
 // UnsetEmergencyStop set emergency state to false
-func (h *dfpRepository) UnsetEmergencyStop() (bool, error) {
+func (h *dfpRepository) UnsetEmergencyStop() error {
 	if h.state.IsEmergencyStopped {
 		h.state.ShouldWash = false
 		h.state.IsWashed = false
 		h.state.IsEmergencyStopped = false
 		h.eventer.Publish("stateChange", "isNotEmergencyStop")
-		return true, nil
+
+		// Save config
+		err := h.updateConfig()
+
+		return err
 	}
-	return false, nil
+	return nil
 }
 
 // SetDisableSecurity set disable security state to true
-func (h *dfpRepository) SetDisableSecurity() (bool, error) {
+func (h *dfpRepository) SetDisableSecurity() error {
 	if !h.state.IsDisableSecurity {
 		h.state.IsDisableSecurity = true
 		h.eventer.Publish("stateChange", "isDisableSecurity")
-		return true, nil
+
+		// Save config
+		err := h.updateConfig()
+
+		return err
 	}
-	return false, nil
+	return nil
 }
 
 // UnsetDisableSecurity set disable security state to false
-func (h *dfpRepository) UnsetDisableSecurity() (bool, error) {
+func (h *dfpRepository) UnsetDisableSecurity() error {
 	if h.state.IsDisableSecurity {
 		h.state.IsDisableSecurity = false
 		h.eventer.Publish("stateChange", "isNotDisableSecurity")
-		return true, nil
+
+		// Save config
+		err := h.updateConfig()
+
+		return err
 	}
-	return false, nil
+	return nil
 }
 
 // CanWash handle if wash can start or not
@@ -197,7 +241,10 @@ func (h *dfpRepository) LastWashDurationSecond() uint64 {
 func (h *dfpRepository) UpdateLastWashing() error {
 	h.state.LastWashing = time.Now()
 
-	return nil
+	// Save config
+	err := h.updateConfig()
+
+	return err
 }
 
 func (h *dfpRepository) String() string {
@@ -206,4 +253,25 @@ func (h *dfpRepository) String() string {
 
 func (h *dfpRepository) State() *models.DFPState {
 	return h.state
+}
+
+func (h *dfpRepository) updateConfig() error {
+	ctx := context.Background()
+	config, err := h.config.Get(ctx)
+	if err != nil {
+		return err
+	}
+
+	config.SecurityDisabled = h.State().IsDisableSecurity
+	config.Auto = h.State().IsAuto
+	config.EmergencyStopped = h.State().IsEmergencyStopped
+	config.Stopped = h.State().IsStopped
+	config.LastWashing = h.State().LastWashing
+
+	err = h.config.Update(ctx, config)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

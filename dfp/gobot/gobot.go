@@ -198,5 +198,16 @@ func (h *DFPHandler) work() {
 	// Motor handler
 	h.HandleMotor()
 
+	// Fire event to init saved state
+	h.eventer.Publish("stateChange", "initDFP")
+
+	// Publish external event
+	if h.stateRepository.State().IsEmergencyStopped {
+		h.stateRepository.SetEmergencyStop()
+	}
+	if h.stateRepository.State().IsDisableSecurity {
+		h.stateRepository.SetDisableSecurity()
+	}
+
 	log.Infof("Robot %s started successfully", h.stateRepository.State().Name)
 }

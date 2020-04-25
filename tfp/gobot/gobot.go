@@ -14,9 +14,9 @@ import (
 )
 
 // DFPHandler manage all i/o on FAT
-type DFPHandler struct {
+type TFPHandler struct {
 	stateRepository    tfp.Repository
-	arduino            *firmata.Adaptor
+	arduino            *firmata.TCPAdaptor
 	configUsecase      tfpconfig.Usecase
 	eventUsecase       event.Usecase
 	robot              *gobot.Robot
@@ -29,7 +29,7 @@ type DFPHandler struct {
 	eventer            gobot.Eventer
 }
 
-// NewDFP create handler to manage FAT
+// NewTFP create handler to manage FAT
 func NewTFP(configHandler *viper.Viper, configUsecase tfpconfig.Usecase, eventUsecase event.Usecase, stateRepository tfp.Repository, eventer gobot.Eventer) (tfp.Gobot, error) {
 	arduino := firmata.NewTCPAdaptor(configHandler.GetString("tfp.address"))
 
@@ -49,7 +49,7 @@ func NewTFP(configHandler *viper.Viper, configUsecase tfpconfig.Usecase, eventUs
 	}
 
 	// Set event
-	dfpHandler.eventer.AddEvent("stateChange")
+	tfpHandler.eventer.AddEvent("stateChange")
 
 	// Initialize robot
 	tfpHandler.robot = gobot.NewRobot(
@@ -100,13 +100,16 @@ func (h *TFPHandler) work() {
 		log.Debugf("state: %s", h.stateRepository.String())
 	})
 
-	// Check saved state to turn on / off relais
-	//@TODO
-
 	time.Sleep(1 * time.Second)
 
 	// Relais handler
-	h.HandleRelais()
+	h.HandleRelay()
+
+	// External event handler
+	h.HandleExternalEvent()
+
+	// Fire event to init saved state
+	h.eventer.Publish("stateChange", "initTFP")
 
 	log.Infof("Robot %s started successfully", h.stateRepository.State().Name)
 }

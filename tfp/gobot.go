@@ -5,7 +5,7 @@ type Gobot interface {
 	StartPondPump() error
 	StopPondPump()
 	StartWaterfallPump() error
-	StopWaterfallPump() error
+	StopWaterfallPump()
 	StartUVC1() error
 	StopUVC1()
 	StartUVC2() error

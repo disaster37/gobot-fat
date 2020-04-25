@@ -11,4 +11,5 @@ type Usecase interface {
 	Get(ctx context.Context) (*models.DFPConfig, error)
 	Update(ctx context.Context, config *models.DFPConfig) error
 	Create(ctx context.Context, config *models.DFPConfig) error
+	Init(ctx context.Context, config *models.DFPConfig) error
 }

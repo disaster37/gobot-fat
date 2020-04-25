@@ -6,20 +6,20 @@ import (
 
 // Repository is the interface to manage the state of DFP
 type Repository interface {
-	SetWashed() (bool, error)
-	SetShouldWash() (bool, error)
-	UnsetShouldWash() (bool, error)
-	UnsetWashed() (bool, error)
-	SetSecurity() (bool, error)
-	UnsetSecurity() (bool, error)
-	SetAuto() (bool, error)
-	UnsetAuto() (bool, error)
-	SetStop() (bool, error)
-	UnsetStop() (bool, error)
-	SetEmergencyStop() (bool, error)
-	UnsetEmergencyStop() (bool, error)
-	SetDisableSecurity() (bool, error)
-	UnsetDisableSecurity() (bool, error)
+	SetWashed() error
+	SetShouldWash() error
+	UnsetShouldWash() error
+	UnsetWashed() error
+	SetSecurity() error
+	UnsetSecurity() error
+	SetAuto() error
+	UnsetAuto() error
+	SetStop() error
+	UnsetStop() error
+	SetEmergencyStop() error
+	UnsetEmergencyStop() error
+	SetDisableSecurity() error
+	UnsetDisableSecurity() error
 	UpdateLastWashing() error
 	CanWash() bool
 	CanStartMotor() bool

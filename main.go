@@ -18,6 +18,12 @@ import (
 	eventUsecase "github.com/disaster37/gobot-fat/event/usecase"
 	dfpMiddleware "github.com/disaster37/gobot-fat/middleware"
 	"github.com/disaster37/gobot-fat/models"
+	tfpGobot "github.com/disaster37/gobot-fat/tfp/gobot"
+	tfpRepo "github.com/disaster37/gobot-fat/tfp/repository"
+	tfpUsecase "github.com/disaster37/gobot-fat/tfp/usecase"
+	tfpConfigHttpDeliver "github.com/disaster37/gobot-fat/tfp_config/delivery/http"
+	tfpConfigRepo "github.com/disaster37/gobot-fat/tfp_config/repository"
+	tfpConfigUsecase "github.com/disaster37/gobot-fat/tfp_config/usecase"
 
 	elastic "github.com/elastic/go-elasticsearch/v7"
 	"github.com/jinzhu/gorm"
@@ -72,6 +78,7 @@ func main() {
 
 	// Create Schema
 	db.AutoMigrate(&models.DFPConfig{})
+	db.AutoMigrate(&models.TFPConfig{})
 
 	// Init web server
 	e := echo.New()
@@ -91,6 +98,8 @@ func main() {
 	dfpConfigRepoSQL := dfpConfigRepo.NewSQLDFPConfigRepository(db)
 	dfpConfigRepoES := dfpConfigRepo.NewElasticsearchDFPConfigRepository(es, "dfp-dfpconfig-alias")
 	eventRepoES := eventRepo.NewElasticsearchEventRepository(es, "dfp-event-alias")
+	tfpConfigRepoSQL := tfpConfigRepo.NewSQLTFPConfigRepository(db)
+	tfpConfigRepoES := tfpConfigRepo.NewElasticsearchTFPConfigRepository(es, "dfp-tfpconfig-alias")
 	eventer := gobot.NewEventer()
 	dfpState := &models.DFPState{
 		ID:         configHandler.GetString("dfp.id"),
@@ -98,99 +107,101 @@ func main() {
 		IsWashed:   false,
 		ShouldWash: false,
 	}
-	dfpRepo := dfpRepo.NewDFPRepository(dfpState, eventer)
+	tfpState := &models.TFPState{
+		ID:                 configHandler.GetString("tfp.id"),
+		Name:               configHandler.GetString("tfp.Name"),
+		IsDisableSecurity:  false,
+		IsSecurity:         false,
+		IsEmergencyStopped: false,
+	}
 
 	// Init usecase
 	timeoutContext := time.Duration(configHandler.GetInt("context.timeout")) * time.Second
 	dfpConfigUsecase := dfpConfigUsecase.NewConfigUsecase(dfpConfigRepoES, dfpConfigRepoSQL, timeoutContext)
+	tfpConfigUsecase := tfpConfigUsecase.NewConfigUsecase(tfpConfigRepoES, tfpConfigRepoSQL, timeoutContext)
 	eventUsecase := eventUsecase.NewEventUsecase(eventRepoES, timeoutContext)
+	dfpRepo := dfpRepo.NewDFPRepository(dfpState, eventer, dfpConfigUsecase)
+	tfpRepo := tfpRepo.NewTFPRepository(tfpState, eventer, tfpConfigUsecase)
 	dfpGobot, err := dfpGobot.NewDFP(configHandler, dfpConfigUsecase, eventUsecase, dfpRepo, eventer)
 	if err != nil {
 		log.Errorf("Failed to init DFP gobot: %s", err.Error())
 		panic("Failed to init DFP gobot")
 	}
-	dfpUsecase := dfpUsecase.NewDFPUsecase(dfpGobot, dfpRepo, dfpConfigUsecase)
+	tfpGobot, err := tfpGobot.NewTFP(configHandler, tfpConfigUsecase, eventUsecase, tfpRepo, eventer)
+	if err != nil {
+		log.Errorf("Failed to init TFP gobot: %s", err.Error())
+		panic("Failed to init TFP gobot")
+	}
+	dfpUsecase := dfpUsecase.NewDFPUsecase(dfpGobot, dfpRepo)
+	tfpUsecase := tfpUsecase.NewTFPUsecase(tfpGobot, tfpRepo)
 
 	// Init config if needed
 	ctx := context.Background()
-	currentConfig, err := dfpConfigRepoSQL.Get(ctx)
+	dfpConfig := &models.DFPConfig{
+		ForceWashingDuration:           180,
+		ForceWashingDurationWhenFrozen: 120,
+		TemperatureThresholdWhenFrozen: -5,
+		WaitTimeBetweenWashing:         30,
+		WashingDuration:                8,
+		StartWashingPumpBeforeWashing:  2,
+		Stopped:                        false,
+		EmergencyStopped:               false,
+		Auto:                           true,
+		SecurityDisabled:               false,
+		LastWashing:                    time.Now(),
+	}
+	err = dfpConfigUsecase.Init(ctx, dfpConfig)
 	if err != nil {
-		log.Errorf("Failed to retrive dfpconfig from sql: %s", err.Error())
+		log.Errorf("Error appear when init DFP config: %s", err.Error())
 		panic("Failed to retrive dfpconfig from sql")
 	}
-	bisConfig, err := dfpConfigRepoES.Get(ctx)
-	if err != nil {
-		log.Errorf("Failed to retrive dfpconfig from elastic: %s", err.Error())
-	}
-	if currentConfig == nil && bisConfig == nil {
-		// No config found
-		dfpConfig := &models.DFPConfig{
-			ForceWashingDuration:           180,
-			ForceWashingDurationWhenFrozen: 120,
-			TemperatureThresholdWhenFrozen: -5,
-			WaitTimeBetweenWashing:         30,
-			WashingDuration:                8,
-			StartWashingPumpBeforeWashing:  2,
-			Stopped:                        false,
-			EmergencyStopped:               false,
-			Auto:                           true,
-			SecurityDisabled:               false,
-			LastWashing:                    time.Now(),
-		}
-		err = dfpConfigUsecase.Create(ctx, dfpConfig)
-		if err != nil {
-			log.Errorf("Failed to create dfpconfig on SQL: %s", err.Error())
-			panic("Failed to create dfpconfig on SQL")
-		}
-		log.Info("Create new dfpconfig on repositories")
-	} else if currentConfig == nil && bisConfig != nil {
-		// Config found only on Elastic
-		bisConfig.Version--
-		err = dfpConfigRepoSQL.Create(ctx, bisConfig)
-		if err != nil {
-			log.Errorf("Failed to create dfpconfig on SQL: %s", err.Error())
-			panic("Failed to create dfpconfig on SQL")
-		}
-		log.Info("Create new dfpconfig on SQL from elastic config")
-	} else if currentConfig != nil && bisConfig == nil {
-		// Config found only on SQL
-		currentConfig.Version--
-		err = dfpConfigRepoES.Create(ctx, currentConfig)
-		if err != nil {
-			log.Errorf("Failed to create dfpconfig on Elastic: %s", err.Error())
-		} else {
-			log.Info("Create new dfpconfig on Elastic from SQL config")
-		}
-
-	} else if currentConfig != nil && bisConfig != nil {
-		if currentConfig.Version < bisConfig.Version {
-			// Config found and last version found on Elastic
-			err = dfpConfigUsecase.Update(ctx, bisConfig)
-			if err != nil {
-				log.Errorf("Failed to update dfpconfig on SQL: %s", err.Error())
-				panic("Failed to update dfpconfig on SQL")
-			}
-			log.Info("Update dfpconfig on SQL from elastic config")
-		}
-	}
-	dfpConfig, err := dfpConfigUsecase.Get(ctx)
+	dfpConfig, err = dfpConfigUsecase.Get(ctx)
 	if err != nil {
 		log.Errorf("Failed to retrive dfpconfig from usecase")
 		panic("Failed to retrive dfpconfig from usecase")
 	}
 	log.Info("Get dfpconfig successfully")
-
 	dfpRepo.State().IsStopped = dfpConfig.Stopped
 	dfpRepo.State().IsEmergencyStopped = dfpConfig.EmergencyStopped
 	dfpRepo.State().IsAuto = dfpConfig.Auto
 	dfpRepo.State().IsDisableSecurity = dfpConfig.SecurityDisabled
 	dfpRepo.State().LastWashing = dfpConfig.LastWashing
 
+	tfpConfig := &models.TFPConfig{
+		UVC1Running:          true,
+		UVC2Running:          true,
+		PondPumpRunning:      true,
+		PondBubbleRunning:    true,
+		WaterfallPumpRunning: false,
+		FilterBubbleRunning:  true,
+		UVC1BlisterMaxTime:   6000,
+		UVC2BlisterMaxTime:   6000,
+	}
+	err = tfpConfigUsecase.Init(ctx, tfpConfig)
+	if err != nil {
+		log.Errorf("Error appear when init TFP config: %s", err.Error())
+		panic("Failed to retrive tfpconfig from sql")
+	}
+	tfpConfig, err = tfpConfigUsecase.Get(ctx)
+	if err != nil {
+		log.Errorf("Failed to retrive tfpconfig from usecase")
+		panic("Failed to retrive tfpconfig from usecase")
+	}
+	log.Info("Get tfpconfig successfully")
+	tfpRepo.State().UVC1Running = tfpConfig.UVC1Running
+	tfpRepo.State().UVC2Running = tfpConfig.UVC2Running
+	tfpRepo.State().PondPumpRunning = tfpConfig.PondPumpRunning
+	tfpRepo.State().PondBubbleRunning = tfpConfig.PondBubbleRunning
+	tfpRepo.State().FilterBubbleRunning = tfpConfig.FilterBubbleRunning
+	tfpRepo.State().WaterfallPumpRunning = tfpConfig.WaterfallPumpRunning
+
 	// Init delivery
 	dfpConfigHttpDeliver.NewDFPConfigHandler(api, dfpConfigUsecase)
+	tfpConfigHttpDeliver.NewTFPConfigHandler(api, tfpConfigUsecase)
 
 	// Run robots
 	dfpUsecase.StartRobot(ctx)
+	tfpUsecase.StartRobot(ctx)
 
 	// Run web server
 	e.Start(configHandler.GetString("server.address"))

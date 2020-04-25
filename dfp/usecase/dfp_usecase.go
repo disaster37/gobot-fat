@@ -4,31 +4,28 @@ import (
 	"context"
 
 	"github.com/disaster37/gobot-fat/dfp"
-	"github.com/disaster37/gobot-fat/dfp_config"
 	"github.com/disaster37/gobot-fat/models"
 	log "github.com/sirupsen/logrus"
 )
 
 type dfpUsecase struct {
-	dfp    dfp.Gobot
-	state  dfp.Repository
-	config dfpconfig.Usecase
+	dfp   dfp.Gobot
+	state dfp.Repository
 }
 
 // NewDFPUsecase will create new dfpUsecase object of dfp.Usecase interface
-func NewDFPUsecase(handler dfp.Gobot, repo dfp.Repository, config dfpconfig.Usecase) dfp.Usecase {
+func NewDFPUsecase(handler dfp.Gobot, repo dfp.Repository) dfp.Usecase {
 	return &dfpUsecase{
-		dfp:    handler,
-		state:  repo,
-		config: config,
+		dfp:   handler,
+		state: repo,
 	}
 }
 
 // Wash will force washing cycle if possible
 // Washing is started only if can wash
 func (h *dfpUsecase) Wash(ctx context.Context) error {
-	log.Debugf("Washing is required by API")
-	_, err := h.state.SetShouldWash()
+	log.Debugf("Washing is required")
+	err := h.state.SetShouldWash()
 	if err != nil {
 		return err
 	}
@@ -37,31 +34,19 @@ func (h *dfpUsecase) Wash(ctx context.Context) error {
 
 // Stop will set / unset stop mode
 func (h *dfpUsecase) Stop(ctx context.Context, status bool) error {
-	var isUpdate bool
 	var err error
 	if status {
 		// Set stop
 		log.Debugf("Set stop is required by API")
-		isUpdate, err = h.state.SetStop()
+		err = h.state.SetStop()
 	} else {
 		// Unset stop
 		log.Debugf("Unset stop is required by API")
-		isUpdate, err = h.state.UnsetStop()
+		err = h.state.UnsetStop()
 	}
 
 	if err != nil {
 		return err
-	}
-	if isUpdate {
-		config, err := h.config.Get(ctx)
-		if err != nil {
-			return err
-		}
-		config.Stopped = status
-		err = h.config.Update(ctx, config)
-		if err != nil {
-			return err
-		}
 	}
 
 	return nil
@@ -69,33 +54,20 @@ func (h *dfpUsecase) Stop(ctx context.Context, status bool) error {
 
 // EmergencyStop will set / unset emergency stop mode
 func (h *dfpUsecase) EmergencyStop(ctx context.Context, status bool) error {
-	var isUpdate bool
 	var err error
 	if status {
 		// Set emergency stop
 		log.Debugf("Set emergency stop is required by API")
-		isUpdate, err = h.state.SetEmergencyStop()
+		err = h.state.SetEmergencyStop()
 
 	} else {
 		// Unset emergency stop
 		log.Debugf("Unset emergency stop is required by API")
-		isUpdate, err = h.state.UnsetEmergencyStop()
+		err = h.state.UnsetEmergencyStop()
 	}
 
 	if err != nil {
 		return err
-	}
-
-	if isUpdate {
-		config, err := h.config.Get(ctx)
-		if err != nil {
-			return err
-		}
-		config.EmergencyStopped = status
-		err = h.config.Update(ctx, config)
-		if err != nil {
-			return err
-		}
 	}
 
 	return nil
@@ -103,32 +75,19 @@ func (h *dfpUsecase) EmergencyStop(ctx context.Context, status bool) error {
 
 // Auto witl set / unset auto mode
 func (h *dfpUsecase) Auto(ctx context.Context, status bool) error {
-	var isUpdate bool
 	var err error
 	if status {
 		// Set auto mode
 		log.Debugf("Set auto is required by API")
-		isUpdate, err = h.state.SetAuto()
+		err = h.state.SetAuto()
 	} else {
 		// Unset auto mode
 		log.Debugf("Unset auto is required by API")
-		isUpdate, err = h.state.UnsetAuto()
+		err = h.state.UnsetAuto()
 	}
 
 	if err != nil {
 		return err
-	}
-
-	if isUpdate {
-		config, err := h.config.Get(ctx)
-		if err != nil {
-			return err
-		}
-		config.Auto = status
-		err = h.config.Update(ctx, config)
-		if err != nil {
-			return err
-		}
 	}
 
 	return nil
@@ -166,32 +125,19 @@ func (h *dfpUsecase) ForceWashingPump(ctx context.Context, status bool) error {
 
 // DisableSecurity will set / unset the disable security mode
 func (h *dfpUsecase) DisableSecurity(ctx context.Context, status bool) error {
-	var isUpdate bool
 	var err error
 	if status {
 		// Disable security
 		log.Debugf("Set disable security by API")
-		isUpdate, err = h.state.SetDisableSecurity()
+		err = h.state.SetDisableSecurity()
 	} else {
 		// Enabled security
 		log.Debugf("Unset disable security by API")
-		isUpdate, err = h.state.UnsetDisableSecurity()
+		err = h.state.UnsetDisableSecurity()
 	}
 
 	if err != nil {
 		return err
-	}
-
-	if isUpdate {
-		config, err := h.config.Get(ctx)
-		if err != nil {
-			return err
-		}
-		config.SecurityDisabled = status
-		err = h.config.Update(ctx, config)
-		if err != nil {
-			return err
-		}
 	}
 
 	return nil
