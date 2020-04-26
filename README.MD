@@ -1,5 +1,17 @@
 # gobot-fat
 
+## Build
+
+```bash
+GOOS=linux GOARCH=arm GOARM=6 go build
+```
+
+## RUN
+
+```bash
+docker run -d --name dfp -ti -p 4040:4040 -v /opt/dfp/data:/opt/dfp/data -v /opt/dfp/config:/opt/dfp/config disaster37/dfp:latest 
+```
+
 ## Handle Technical Filter Pond Robot (TFP robot)
 
 ### Start pond pump

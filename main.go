@@ -49,14 +49,14 @@ func main() {
 
 	// Read config file
 	configHandler := viper.New()
-	configHandler.SetConfigFile(`config.yml`)
+	configHandler.SetConfigFile(`config/config.yml`)
 	err := configHandler.ReadInConfig()
 	if err != nil {
 		panic(err)
 	}
 
 	// Init backend connexion
-	db, err := gorm.Open("sqlite3", "/tmp/dfp.db")
+	db, err := gorm.Open("sqlite3", configHandler.GetString("sqlite.path"))
 	if err != nil {
 		log.Errorf("failed to connect on sqlite: %s", err.Error())
 		panic("failed to connect on sqlite")
@@ -177,6 +177,8 @@ func main() {
 		FilterBubbleRunning:  true,
 		UVC1BlisterMaxTime:   6000,
 		UVC2BlisterMaxTime:   6000,
+		UVC1BlisterTime:      time.Now(),
+		UVC2BlisterTime:      time.Now(),
 	}
 	err = tfpConfigUsecase.Init(ctx, tfpConfig)
 	if err != nil {

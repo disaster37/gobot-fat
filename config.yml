@@ -9,6 +9,8 @@ elasticsearch:
     - 'https://elasticsearch.webcenter.fr'
   username: 'gobot'
   password: 'G@b@t$36'
+sqlite:
+  path: '/data/dfp/dfp.db'
 dfp:
   id: "dfp"
   name: "dfp"
@@ -39,9 +41,9 @@ tfp:
   address: '192.168.0.191:3030'
   pin:
     relay:
-      pond_pomp: '0'
-      waterfall_pomp: '1'
-      pond_bubble: '2'
+      pond_pomp: '2'
+      waterfall_pomp: '7'
+      pond_bubble: '6'
       filter_bubble: '3'
-      uvc1: '15'
-      uvc2: '16'
+      uvc1: '0'
+      uvc2: '1'
