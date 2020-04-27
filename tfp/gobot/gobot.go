@@ -26,7 +26,7 @@ type TFPHandler struct {
 	relayBubbleFilter  *gpio.RelayDriver
 	relayUVC1          *gpio.RelayDriver
 	relayUVC2          *gpio.RelayDriver
-	pinSDCard          *gpio.DirectPinDriver
+	pinRead            *gpio.ButtonDriver
 	eventer            gobot.Eventer
 }
 
@@ -47,7 +47,7 @@ func NewTFP(configHandler *viper.Viper, configUsecase tfpconfig.Usecase, eventUs
 		relayBubbleFilter:  gpio.NewRelayDriver(arduino, configHandler.GetString("tfp.pin.relay.filter_bubble")),
 		relayUVC1:          gpio.NewRelayDriver(arduino, configHandler.GetString("tfp.pin.relay.uvc1")),
 		relayUVC2:          gpio.NewRelayDriver(arduino, configHandler.GetString("tfp.pin.relay.uvc2")),
-		pinSDCard:          gpio.NewDirectPinDriver(arduino, "4"),
+		pinRead:            gpio.NewButtonDriver(arduino, "11"),
 	}
 
 	// Set event
@@ -64,6 +64,7 @@ func NewTFP(configHandler *viper.Viper, configUsecase tfpconfig.Usecase, eventUs
 			tfpHandler.relayBubbleFilter,
 			tfpHandler.relayUVC1,
 			tfpHandler.relayUVC2,
+			tfpHandler.pinRead,
 		},
 		tfpHandler.work,
 	)
@@ -95,8 +96,9 @@ func (h *TFPHandler) Stop() error {
 
 func (h *TFPHandler) work() {
 
-	// Disable SD card
-	h.pinSDCard.DigitalWrite(1)
+	h.pinRead.On(gpio.ButtonPush, func(data interface{}) {
+		log.Debugf("Pin button on")
+	})
 
 	// Debug
 	h.eventer.On("stateChange", func(data interface{}) {

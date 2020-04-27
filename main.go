@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/subtle"
 	"crypto/tls"
+	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -28,7 +29,7 @@ import (
 
 	elastic "github.com/elastic/go-elasticsearch/v7"
 	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/sqlite"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	log "github.com/sirupsen/logrus"
@@ -56,11 +57,20 @@ func main() {
 	}
 
 	// Init backend connexion
-	db, err := gorm.Open("sqlite3", configHandler.GetString("sqlite.path"))
-	if err != nil {
-		log.Errorf("failed to connect on sqlite: %s", err.Error())
-		panic("failed to connect on sqlite")
+	isConnected := false
+	var db *gorm.DB
+	for isConnected == false {
+		conStr := fmt.Sprintf("host=%s port=5432 user=%s dbname=%s password=%s sslmode=disable", configHandler.GetString("db.host"), configHandler.GetString("db.user"), configHandler.GetString("db.name"), configHandler.GetString("db.password"))
+		log.Debug(conStr)
+		db, err = gorm.Open("postgres", conStr)
+		if err != nil {
+			log.Errorf("failed to connect on postgresql: %s", err.Error())
+			time.Sleep(10 * time.Second)
+		} else {
+			isConnected = true
+		}
 	}
+
 	defer db.Close()
 
 	cfg := elastic.Config{

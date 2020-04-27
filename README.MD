@@ -4,6 +4,8 @@
 
 ```bash
 GOOS=linux GOARCH=arm GOARM=6 go build
+
+GOOS=linux GOARCH=arm GOARM=6 CGO_ENABLED=1 CC=arm-linux-gnueabihf-gcc go build
 ```
 
 ## RUN
