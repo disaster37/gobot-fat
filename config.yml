@@ -43,5 +43,5 @@ tfp:
       waterfall_pomp: '1'
       pond_bubble: '2'
       filter_bubble: '3'
-      uvc1: 'A1'
-      uvc2: 'A2'
+      uvc1: '15'
+      uvc2: '16'
