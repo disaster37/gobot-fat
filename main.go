@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/subtle"
 	"crypto/tls"
+	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -18,6 +19,7 @@ import (
 	eventUsecase "github.com/disaster37/gobot-fat/event/usecase"
 	dfpMiddleware "github.com/disaster37/gobot-fat/middleware"
 	"github.com/disaster37/gobot-fat/models"
+	tfpHttpDeliver "github.com/disaster37/gobot-fat/tfp/delivery/http"
 	tfpGobot "github.com/disaster37/gobot-fat/tfp/gobot"
 	tfpRepo "github.com/disaster37/gobot-fat/tfp/repository"
 	tfpUsecase "github.com/disaster37/gobot-fat/tfp/usecase"
@@ -27,7 +29,7 @@ import (
 
 	elastic "github.com/elastic/go-elasticsearch/v7"
 	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/sqlite"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	log "github.com/sirupsen/logrus"
@@ -48,18 +50,27 @@ func main() {
 
 	// Read config file
 	configHandler := viper.New()
-	configHandler.SetConfigFile(`config.yml`)
+	configHandler.SetConfigFile(`config/config.yml`)
 	err := configHandler.ReadInConfig()
 	if err != nil {
 		panic(err)
 	}
 
 	// Init backend connexion
-	db, err := gorm.Open("sqlite3", "/tmp/dfp.db")
-	if err != nil {
-		log.Errorf("failed to connect on sqlite: %s", err.Error())
-		panic("failed to connect on sqlite")
+	isConnected := false
+	var db *gorm.DB
+	for isConnected == false {
+		conStr := fmt.Sprintf("host=%s port=5432 user=%s dbname=%s password=%s sslmode=disable", configHandler.GetString("db.host"), configHandler.GetString("db.user"), configHandler.GetString("db.name"), configHandler.GetString("db.password"))
+		log.Debug(conStr)
+		db, err = gorm.Open("postgres", conStr)
+		if err != nil {
+			log.Errorf("failed to connect on postgresql: %s", err.Error())
+			time.Sleep(10 * time.Second)
+		} else {
+			isConnected = true
+		}
 	}
+
 	defer db.Close()
 
 	cfg := elastic.Config{
@@ -133,7 +144,7 @@ func main() {
 		panic("Failed to init TFP gobot")
 	}
 	dfpUsecase := dfpUsecase.NewDFPUsecase(dfpGobot, dfpRepo)
-	tfpUsecase := tfpUsecase.NewTFPUsecase(tfpGobot, tfpRepo)
+	tfpUsecase := tfpUsecase.NewTFPUsecase(tfpGobot, tfpRepo, tfpConfigUsecase)
 
 	// Init config if needed
 	ctx := context.Background()
@@ -176,6 +187,8 @@ func main() {
 		FilterBubbleRunning:  true,
 		UVC1BlisterMaxTime:   6000,
 		UVC2BlisterMaxTime:   6000,
+		UVC1BlisterTime:      time.Now(),
+		UVC2BlisterTime:      time.Now(),
 	}
 	err = tfpConfigUsecase.Init(ctx, tfpConfig)
 	if err != nil {
@@ -198,12 +211,19 @@ func main() {
 	// Init delivery
 	dfpConfigHttpDeliver.NewDFPConfigHandler(api, dfpConfigUsecase)
 	tfpConfigHttpDeliver.NewTFPConfigHandler(api, tfpConfigUsecase)
+	tfpHttpDeliver.NewTFPHandler(api, tfpUsecase)
 
 	// Run robots
-	dfpUsecase.StartRobot(ctx)
+	//dfpUsecase.StartRobot(ctx)
+	log.Debug(dfpUsecase)
 	tfpUsecase.StartRobot(ctx)
 
 	// Run web server
 	e.Start(configHandler.GetString("server.address"))
+
+	// Stop Robots
+	tfpUsecase.StopRobot(ctx)
+
+	log.Info("End of program")
 
 }

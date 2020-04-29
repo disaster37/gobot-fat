@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/disaster37/gobot-fat/dfp_config"
+	dfpconfig "github.com/disaster37/gobot-fat/dfp_config"
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"

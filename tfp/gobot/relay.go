@@ -29,8 +29,10 @@ func (h *TFPHandler) StartPondPump() error {
 		if err != nil {
 			log.Errorf("Error when store new event: %s", err.Error())
 		}
+
+		log.Info("Start pond pump successfully")
 	} else {
-		log.Debug("Pond pump not started because of state not permit it")
+		log.Info("Pond pump not started because of state not permit it")
 	}
 
 	return nil
@@ -57,8 +59,10 @@ func (h *TFPHandler) StartUVC1() error {
 		if err != nil {
 			log.Errorf("Error when store new event: %s", err.Error())
 		}
+
+		log.Info("Start UVC1 successfully")
 	} else {
-		log.Debug("UVC1 not started because of state not permit it")
+		log.Info("UVC1 not started because of state not permit it")
 	}
 
 	return nil
@@ -85,8 +89,10 @@ func (h *TFPHandler) StartUVC2() error {
 		if err != nil {
 			log.Errorf("Error when store new event: %s", err.Error())
 		}
+
+		log.Info("Start UVC2 successfully")
 	} else {
-		log.Debug("UVC2 not started because of state not permit it")
+		log.Info("UVC2 not started because of state not permit it")
 	}
 
 	return nil
@@ -110,8 +116,10 @@ func (h *TFPHandler) StartPondPumpWithUVC() error {
 		if err != nil {
 			return err
 		}
+
+		log.Info("Start pond pump with UVCs successfully")
 	} else {
-		log.Debug("Pond pump with UVC not started because of state not permit it")
+		log.Info("Pond pump with UVC not started because of state not permit it")
 	}
 
 	return nil
@@ -235,8 +243,10 @@ func (h *TFPHandler) StartWaterfallPump() error {
 		if err != nil {
 			log.Errorf("Error when store new event: %s", err.Error())
 		}
+
+		log.Info("Start waterfall pump successfully")
 	} else {
-		log.Debug("Waterfall pump not started because of state not permit it")
+		log.Info("Waterfall pump not started because of state not permit it")
 	}
 
 	return nil
@@ -295,8 +305,10 @@ func (h *TFPHandler) StartPondBubble() error {
 		if err != nil {
 			log.Errorf("Error when store new event: %s", err.Error())
 		}
+
+		log.Info("Start pond bubble successfully")
 	} else {
-		log.Debug("Pond bubble not started because of state not permit it")
+		log.Info("Pond bubble not started because of state not permit it")
 	}
 
 	return nil
@@ -355,8 +367,10 @@ func (h *TFPHandler) StartFilterBubble() error {
 		if err != nil {
 			log.Errorf("Error when store new event: %s", err.Error())
 		}
+
+		log.Info("Start filter bubble successfully")
 	} else {
-		log.Debug("Filter bubble not started because of state not permit it")
+		log.Info("Filter bubble not started because of state not permit it")
 	}
 
 	return nil
@@ -428,49 +442,68 @@ func (h *TFPHandler) HandleRelay() {
 
 		log.Debugf("Receive event %s", event)
 
-		// Manage pond pump
-		if h.stateRepository.State().PondPumpRunning {
-			h.StartPondPump()
-		} else {
-			h.StopPondPump()
-		}
+		if event == "initTFP" {
+			// Manage pond pump
+			if h.stateRepository.State().PondPumpRunning {
+				err := h.StartPondPump()
+				if err != nil {
+					log.Errorf("Failed to start pond pump: %s", err.Error())
+				}
+			} else {
+				h.StopPondPump()
+			}
 
-		// Manage UVC1
-		if h.stateRepository.State().UVC1Running {
-			h.StartUVC1()
-		} else {
-			h.StopUVC1()
-		}
+			// Manage UVC1
+			if h.stateRepository.State().UVC1Running {
+				err := h.StartUVC1()
+				if err != nil {
+					log.Errorf("Failed to start UVC1: %s", err.Error())
+				}
+			} else {
+				h.StopUVC1()
+			}
 
-		// Manage UVC2
-		if h.stateRepository.State().UVC2Running {
-			h.StartUVC2()
-		} else {
-			h.StopUVC2()
-		}
+			// Manage UVC2
+			if h.stateRepository.State().UVC2Running {
+				err := h.StartUVC2()
+				if err != nil {
+					log.Errorf("Failed to start UVC2: %s", err.Error())
+				}
+			} else {
+				h.StopUVC2()
+			}
 
-		// Manage waterfall pump
-		if h.stateRepository.State().WaterfallPumpRunning {
-			h.StartWaterfallPump()
-		} else {
-			h.StopWaterfallPump()
-		}
+			// Manage waterfall pump
+			if h.stateRepository.State().WaterfallPumpRunning {
+				err := h.StartWaterfallPump()
+				if err != nil {
+					log.Errorf("Failed to start Waterfall pump: %s", err.Error())
+				}
+			} else {
+				h.StopWaterfallPump()
+			}
 
-		// Manage pond bubble
-		if h.stateRepository.State().PondBubbleRunning {
-			h.StartPondBubble()
-		} else {
-			h.StopPondBubble()
-		}
+			// Manage pond bubble
+			if h.stateRepository.State().PondBubbleRunning {
+				err := h.StartPondBubble()
+				if err != nil {
+					log.Errorf("Failed to start pond bubble: %s", err.Error())
+				}
+			} else {
+				h.StopPondBubble()
+			}
 
-		// Manage filter bubble
-		if h.stateRepository.State().PondBubbleRunning {
-			h.StartFilterBubble()
-		} else {
-			h.StopFilterBubble()
+			// Manage filter bubble
+			if h.stateRepository.State().FilterBubbleRunning {
+				err := h.StartFilterBubble()
+				if err != nil {
+					log.Errorf("Failed to start filter bubble: %s", err.Error())
+				}
+			} else {
+				h.StopFilterBubble()
+			}
 		}
 	})
-
 }
 
 // StopRelais stop all relais

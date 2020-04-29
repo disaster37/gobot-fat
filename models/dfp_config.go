@@ -42,7 +42,7 @@ type DFPConfig struct {
 	SecurityDisabled bool `json:"security_disabled" gorm:"column:security_disabled" validate:"required"`
 
 	// LastWashing is the date of last washing time
-	LastWashing time.Time `json:"last_washing" gorm:"column:lastwashing;type:datetime"`
+	LastWashing time.Time `json:"last_washing" gorm:"column:lastwashing"`
 
 	// Version of configuration
 	Version int64 `json:"version" gorm:"column:version;type:bigint" validate:"required"`
@@ -54,4 +54,8 @@ func (h *DFPConfig) String() string {
 		panic(err)
 	}
 	return string(str)
+}
+
+func (DFPConfig) TableName() string {
+	return "dfpconfig"
 }

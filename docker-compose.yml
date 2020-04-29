@@ -1,0 +1,18 @@
+version: "2.4"
+services:
+    postgres:
+        image: arm32v6/postgres:12-alpine
+        environment: 
+            POSTGRES_PASSWORD: dfp
+            PGDATA: /var/lib/postgresql/data/pgdata
+            POSTGRES_DB: dfp
+            POSTGRES_USER: dfp
+        volumes: 
+            - /data/dfp:/var/lib/postgresql/data
+    dfp:
+        image: disaster37/dfp:latest
+        build: 
+            dockerfile: Dockerfile
+            context: .
+        links:
+            - postgres:postgres

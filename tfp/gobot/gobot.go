@@ -5,7 +5,7 @@ import (
 
 	"github.com/disaster37/gobot-fat/event"
 	"github.com/disaster37/gobot-fat/tfp"
-	"github.com/disaster37/gobot-fat/tfp_config"
+	tfpconfig "github.com/disaster37/gobot-fat/tfp_config"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"gobot.io/x/gobot"
@@ -16,7 +16,7 @@ import (
 // DFPHandler manage all i/o on FAT
 type TFPHandler struct {
 	stateRepository    tfp.Repository
-	arduino            *firmata.TCPAdaptor
+	arduino            gobot.Adaptor
 	configUsecase      tfpconfig.Usecase
 	eventUsecase       event.Usecase
 	robot              *gobot.Robot
@@ -26,6 +26,7 @@ type TFPHandler struct {
 	relayBubbleFilter  *gpio.RelayDriver
 	relayUVC1          *gpio.RelayDriver
 	relayUVC2          *gpio.RelayDriver
+	pinRead            *gpio.ButtonDriver
 	eventer            gobot.Eventer
 }
 
@@ -46,6 +47,7 @@ func NewTFP(configHandler *viper.Viper, configUsecase tfpconfig.Usecase, eventUs
 		relayBubbleFilter:  gpio.NewRelayDriver(arduino, configHandler.GetString("tfp.pin.relay.filter_bubble")),
 		relayUVC1:          gpio.NewRelayDriver(arduino, configHandler.GetString("tfp.pin.relay.uvc1")),
 		relayUVC2:          gpio.NewRelayDriver(arduino, configHandler.GetString("tfp.pin.relay.uvc2")),
+		pinRead:            gpio.NewButtonDriver(arduino, "11"),
 	}
 
 	// Set event
@@ -62,6 +64,7 @@ func NewTFP(configHandler *viper.Viper, configUsecase tfpconfig.Usecase, eventUs
 			tfpHandler.relayBubbleFilter,
 			tfpHandler.relayUVC1,
 			tfpHandler.relayUVC2,
+			tfpHandler.pinRead,
 		},
 		tfpHandler.work,
 	)
@@ -78,14 +81,12 @@ func (h *TFPHandler) Start() {
 }
 
 func (h *TFPHandler) start() {
-	err := h.robot.Start()
+	err := h.robot.Start(false)
 	for err != nil {
 		log.Errorf("Error when start Robot %s: %s", h.stateRepository.State().Name, err.Error())
 		time.Sleep(10 * time.Second)
 		err = h.robot.Start()
 	}
-
-	log.Infof("Robot %s started successfully", h.stateRepository.State().Name)
 }
 
 // Stop permit to stop robot
@@ -94,6 +95,10 @@ func (h *TFPHandler) Stop() error {
 }
 
 func (h *TFPHandler) work() {
+
+	h.pinRead.On(gpio.ButtonPush, func(data interface{}) {
+		log.Debugf("Pin button on")
+	})
 
 	// Debug
 	h.eventer.On("stateChange", func(data interface{}) {
