@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/tfp"
 	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
@@ -25,20 +26,52 @@ func NewTFPHandler(e *echo.Group, us tfp.Usecase) {
 	handler := &TFPHandler{
 		dUsecase: us,
 	}
-	e.POST("/tfp/action/start_pond_pump", handler.StartPondPump)
-	e.POST("/tfp/action/start_pond_pump_with_uvc", handler.StartPondPumpWithUVC)
-	e.POST("/tfp/action/stop_pond_pump", handler.StopPondPump)
-	e.POST("/tfp/action/start_waterfall_pump", handler.StartWaterfallPump)
-	e.POST("/tfp/action/stop_waterfall_pump", handler.StopWaterfallPump)
-	e.POST("/tfp/action/start_uvc1", handler.StartUVC1)
-	e.POST("/tfp/action/stop_uvc1", handler.StopUVC1)
-	e.POST("/tfp/action/start_uvc2", handler.StartUVC2)
-	e.POST("/tfp/action/stop_uvc2", handler.StopUVC2)
-	e.POST("/tfp/action/start_pond_bubble", handler.StartPondBubble)
-	e.POST("/tfp/action/stop_pond_bubble", handler.StopPondBubble)
-	e.POST("/tfp/action/start_filter_bubble", handler.StartFilterBubble)
-	e.POST("/tfp/action/stop_filter_bubble", handler.StopFilterBubble)
+	e.POST("/tfps/action/start_pond_pump", handler.StartPondPump)
+	e.POST("/tfps/action/start_pond_pump_with_uvc", handler.StartPondPumpWithUVC)
+	e.POST("/tfps/action/stop_pond_pump", handler.StopPondPump)
+	e.POST("/tfps/action/start_waterfall_pump", handler.StartWaterfallPump)
+	e.POST("/tfps/action/stop_waterfall_pump", handler.StopWaterfallPump)
+	e.POST("/tfps/action/start_uvc1", handler.StartUVC1)
+	e.POST("/tfps/action/stop_uvc1", handler.StopUVC1)
+	e.POST("/tfps/action/start_uvc2", handler.StartUVC2)
+	e.POST("/tfps/action/stop_uvc2", handler.StopUVC2)
+	e.POST("/tfps/action/start_pond_bubble", handler.StartPondBubble)
+	e.POST("/tfps/action/stop_pond_bubble", handler.StopPondBubble)
+	e.POST("/tfps/action/start_filter_bubble", handler.StartFilterBubble)
+	e.POST("/tfps/action/stop_filter_bubble", handler.StopFilterBubble)
+	e.GET("/tfps", handler.GetState)
 
+}
+
+// GetState return the current state of TFP
+func (h TFPHandler) GetState(c echo.Context) error {
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	state, err := h.dUsecase.GetState(ctx)
+
+	if err != nil {
+		log.Errorf("Error when get TFP state: %s", err.Error())
+		return c.JSON(500, models.JSONAPI{
+			Errors: []models.JSONAPIError{
+				models.JSONAPIError{
+					Status: "500",
+					Title:  "Error when get TFP state",
+					Detail: err.Error(),
+				},
+			},
+		})
+	}
+
+	return c.JSON(http.StatusOK, models.JSONAPI{
+		Data: models.JSONAPIData{
+			Type:       "tfps",
+			Id:         "state",
+			Attributes: state,
+		},
+	})
 }
 
 // StartPondPump start pond pump

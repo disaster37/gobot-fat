@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"net/http"
+	"strconv"
 
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/tfp_config"
@@ -26,8 +27,8 @@ func NewTFPConfigHandler(e *echo.Group, us tfpconfig.Usecase) {
 	handler := &TFPConfigHandler{
 		dUsecase: us,
 	}
-	e.GET("/tfp_config", handler.Get)
-	e.POST("/tfp_config", handler.Update)
+	e.GET("/tfp-configs", handler.Get)
+	e.POST("/tfp-configs", handler.Update)
 }
 
 // Get will get the tfp_config
@@ -41,10 +42,25 @@ func (h *TFPConfigHandler) Get(c echo.Context) error {
 
 	if err != nil {
 		log.Errorf("Error when get tfp_config: %s", err.Error())
-		return c.JSON(500, ResponseError{Code: http.StatusInternalServerError, Message: err.Error()})
+
+		return c.JSON(500, models.JSONAPI{
+			Errors: []models.JSONAPIError{
+				models.JSONAPIError{
+					Status: "500",
+					Title:  "Error when get tfp_config",
+					Detail: err.Error(),
+				},
+			},
+		})
 	}
 
-	return c.JSON(http.StatusOK, config)
+	return c.JSON(http.StatusOK, models.JSONAPI{
+		Data: models.JSONAPIData{
+			Type:       "tfp-configs",
+			Id:         strconv.Itoa(int(config.ID)),
+			Attributes: config,
+		},
+	})
 }
 
 // Update permit to update the current TFP config

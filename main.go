@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/subtle"
 	"crypto/tls"
 	"fmt"
 	"net/http"
@@ -17,6 +16,8 @@ import (
 	dfpConfigUsecase "github.com/disaster37/gobot-fat/dfp_config/usecase"
 	eventRepo "github.com/disaster37/gobot-fat/event/repository"
 	eventUsecase "github.com/disaster37/gobot-fat/event/usecase"
+	loginHttpDeliver "github.com/disaster37/gobot-fat/login/delivery/http"
+	loginUsecase "github.com/disaster37/gobot-fat/login/usecase"
 	dfpMiddleware "github.com/disaster37/gobot-fat/middleware"
 	"github.com/disaster37/gobot-fat/models"
 	tfpHttpDeliver "github.com/disaster37/gobot-fat/tfp/delivery/http"
@@ -95,15 +96,13 @@ func main() {
 	e := echo.New()
 	middL := dfpMiddleware.InitMiddleware()
 	e.Use(middL.CORS)
+	e.Use(middleware.Logger())
+	e.Use(middleware.Recover())
 	api := e.Group("/api")
-	api.Use(middleware.BasicAuth(func(username, password string, c echo.Context) (bool, error) {
-		// Be careful to use constant time comparison to prevent timing attacks
-		if subtle.ConstantTimeCompare([]byte(username), []byte(configHandler.GetString("server.username"))) == 1 &&
-			subtle.ConstantTimeCompare([]byte(password), []byte(configHandler.GetString("server.password"))) == 1 {
-			return true, nil
-		}
-		return false, nil
+	api.Use(middleware.JWTWithConfig(middleware.JWTConfig{
+		SigningKey: []byte(configHandler.GetString("jwt.secret")),
 	}))
+	api.Use(middL.IsAdmin)
 
 	// Init repositories
 	dfpConfigRepoSQL := dfpConfigRepo.NewSQLDFPConfigRepository(db)
@@ -145,6 +144,7 @@ func main() {
 	}
 	dfpUsecase := dfpUsecase.NewDFPUsecase(dfpGobot, dfpRepo)
 	tfpUsecase := tfpUsecase.NewTFPUsecase(tfpGobot, tfpRepo, tfpConfigUsecase)
+	loginUsecase := loginUsecase.NewLoginUsecase(configHandler)
 
 	// Init config if needed
 	ctx := context.Background()
@@ -212,6 +212,7 @@ func main() {
 	dfpConfigHttpDeliver.NewDFPConfigHandler(api, dfpConfigUsecase)
 	tfpConfigHttpDeliver.NewTFPConfigHandler(api, tfpConfigUsecase)
 	tfpHttpDeliver.NewTFPHandler(api, tfpUsecase)
+	loginHttpDeliver.NewLoginHandler(e, loginUsecase)
 
 	// Run robots
 	//dfpUsecase.StartRobot(ctx)

@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"net/http"
+	"strconv"
 
 	"github.com/disaster37/gobot-fat/dfp_config"
 	"github.com/disaster37/gobot-fat/models"
@@ -26,8 +27,8 @@ func NewDFPConfigHandler(e *echo.Group, us dfpconfig.Usecase) {
 	handler := &DFPConfigHandler{
 		dUsecase: us,
 	}
-	e.GET("/dfp_config", handler.Get)
-	e.POST("/dfp_config", handler.Update)
+	e.GET("/dfp-configs", handler.Get)
+	e.POST("/dfp-configs", handler.Update)
 }
 
 // Get will get the dfp_config
@@ -41,10 +42,24 @@ func (h *DFPConfigHandler) Get(c echo.Context) error {
 
 	if err != nil {
 		log.Errorf("Error when get dfp_config: %s", err.Error())
-		return c.JSON(500, ResponseError{Code: http.StatusInternalServerError, Message: err.Error()})
+		return c.JSON(500, models.JSONAPI{
+			Errors: []models.JSONAPIError{
+				models.JSONAPIError{
+					Status: "500",
+					Title:  "Error when get dfp_config",
+					Detail: err.Error(),
+				},
+			},
+		})
 	}
 
-	return c.JSON(http.StatusOK, config)
+	return c.JSON(http.StatusOK, models.JSONAPI{
+		Data: models.JSONAPIData{
+			Type:       "dfp-configs",
+			Id:         strconv.Itoa(int(config.ID)),
+			Attributes: config,
+		},
+	})
 }
 
 func (h *DFPConfigHandler) Update(c echo.Context) error {
