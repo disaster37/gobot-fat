@@ -26,32 +26,23 @@ type TFPHandler struct {
 	relayBubbleFilter  *gpio.RelayDriver
 	relayUVC1          *gpio.RelayDriver
 	relayUVC2          *gpio.RelayDriver
-	pinRead            *gpio.ButtonDriver
+	configHandler      *viper.Viper
 	eventer            gobot.Eventer
 }
 
 // NewTFP create handler to manage FAT
 func NewTFP(configHandler *viper.Viper, configUsecase tfpconfig.Usecase, eventUsecase event.Usecase, stateRepository tfp.Repository, eventer gobot.Eventer) (tfp.Gobot, error) {
-	arduino := firmata.NewTCPAdaptor(configHandler.GetString("tfp.address"))
 
 	// Initialise i/o
 	tfpHandler := &TFPHandler{
-		stateRepository:    stateRepository,
-		arduino:            arduino,
-		configUsecase:      configUsecase,
-		eventUsecase:       eventUsecase,
-		eventer:            eventer,
-		relayPompPond:      gpio.NewRelayDriver(arduino, configHandler.GetString("tfp.pin.relay.pond_pomp")),
-		relayPompWaterfall: gpio.NewRelayDriver(arduino, configHandler.GetString("tfp.pin.relay.waterfall_pomp")),
-		relayBubblePond:    gpio.NewRelayDriver(arduino, configHandler.GetString("tfp.pin.relay.pond_bubble")),
-		relayBubbleFilter:  gpio.NewRelayDriver(arduino, configHandler.GetString("tfp.pin.relay.filter_bubble")),
-		relayUVC1:          gpio.NewRelayDriver(arduino, configHandler.GetString("tfp.pin.relay.uvc1")),
-		relayUVC2:          gpio.NewRelayDriver(arduino, configHandler.GetString("tfp.pin.relay.uvc2")),
-		pinRead:            gpio.NewButtonDriver(arduino, "11"),
+		stateRepository: stateRepository,
+		configUsecase:   configUsecase,
+		eventUsecase:    eventUsecase,
+		configHandler:   configHandler,
+		eventer:         eventer,
 	}
 
-	// Set event
-	tfpHandler.eventer.AddEvent("stateChange")
+	tfpHandler.init()
 
 	// Initialize robot
 	tfpHandler.robot = gobot.NewRobot(
@@ -64,7 +55,6 @@ func NewTFP(configHandler *viper.Viper, configUsecase tfpconfig.Usecase, eventUs
 			tfpHandler.relayBubbleFilter,
 			tfpHandler.relayUVC1,
 			tfpHandler.relayUVC2,
-			tfpHandler.pinRead,
 		},
 		tfpHandler.work,
 	)
@@ -75,18 +65,25 @@ func NewTFP(configHandler *viper.Viper, configUsecase tfpconfig.Usecase, eventUs
 
 }
 
+func (h *TFPHandler) init() {
+	arduino := firmata.NewTCPAdaptor(h.configHandler.GetString("tfp.address"))
+	h.arduino = arduino
+	h.relayPompPond = gpio.NewRelayDriver(arduino, h.configHandler.GetString("tfp.pin.relay.pond_pomp"))
+	h.relayPompWaterfall = gpio.NewRelayDriver(arduino, h.configHandler.GetString("tfp.pin.relay.waterfall_pomp"))
+	h.relayBubblePond = gpio.NewRelayDriver(arduino, h.configHandler.GetString("tfp.pin.relay.pond_bubble"))
+	h.relayBubbleFilter = gpio.NewRelayDriver(arduino, h.configHandler.GetString("tfp.pin.relay.filter_bubble"))
+	h.relayUVC1 = gpio.NewRelayDriver(arduino, h.configHandler.GetString("tfp.pin.relay.uvc1"))
+	h.relayUVC2 = gpio.NewRelayDriver(arduino, h.configHandler.GetString("tfp.pin.relay.uvc2"))
+}
+
 // Start permit to run robot
-func (h *TFPHandler) Start() {
+func (h *TFPHandler) Start() error {
 	go h.start()
+	return nil
 }
 
 func (h *TFPHandler) start() {
-	err := h.robot.Start(false)
-	for err != nil {
-		log.Errorf("Error when start Robot %s: %s", h.stateRepository.State().Name, err.Error())
-		time.Sleep(10 * time.Second)
-		err = h.robot.Start()
-	}
+	h.robot.Start(false)
 }
 
 // Stop permit to stop robot
@@ -94,11 +91,21 @@ func (h *TFPHandler) Stop() error {
 	return h.robot.Stop()
 }
 
-func (h *TFPHandler) work() {
+func (h *TFPHandler) Reconnect() error {
+	h.arduino.Finalize()
+	h.init()
+	err := h.arduino.Connect()
+	if err != nil {
+		return err
+	}
+	for _, device := range *h.robot.Devices() {
+		device.Start()
+	}
 
-	h.pinRead.On(gpio.ButtonPush, func(data interface{}) {
-		log.Debugf("Pin button on")
-	})
+	return nil
+}
+
+func (h *TFPHandler) work() {
 
 	// Debug
 	h.eventer.On("stateChange", func(data interface{}) {

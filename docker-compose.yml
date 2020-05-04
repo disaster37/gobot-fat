@@ -1,7 +1,7 @@
-version: "2.4"
+version: "2"
 services:
     postgres:
-        image: arm32v6/postgres:12-alpine
+        image: postgres:12-alpine
         environment: 
             POSTGRES_PASSWORD: dfp
             PGDATA: /var/lib/postgresql/data/pgdata
@@ -9,6 +9,9 @@ services:
             POSTGRES_USER: dfp
         volumes: 
             - /data/dfp:/var/lib/postgresql/data
+        network_mode: "host"
+        ports:
+            - 5432:5432
     dfp:
         image: disaster37/dfp:latest
         build: 

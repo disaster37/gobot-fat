@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/disaster37/gobot-fat/dfp"
-	"github.com/disaster37/gobot-fat/dfp_config"
+	dfpconfig "github.com/disaster37/gobot-fat/dfp_config"
 	"github.com/disaster37/gobot-fat/event"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -109,9 +109,6 @@ func NewDFP(configHandler *viper.Viper, configUsecase dfpconfig.Usecase, eventUs
 	// Manage default state for button and Captor that work like button
 	dfpHandler.captorWaterTop.DefaultState = 1
 	dfpHandler.captorWaterSecurityTop.DefaultState = 1
-
-	// Set event
-	dfpHandler.eventer.AddEvent("stateChange")
 
 	// Initialize robot
 	dfpHandler.robot = gobot.NewRobot(

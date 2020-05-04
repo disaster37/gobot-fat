@@ -37,6 +37,10 @@ github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZm
 github.com/dgryski/go-sip13 v0.0.0-20181026042036-e10d5fee7954/go.mod h1:vAd38F8PWV+bWy6jNmig1y/TA+kYO4g3RSRF0IAv0no=
 github.com/disaster37/gobot v1.14.1-0.20200214195251-3e9e12582a3d h1:AYFng8H2ag4lMSDSEZSq8p3p1LRaH4Fc9o2Gji2WC0o=
 github.com/disaster37/gobot v1.14.1-0.20200214195251-3e9e12582a3d/go.mod h1:cg1GwF1yziEvX5dB09t91t05lf8kwDS6rN90XgcUhK0=
+github.com/disaster37/gobot v1.14.1-0.20200502092622-f3e05140d72b h1:JWYxeAyjZbgiAup3xODczoxcxLHT6EY/Imxyiw8BR4I=
+github.com/disaster37/gobot v1.14.1-0.20200502092622-f3e05140d72b/go.mod h1:cg1GwF1yziEvX5dB09t91t05lf8kwDS6rN90XgcUhK0=
+github.com/disaster37/gobot v1.14.1-0.20200502111748-8be692d696fa h1:mGcZcq4u6fHqtSpHIObNIToBQLi1VTjTF4+U2DOqp+Y=
+github.com/disaster37/gobot v1.14.1-0.20200502111748-8be692d696fa/go.mod h1:cg1GwF1yziEvX5dB09t91t05lf8kwDS6rN90XgcUhK0=
 github.com/donovanhide/eventsource v0.0.0-20171031113327-3ed64d21fb0b/go.mod h1:56wL82FO0bfMU5RvfXoIwSOP2ggqqxT+tAfNEIyxuHw=
 github.com/eapache/go-resiliency v1.1.0/go.mod h1:kFI+JgMyC7bLPUVY133qvEBtVayf5mFgVsvEsIPBvNs=
 github.com/eapache/go-xerial-snappy v0.0.0-20180814174437-776d5712da21/go.mod h1:+020luEh2TKB4/GOp8oxxtq0Daoen/Cii55CzbTV6DU=

@@ -3,18 +3,19 @@ package tfp
 // Gobot is the interface to handle I/O
 type Gobot interface {
 	StartPondPump() error
-	StopPondPump()
+	StopPondPump() error
 	StartWaterfallPump() error
-	StopWaterfallPump()
+	StopWaterfallPump() error
 	StartUVC1() error
-	StopUVC1()
+	StopUVC1() error
 	StartUVC2() error
-	StopUVC2()
+	StopUVC2() error
 	StartPondBubble() error
-	StopPondBubble()
+	StopPondBubble() error
 	StartFilterBubble() error
-	StopFilterBubble()
-	StopRelais()
-	Start()
+	StopFilterBubble() error
+	StopRelais() error
+	Start() error
 	Stop() error
+	Reconnect() error
 }

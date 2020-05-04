@@ -7,7 +7,7 @@ require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/elastic/go-elasticsearch/v7 v7.6.0
 	github.com/jinzhu/gorm v1.9.11
-	github.com/labstack/echo v3.3.10+incompatible
+	github.com/labstack/echo v3.3.10+incompatible // indirect
 	github.com/labstack/echo/v4 v4.1.11
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/onsi/ginkgo v1.12.0 // indirect
@@ -22,3 +22,5 @@ require (
 )
 
 replace gobot.io/x/gobot => github.com/disaster37/gobot v1.14.1-0.20200214195251-3e9e12582a3d
+
+//replace gobot.io/x/gobot => github.com/disaster37/gobot v1.14.1-0.20200502111748-8be692d696fa

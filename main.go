@@ -127,24 +127,26 @@ func main() {
 
 	// Init usecase
 	timeoutContext := time.Duration(configHandler.GetInt("context.timeout")) * time.Second
-	dfpConfigUsecase := dfpConfigUsecase.NewConfigUsecase(dfpConfigRepoES, dfpConfigRepoSQL, timeoutContext)
-	tfpConfigUsecase := tfpConfigUsecase.NewConfigUsecase(tfpConfigRepoES, tfpConfigRepoSQL, timeoutContext)
-	eventUsecase := eventUsecase.NewEventUsecase(eventRepoES, timeoutContext)
-	dfpRepo := dfpRepo.NewDFPRepository(dfpState, eventer, dfpConfigUsecase)
-	tfpRepo := tfpRepo.NewTFPRepository(tfpState, eventer, tfpConfigUsecase)
-	dfpGobot, err := dfpGobot.NewDFP(configHandler, dfpConfigUsecase, eventUsecase, dfpRepo, eventer)
+	dfpConfigU := dfpConfigUsecase.NewConfigUsecase(dfpConfigRepoES, dfpConfigRepoSQL, timeoutContext)
+	tfpConfigU := tfpConfigUsecase.NewConfigUsecase(tfpConfigRepoES, tfpConfigRepoSQL, timeoutContext)
+	eventU := eventUsecase.NewEventUsecase(eventRepoES, timeoutContext)
+	dfpR := dfpRepo.NewDFPRepository(dfpState, eventer, dfpConfigU)
+	tfpR := tfpRepo.NewTFPRepository(tfpState, eventer, tfpConfigU)
+	dfpG, err := dfpGobot.NewDFP(configHandler, dfpConfigU, eventU, dfpR, eventer)
 	if err != nil {
 		log.Errorf("Failed to init DFP gobot: %s", err.Error())
 		panic("Failed to init DFP gobot")
 	}
-	tfpGobot, err := tfpGobot.NewTFP(configHandler, tfpConfigUsecase, eventUsecase, tfpRepo, eventer)
+	defer dfpG.Stop()
+	tfpG, err := tfpGobot.NewTFP(configHandler, tfpConfigU, eventU, tfpR, eventer)
 	if err != nil {
 		log.Errorf("Failed to init TFP gobot: %s", err.Error())
 		panic("Failed to init TFP gobot")
 	}
-	dfpUsecase := dfpUsecase.NewDFPUsecase(dfpGobot, dfpRepo)
-	tfpUsecase := tfpUsecase.NewTFPUsecase(tfpGobot, tfpRepo, tfpConfigUsecase)
-	loginUsecase := loginUsecase.NewLoginUsecase(configHandler)
+	defer tfpG.Stop()
+	dfpU := dfpUsecase.NewDFPUsecase(dfpG, dfpR)
+	tfpU := tfpUsecase.NewTFPUsecase(tfpG, tfpR, tfpConfigU)
+	loginU := loginUsecase.NewLoginUsecase(configHandler)
 
 	// Init config if needed
 	ctx := context.Background()
@@ -161,22 +163,22 @@ func main() {
 		SecurityDisabled:               false,
 		LastWashing:                    time.Now(),
 	}
-	err = dfpConfigUsecase.Init(ctx, dfpConfig)
+	err = dfpConfigU.Init(ctx, dfpConfig)
 	if err != nil {
 		log.Errorf("Error appear when init DFP config: %s", err.Error())
 		panic("Failed to retrive dfpconfig from sql")
 	}
-	dfpConfig, err = dfpConfigUsecase.Get(ctx)
+	dfpConfig, err = dfpConfigU.Get(ctx)
 	if err != nil {
 		log.Errorf("Failed to retrive dfpconfig from usecase")
 		panic("Failed to retrive dfpconfig from usecase")
 	}
 	log.Info("Get dfpconfig successfully")
-	dfpRepo.State().IsStopped = dfpConfig.Stopped
-	dfpRepo.State().IsEmergencyStopped = dfpConfig.EmergencyStopped
-	dfpRepo.State().IsAuto = dfpConfig.Auto
-	dfpRepo.State().IsDisableSecurity = dfpConfig.SecurityDisabled
-	dfpRepo.State().LastWashing = dfpConfig.LastWashing
+	dfpR.State().IsStopped = dfpConfig.Stopped
+	dfpR.State().IsEmergencyStopped = dfpConfig.EmergencyStopped
+	dfpR.State().IsAuto = dfpConfig.Auto
+	dfpR.State().IsDisableSecurity = dfpConfig.SecurityDisabled
+	dfpR.State().LastWashing = dfpConfig.LastWashing
 
 	tfpConfig := &models.TFPConfig{
 		UVC1Running:          true,
@@ -190,40 +192,50 @@ func main() {
 		UVC1BlisterTime:      time.Now(),
 		UVC2BlisterTime:      time.Now(),
 	}
-	err = tfpConfigUsecase.Init(ctx, tfpConfig)
+	err = tfpConfigU.Init(ctx, tfpConfig)
 	if err != nil {
 		log.Errorf("Error appear when init TFP config: %s", err.Error())
 		panic("Failed to retrive tfpconfig from sql")
 	}
-	tfpConfig, err = tfpConfigUsecase.Get(ctx)
+	tfpConfig, err = tfpConfigU.Get(ctx)
 	if err != nil {
 		log.Errorf("Failed to retrive tfpconfig from usecase")
 		panic("Failed to retrive tfpconfig from usecase")
 	}
 	log.Info("Get tfpconfig successfully")
-	tfpRepo.State().UVC1Running = tfpConfig.UVC1Running
-	tfpRepo.State().UVC2Running = tfpConfig.UVC2Running
-	tfpRepo.State().PondPumpRunning = tfpConfig.PondPumpRunning
-	tfpRepo.State().PondBubbleRunning = tfpConfig.PondBubbleRunning
-	tfpRepo.State().FilterBubbleRunning = tfpConfig.FilterBubbleRunning
-	tfpRepo.State().WaterfallPumpRunning = tfpConfig.WaterfallPumpRunning
+	tfpR.State().UVC1Running = tfpConfig.UVC1Running
+	tfpR.State().UVC2Running = tfpConfig.UVC2Running
+	tfpR.State().PondPumpRunning = tfpConfig.PondPumpRunning
+	tfpR.State().PondBubbleRunning = tfpConfig.PondBubbleRunning
+	tfpR.State().FilterBubbleRunning = tfpConfig.FilterBubbleRunning
+	tfpR.State().WaterfallPumpRunning = tfpConfig.WaterfallPumpRunning
 
 	// Init delivery
-	dfpConfigHttpDeliver.NewDFPConfigHandler(api, dfpConfigUsecase)
-	tfpConfigHttpDeliver.NewTFPConfigHandler(api, tfpConfigUsecase)
-	tfpHttpDeliver.NewTFPHandler(api, tfpUsecase)
-	loginHttpDeliver.NewLoginHandler(e, loginUsecase)
+	dfpConfigHttpDeliver.NewDFPConfigHandler(api, dfpConfigU)
+	tfpConfigHttpDeliver.NewTFPConfigHandler(api, tfpConfigU)
+	tfpHttpDeliver.NewTFPHandler(api, tfpU)
+	loginHttpDeliver.NewLoginHandler(e, loginU)
 
 	// Run robots
+	eventer.AddEvent("tfpPanic")
+	eventer.AddEvent("stateChange")
+	eventer.On("tfpPanic", func(data interface{}) {
+		log.Debugf("TFP panic error: %+v", data)
+
+		err := tfpG.Reconnect()
+		if err != nil {
+			log.Errorf("Error when reconnect tfp robot: %s", err.Error())
+		}
+
+		log.Info("Robot TFP reconnecting")
+		eventer.Publish("stateChange", "reconnectTFP")
+	})
 	//dfpUsecase.StartRobot(ctx)
-	log.Debug(dfpUsecase)
-	tfpUsecase.StartRobot(ctx)
+	log.Debug(dfpU)
+	tfpU.StartRobot(ctx)
 
 	// Run web server
 	e.Start(configHandler.GetString("server.address"))
-
-	// Stop Robots
-	tfpUsecase.StopRobot(ctx)
 
 	log.Info("End of program")
 

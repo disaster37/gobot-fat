@@ -15,6 +15,7 @@ func (h *TFPHandler) StartPondPump() error {
 		log.Debug("Start pond pump")
 		err := h.relayPompPond.On()
 		if err != nil {
+			h.eventer.Publish("tfpPanic", err)
 			return err
 		}
 
@@ -45,6 +46,7 @@ func (h *TFPHandler) StartUVC1() error {
 		log.Debug("Start UVC1")
 		err := h.relayUVC1.On()
 		if err != nil {
+			h.eventer.Publish("tfpPanic", err)
 			return err
 		}
 
@@ -75,6 +77,7 @@ func (h *TFPHandler) StartUVC2() error {
 		log.Debug("Start UVC2")
 		err := h.relayUVC2.On()
 		if err != nil {
+			h.eventer.Publish("tfpPanic", err)
 			return err
 		}
 
@@ -127,18 +130,13 @@ func (h *TFPHandler) StartPondPumpWithUVC() error {
 
 // StopUVC1 permit to stop UVC1
 // It will try while not stopped
-func (h *TFPHandler) StopUVC1() {
+func (h *TFPHandler) StopUVC1() error {
 	log.Debug("Stop UVC1")
 
-	isStopped := false
-	for isStopped == false {
-		err := h.relayUVC1.Off()
-		if err != nil {
-			log.Errorf("Error when stop UVC1: %s", err)
-			time.Sleep(1 * time.Second)
-		} else {
-			isStopped = true
-		}
+	err := h.relayUVC1.Off()
+	if err != nil {
+		h.eventer.Publish("tfpPanic", err)
+		return err
 	}
 
 	event := &models.Event{
@@ -148,29 +146,26 @@ func (h *TFPHandler) StopUVC1() {
 		EventType:  "stop_uvc1",
 		EventKind:  "uvc",
 	}
-	err := h.eventUsecase.Store(context.Background(), event)
+	err = h.eventUsecase.Store(context.Background(), event)
 	if err != nil {
 		log.Errorf("Error when store new event: %s", err.Error())
 	}
 
 	log.Info("Stop UVC1 successfully")
 
+	return nil
+
 }
 
 // StopUVC2 permit to stop UVC2
 // It will try while not stopped
-func (h *TFPHandler) StopUVC2() {
+func (h *TFPHandler) StopUVC2() error {
 	log.Debug("Stop UVC2")
 
-	isStopped := false
-	for isStopped == false {
-		err := h.relayUVC2.Off()
-		if err != nil {
-			log.Errorf("Error when stop UVC2: %s", err)
-			time.Sleep(1 * time.Second)
-		} else {
-			isStopped = true
-		}
+	err := h.relayUVC2.Off()
+	if err != nil {
+		h.eventer.Publish("tfpPanic", err)
+		return err
 	}
 
 	event := &models.Event{
@@ -180,31 +175,35 @@ func (h *TFPHandler) StopUVC2() {
 		EventType:  "stop_uvc2",
 		EventKind:  "uvc",
 	}
-	err := h.eventUsecase.Store(context.Background(), event)
+	err = h.eventUsecase.Store(context.Background(), event)
 	if err != nil {
 		log.Errorf("Error when store new event: %s", err.Error())
 	}
 
 	log.Info("Stop UVC2 successfully")
+
+	return nil
 }
 
 // StopPondPump permit to stop pond pump
 // It will try while not stopped
 // It will stop all UVC
-func (h *TFPHandler) StopPondPump() {
+func (h *TFPHandler) StopPondPump() error {
 
-	h.StopUVC1()
-	h.StopUVC2()
+	err := h.StopUVC1()
+	if err != nil {
+		return err
+	}
 
-	isStopped := false
-	for isStopped == false {
-		err := h.relayPompPond.Off()
-		if err != nil {
-			log.Errorf("Error when stop pond pump: %s", err)
-			time.Sleep(1 * time.Second)
-		} else {
-			isStopped = true
-		}
+	err = h.StopUVC2()
+	if err != nil {
+		return err
+	}
+
+	err = h.relayPompPond.Off()
+	if err != nil {
+		h.eventer.Publish("tfpPanic", err)
+		return err
 	}
 
 	event := &models.Event{
@@ -214,12 +213,14 @@ func (h *TFPHandler) StopPondPump() {
 		EventType:  "stop_pond_pump",
 		EventKind:  "pump",
 	}
-	err := h.eventUsecase.Store(context.Background(), event)
+	err = h.eventUsecase.Store(context.Background(), event)
 	if err != nil {
 		log.Errorf("Error when store new event: %s", err.Error())
 	}
 
 	log.Info("Stop pond pump successfully")
+
+	return nil
 }
 
 // StartWaterfallPump permit to start waterfall pump
@@ -229,6 +230,7 @@ func (h *TFPHandler) StartWaterfallPump() error {
 		log.Debug("Start waterfall pump")
 		err := h.relayPompWaterfall.On()
 		if err != nil {
+			h.eventer.Publish("tfpPanic", err)
 			return err
 		}
 
@@ -255,18 +257,13 @@ func (h *TFPHandler) StartWaterfallPump() error {
 
 // StopWaterfallPump permit to stop waterfall pump
 // It will try while is not stopped
-func (h *TFPHandler) StopWaterfallPump() {
+func (h *TFPHandler) StopWaterfallPump() error {
 	log.Debug("Stop waterfall pump")
 
-	isStopped := false
-	for isStopped == false {
-		err := h.relayPompWaterfall.Off()
-		if err != nil {
-			log.Errorf("Error when stop waterfall pump: %s", err)
-			time.Sleep(1 * time.Second)
-		} else {
-			isStopped = true
-		}
+	err := h.relayPompWaterfall.Off()
+	if err != nil {
+		h.eventer.Publish("tfpPanic", err)
+		return err
 	}
 
 	event := &models.Event{
@@ -276,12 +273,14 @@ func (h *TFPHandler) StopWaterfallPump() {
 		EventType:  "stop_waterfall_pump",
 		EventKind:  "pump",
 	}
-	err := h.eventUsecase.Store(context.Background(), event)
+	err = h.eventUsecase.Store(context.Background(), event)
 	if err != nil {
 		log.Errorf("Error when store new event: %s", err.Error())
 	}
 
 	log.Info("Stop waterfall pump successfully")
+
+	return nil
 }
 
 // StartPondBubble permit to start pond bubble
@@ -291,6 +290,7 @@ func (h *TFPHandler) StartPondBubble() error {
 		log.Debug("Start pond bubble")
 		err := h.relayBubblePond.On()
 		if err != nil {
+			h.eventer.Publish("tfpPanic", err)
 			return err
 		}
 
@@ -317,18 +317,13 @@ func (h *TFPHandler) StartPondBubble() error {
 
 // StopPondBubble permit to stop pond bubble
 // It will try while is not stopped
-func (h *TFPHandler) StopPondBubble() {
+func (h *TFPHandler) StopPondBubble() error {
 	log.Debug("Stop pond bubble")
 
-	isStopped := false
-	for isStopped == false {
-		err := h.relayBubblePond.Off()
-		if err != nil {
-			log.Errorf("Error when stop pond bubble: %s", err)
-			time.Sleep(1 * time.Second)
-		} else {
-			isStopped = true
-		}
+	err := h.relayBubblePond.Off()
+	if err != nil {
+		h.eventer.Publish("tfpPanic", err)
+		return err
 	}
 
 	event := &models.Event{
@@ -338,12 +333,14 @@ func (h *TFPHandler) StopPondBubble() {
 		EventType:  "stop_pund_bubble",
 		EventKind:  "bubble",
 	}
-	err := h.eventUsecase.Store(context.Background(), event)
+	err = h.eventUsecase.Store(context.Background(), event)
 	if err != nil {
 		log.Errorf("Error when store new event: %s", err.Error())
 	}
 
 	log.Info("Stop pond bubble successfully")
+
+	return nil
 }
 
 // StartFilterBubble permit to start filter bubble
@@ -353,6 +350,7 @@ func (h *TFPHandler) StartFilterBubble() error {
 		log.Debug("Start filter bubble")
 		err := h.relayBubbleFilter.On()
 		if err != nil {
+			h.eventer.Publish("tfpPanic", err)
 			return err
 		}
 
@@ -379,18 +377,13 @@ func (h *TFPHandler) StartFilterBubble() error {
 
 // StopFilterBubble permit to stop filter bubble
 // It will try while is not stopped
-func (h *TFPHandler) StopFilterBubble() {
+func (h *TFPHandler) StopFilterBubble() error {
 	log.Debug("Stop filter bubble")
 
-	isStopped := false
-	for isStopped == false {
-		err := h.relayBubbleFilter.Off()
-		if err != nil {
-			log.Errorf("Error when stop filter bubble: %s", err)
-			time.Sleep(1 * time.Second)
-		} else {
-			isStopped = true
-		}
+	err := h.relayBubbleFilter.Off()
+	if err != nil {
+		h.eventer.Publish("tfpPanic", err)
+		return err
 	}
 
 	event := &models.Event{
@@ -400,12 +393,14 @@ func (h *TFPHandler) StopFilterBubble() {
 		EventType:  "stop_filter_bubble",
 		EventKind:  "bubble",
 	}
-	err := h.eventUsecase.Store(context.Background(), event)
+	err = h.eventUsecase.Store(context.Background(), event)
 	if err != nil {
 		log.Errorf("Error when store new event: %s", err.Error())
 	}
 
 	log.Info("Stop filter bubble successfully")
+
+	return err
 }
 
 // HandleRelay manage the relay state
@@ -431,8 +426,15 @@ func (h *TFPHandler) HandleRelay() {
 
 		// Stop pump
 		if h.stateRepository.State().IsSecurity && !h.stateRepository.State().IsDisableSecurity {
-			h.StopPondPump()
-			h.StopWaterfallPump()
+			err := h.StopPondPump()
+			if err != nil {
+				log.Errorf("Failed to stop Pond pump: %s", err.Error())
+			}
+
+			err = h.StopWaterfallPump()
+			if err != nil {
+				log.Errorf("Failed to stop waterfall pump: %s", err.Error())
+			}
 		}
 	})
 
@@ -442,7 +444,7 @@ func (h *TFPHandler) HandleRelay() {
 
 		log.Debugf("Receive event %s", event)
 
-		if event == "initTFP" {
+		if event == "initTFP" || event == "reconnectTFP" {
 			// Manage pond pump
 			if h.stateRepository.State().PondPumpRunning {
 				err := h.StartPondPump()
@@ -450,7 +452,10 @@ func (h *TFPHandler) HandleRelay() {
 					log.Errorf("Failed to start pond pump: %s", err.Error())
 				}
 			} else {
-				h.StopPondPump()
+				err := h.StopPondPump()
+				if err != nil {
+					log.Errorf("Failed to stop pond pump: %s", err.Error())
+				}
 			}
 
 			// Manage UVC1
@@ -460,7 +465,10 @@ func (h *TFPHandler) HandleRelay() {
 					log.Errorf("Failed to start UVC1: %s", err.Error())
 				}
 			} else {
-				h.StopUVC1()
+				err := h.StopUVC1()
+				if err != nil {
+					log.Errorf("Failed to sop UVC1: %s", err.Error())
+				}
 			}
 
 			// Manage UVC2
@@ -470,7 +478,10 @@ func (h *TFPHandler) HandleRelay() {
 					log.Errorf("Failed to start UVC2: %s", err.Error())
 				}
 			} else {
-				h.StopUVC2()
+				err := h.StopUVC2()
+				if err != nil {
+					log.Errorf("Failed to stop UVC2: %s", err.Error())
+				}
 			}
 
 			// Manage waterfall pump
@@ -480,7 +491,10 @@ func (h *TFPHandler) HandleRelay() {
 					log.Errorf("Failed to start Waterfall pump: %s", err.Error())
 				}
 			} else {
-				h.StopWaterfallPump()
+				err := h.StopWaterfallPump()
+				if err != nil {
+					log.Errorf("Failed to stop waterfall pump: %s", err.Error())
+				}
 			}
 
 			// Manage pond bubble
@@ -490,7 +504,10 @@ func (h *TFPHandler) HandleRelay() {
 					log.Errorf("Failed to start pond bubble: %s", err.Error())
 				}
 			} else {
-				h.StopPondBubble()
+				err := h.StopPondBubble()
+				if err != nil {
+					log.Errorf("Failed to stop Pond bubble: %s", err.Error())
+				}
 			}
 
 			// Manage filter bubble
@@ -500,19 +517,48 @@ func (h *TFPHandler) HandleRelay() {
 					log.Errorf("Failed to start filter bubble: %s", err.Error())
 				}
 			} else {
-				h.StopFilterBubble()
+				err := h.StopFilterBubble()
+				if err != nil {
+					log.Errorf("Failed to stop filter bubble")
+				}
 			}
 		}
 	})
 }
 
 // StopRelais stop all relais
-func (h *TFPHandler) StopRelais() {
+func (h *TFPHandler) StopRelais() error {
 	log.Info("Stop all relais")
-	h.StopPondPump()
-	h.StopWaterfallPump()
-	h.StopPondBubble()
-	h.StopFilterBubble()
-	h.StopUVC1()
-	h.StopUVC2()
+	err := h.StopPondPump()
+	if err != nil {
+		log.Errorf("Error when stop pond pump: %s", err.Error())
+		return err
+	}
+	err = h.StopWaterfallPump()
+	if err != nil {
+		log.Errorf("Error when stop waterfall pump: %s", err.Error())
+		return err
+	}
+	err = h.StopPondBubble()
+	if err != nil {
+		log.Errorf("Error when stop pond bubble: %s", err.Error())
+		return err
+	}
+	err = h.StopFilterBubble()
+	if err != nil {
+		log.Errorf("Error when stop filter bubble: %s", err.Error())
+		return err
+	}
+	err = h.StopUVC1()
+	if err != nil {
+		log.Errorf("Error when stop UVC1: %s", err.Error())
+		return err
+	}
+	err = h.StopUVC2()
+	if err != nil {
+		log.Errorf("Error when stop UVC2: %s", err.Error())
+		return err
+	}
+
+	return nil
 }
