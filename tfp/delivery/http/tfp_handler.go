@@ -10,12 +10,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// ResponseError represent the reseponse error struct
-type ResponseError struct {
-	Message string `json:"error"`
-	Code    int    `json:"error_code"`
-}
-
 // TFPHandler  represent the httphandler for tfp
 type TFPHandler struct {
 	dUsecase tfp.Usecase
@@ -54,15 +48,12 @@ func (h TFPHandler) GetState(c echo.Context) error {
 
 	if err != nil {
 		log.Errorf("Error when get TFP state: %s", err.Error())
-		return c.JSON(500, models.JSONAPI{
-			Errors: []models.JSONAPIError{
-				models.JSONAPIError{
-					Status: "500",
-					Title:  "Error when get TFP state",
-					Detail: err.Error(),
-				},
-			},
-		})
+		return c.JSON(http.StatusInternalServerError, models.NewJSONAPIerror(
+			"500",
+			"Error when get TFP state",
+			err.Error(),
+			nil,
+		))
 	}
 
 	return c.JSON(http.StatusOK, models.JSONAPI{
@@ -85,7 +76,12 @@ func (h TFPHandler) StartPondPump(c echo.Context) error {
 
 	if err != nil {
 		log.Errorf("Error when post start_pond_pump: %s", err.Error())
-		return c.JSON(500, ResponseError{Code: http.StatusInternalServerError, Message: err.Error()})
+		return c.JSON(500, models.NewJSONAPIerror(
+			"500",
+			"Error when start pond pump",
+			err.Error(),
+			nil,
+		))
 	}
 
 	return c.NoContent(http.StatusOK)
@@ -101,20 +97,35 @@ func (h TFPHandler) StartPondPumpWithUVC(c echo.Context) error {
 	err := h.dUsecase.PondPump(ctx, true)
 
 	if err != nil {
-		log.Errorf("Error when post start_pond_pump_with_uvc: %s", err.Error())
-		return c.JSON(500, ResponseError{Code: http.StatusInternalServerError, Message: err.Error()})
+		log.Errorf("Error when post start_pond_pump: %s", err.Error())
+		return c.JSON(500, models.NewJSONAPIerror(
+			"500",
+			"Error when start pond pump",
+			err.Error(),
+			nil,
+		))
 	}
 
 	err = h.dUsecase.UVC1(ctx, true)
 	if err != nil {
-		log.Errorf("Error when post start_pond_pump_with_uvc: %s", err.Error())
-		return c.JSON(500, ResponseError{Code: http.StatusInternalServerError, Message: err.Error()})
+		log.Errorf("Error when post start_uvc1: %s", err.Error())
+		return c.JSON(500, models.NewJSONAPIerror(
+			"500",
+			"Error when start uvc1",
+			err.Error(),
+			nil,
+		))
 	}
 
 	err = h.dUsecase.UVC2(ctx, true)
 	if err != nil {
-		log.Errorf("Error when post start_pond_pump_with_uvc: %s", err.Error())
-		return c.JSON(500, ResponseError{Code: http.StatusInternalServerError, Message: err.Error()})
+		log.Errorf("Error when post start_uvc2: %s", err.Error())
+		return c.JSON(500, models.NewJSONAPIerror(
+			"500",
+			"Error when start uvc2",
+			err.Error(),
+			nil,
+		))
 	}
 
 	return c.NoContent(http.StatusOK)
@@ -131,7 +142,12 @@ func (h TFPHandler) StopPondPump(c echo.Context) error {
 
 	if err != nil {
 		log.Errorf("Error when post stop_pond_pump: %s", err.Error())
-		return c.JSON(500, ResponseError{Code: http.StatusInternalServerError, Message: err.Error()})
+		return c.JSON(500, models.NewJSONAPIerror(
+			"500",
+			"Error when stop pond pomp",
+			err.Error(),
+			nil,
+		))
 	}
 
 	return c.NoContent(http.StatusOK)
@@ -148,7 +164,12 @@ func (h TFPHandler) StartWaterfallPump(c echo.Context) error {
 
 	if err != nil {
 		log.Errorf("Error when post start_waterfall_pump: %s", err.Error())
-		return c.JSON(500, ResponseError{Code: http.StatusInternalServerError, Message: err.Error()})
+		return c.JSON(500, models.NewJSONAPIerror(
+			"500",
+			"Error when start waterfall pump",
+			err.Error(),
+			nil,
+		))
 	}
 
 	return c.NoContent(http.StatusOK)
@@ -165,7 +186,12 @@ func (h TFPHandler) StopWaterfallPump(c echo.Context) error {
 
 	if err != nil {
 		log.Errorf("Error when post stop_waterfall_pump: %s", err.Error())
-		return c.JSON(500, ResponseError{Code: http.StatusInternalServerError, Message: err.Error()})
+		return c.JSON(500, models.NewJSONAPIerror(
+			"500",
+			"Error when stop waterfall pump",
+			err.Error(),
+			nil,
+		))
 	}
 
 	return c.NoContent(http.StatusOK)
@@ -182,7 +208,12 @@ func (h TFPHandler) StartUVC1(c echo.Context) error {
 
 	if err != nil {
 		log.Errorf("Error when post start_uvc1: %s", err.Error())
-		return c.JSON(500, ResponseError{Code: http.StatusInternalServerError, Message: err.Error()})
+		return c.JSON(500, models.NewJSONAPIerror(
+			"500",
+			"Error when start uvc1",
+			err.Error(),
+			nil,
+		))
 	}
 
 	return c.NoContent(http.StatusOK)
@@ -199,7 +230,12 @@ func (h TFPHandler) StopUVC1(c echo.Context) error {
 
 	if err != nil {
 		log.Errorf("Error when post stop_uvc1: %s", err.Error())
-		return c.JSON(500, ResponseError{Code: http.StatusInternalServerError, Message: err.Error()})
+		return c.JSON(500, models.NewJSONAPIerror(
+			"500",
+			"Error when stop uvc1",
+			err.Error(),
+			nil,
+		))
 	}
 
 	return c.NoContent(http.StatusOK)
@@ -216,7 +252,12 @@ func (h TFPHandler) StartUVC2(c echo.Context) error {
 
 	if err != nil {
 		log.Errorf("Error when post start_uvc2: %s", err.Error())
-		return c.JSON(500, ResponseError{Code: http.StatusInternalServerError, Message: err.Error()})
+		return c.JSON(500, models.NewJSONAPIerror(
+			"500",
+			"Error when start uvc2",
+			err.Error(),
+			nil,
+		))
 	}
 
 	return c.NoContent(http.StatusOK)
@@ -233,7 +274,12 @@ func (h TFPHandler) StopUVC2(c echo.Context) error {
 
 	if err != nil {
 		log.Errorf("Error when post stop_uvc2: %s", err.Error())
-		return c.JSON(500, ResponseError{Code: http.StatusInternalServerError, Message: err.Error()})
+		return c.JSON(500, models.NewJSONAPIerror(
+			"500",
+			"Error when stop uvc2",
+			err.Error(),
+			nil,
+		))
 	}
 
 	return c.NoContent(http.StatusOK)
@@ -250,7 +296,12 @@ func (h TFPHandler) StartPondBubble(c echo.Context) error {
 
 	if err != nil {
 		log.Errorf("Error when post start_pond_bubble: %s", err.Error())
-		return c.JSON(500, ResponseError{Code: http.StatusInternalServerError, Message: err.Error()})
+		return c.JSON(500, models.NewJSONAPIerror(
+			"500",
+			"Error when start pond bubble",
+			err.Error(),
+			nil,
+		))
 	}
 
 	return c.NoContent(http.StatusOK)
@@ -267,7 +318,12 @@ func (h TFPHandler) StopPondBubble(c echo.Context) error {
 
 	if err != nil {
 		log.Errorf("Error when post stop_pond_bubble: %s", err.Error())
-		return c.JSON(500, ResponseError{Code: http.StatusInternalServerError, Message: err.Error()})
+		return c.JSON(500, models.NewJSONAPIerror(
+			"500",
+			"Error when stop pond bubble",
+			err.Error(),
+			nil,
+		))
 	}
 
 	return c.NoContent(http.StatusOK)
@@ -284,7 +340,12 @@ func (h TFPHandler) StartFilterBubble(c echo.Context) error {
 
 	if err != nil {
 		log.Errorf("Error when post start_filter_bubble: %s", err.Error())
-		return c.JSON(500, ResponseError{Code: http.StatusInternalServerError, Message: err.Error()})
+		return c.JSON(500, models.NewJSONAPIerror(
+			"500",
+			"Error when start filter bubble",
+			err.Error(),
+			nil,
+		))
 	}
 
 	return c.NoContent(http.StatusOK)
@@ -301,7 +362,12 @@ func (h TFPHandler) StopFilterBubble(c echo.Context) error {
 
 	if err != nil {
 		log.Errorf("Error when post stop_filter_bubble: %s", err.Error())
-		return c.JSON(500, ResponseError{Code: http.StatusInternalServerError, Message: err.Error()})
+		return c.JSON(500, models.NewJSONAPIerror(
+			"500",
+			"Error when stop filter bubble",
+			err.Error(),
+			nil,
+		))
 	}
 
 	return c.NoContent(http.StatusOK)

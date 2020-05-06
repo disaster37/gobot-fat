@@ -143,7 +143,6 @@ func main() {
 		log.Errorf("Failed to init TFP gobot: %s", err.Error())
 		panic("Failed to init TFP gobot")
 	}
-	defer tfpG.Stop()
 	dfpU := dfpUsecase.NewDFPUsecase(dfpG, dfpR)
 	tfpU := tfpUsecase.NewTFPUsecase(tfpG, tfpR, tfpConfigU)
 	loginU := loginUsecase.NewLoginUsecase(configHandler)

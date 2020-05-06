@@ -19,3 +19,16 @@ type JSONAPI struct {
 	Errors []JSONAPIError `json:"errors,omitempty"`
 	Meta   interface{}    `json:"meta,omitempty"`
 }
+
+func NewJSONAPIerror(status string, title string, detail string, source interface{}) *JSONAPI {
+	return &JSONAPI{
+		Errors: []JSONAPIError{
+			{
+				Status: status,
+				Title:  title,
+				Detail: detail,
+				Source: source,
+			},
+		},
+	}
+}
