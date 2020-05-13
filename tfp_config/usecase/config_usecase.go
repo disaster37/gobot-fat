@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/disaster37/gobot-fat/models"
-	"github.com/disaster37/gobot-fat/tfp_config"
+	tfpconfig "github.com/disaster37/gobot-fat/tfp_config"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
@@ -60,6 +60,8 @@ func (h *configUsecase) Update(c context.Context, config *models.TFPConfig) erro
 	ctx, cancel := context.WithTimeout(c, h.contextTimeout)
 	defer cancel()
 
+	config.UpdatedAt = time.Now()
+
 	err := h.configRepoSQL.Update(ctx, config)
 	if err != nil {
 		return err
@@ -85,16 +87,16 @@ func (h *configUsecase) Get(ctx context.Context) (*models.TFPConfig, error) {
 
 // Init will init config on backend if needed
 func (h *configUsecase) Init(ctx context.Context, config *models.TFPConfig) error {
-	currentConfig, err := h.configRepoSQL.Get(ctx)
+	sqlConfig, err := h.configRepoSQL.Get(ctx)
 	if err != nil {
 		log.Errorf("Failed to retrive tfpconfig from sql: %s", err.Error())
 		return err
 	}
-	bisConfig, err := h.configRepoElasticsearch.Get(ctx)
+	esConfig, err := h.configRepoElasticsearch.Get(ctx)
 	if err != nil {
 		log.Errorf("Failed to retrive tfpconfig from elastic: %s", err.Error())
 	}
-	if currentConfig == nil && bisConfig == nil {
+	if sqlConfig == nil && esConfig == nil {
 		// No config found
 
 		err = h.Create(ctx, config)
@@ -103,42 +105,40 @@ func (h *configUsecase) Init(ctx context.Context, config *models.TFPConfig) erro
 			return err
 		}
 		log.Info("Create new tfpconfig on repositories")
-	} else if currentConfig == nil && bisConfig != nil {
+	} else if sqlConfig == nil && esConfig != nil {
 		// Config found only on Elastic
-		bisConfig.Version--
-		err = h.configRepoSQL.Create(ctx, bisConfig)
+		err = h.configRepoSQL.Create(ctx, esConfig)
 		if err != nil {
 			log.Errorf("Failed to create tfpconfig on SQL: %s", err.Error())
 			return err
 		}
 		log.Info("Create new tfpconfig on SQL from elastic config")
-	} else if currentConfig != nil && bisConfig == nil {
+	} else if sqlConfig != nil && esConfig == nil {
 		// Config found only on SQL
-		currentConfig.Version--
-		err = h.configRepoElasticsearch.Create(ctx, currentConfig)
+		err = h.configRepoElasticsearch.Create(ctx, sqlConfig)
 		if err != nil {
 			log.Errorf("Failed to create tfpconfig on Elastic: %s", err.Error())
 		} else {
 			log.Info("Create new tfpconfig on Elastic from SQL config")
 		}
 
-	} else if currentConfig != nil && bisConfig != nil {
-		if currentConfig.Version < bisConfig.Version {
+	} else if sqlConfig != nil && esConfig != nil {
+		if sqlConfig.UpdatedAt.Before(esConfig.UpdatedAt) {
 			// Config found and last version found on Elastic
-			err = h.Update(ctx, bisConfig)
+			err = h.configRepoSQL.Update(ctx, esConfig)
 			if err != nil {
 				log.Errorf("Failed to update tfpconfig on SQL: %s", err.Error())
 				return err
 			}
 			log.Info("Update tfpconfig on SQL from elastic config")
-		} else {
+		} else if sqlConfig.UpdatedAt.After(esConfig.UpdatedAt) {
 			// Config found and last version found on SQL
-			err = h.Update(ctx, currentConfig)
+			err = h.configRepoElasticsearch.Update(ctx, sqlConfig)
 			if err != nil {
 				log.Errorf("Failed to update tfpconfig on SQL: %s", err.Error())
 				return err
 			}
-			log.Info("Update tfpconfig on SQL from elastic config")
+			log.Info("Update tfpconfig on Elastic from SQL config")
 		}
 	}
 

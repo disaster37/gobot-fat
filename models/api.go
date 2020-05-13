@@ -32,3 +32,11 @@ func NewJSONAPIerror(status string, title string, detail string, source interfac
 		},
 	}
 }
+
+func NewJSONAPIData(data interface{}) *JSONAPI {
+	return &JSONAPI{
+		Data: &JSONAPIData{
+			Attributes: data,
+		},
+	}
+}

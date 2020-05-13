@@ -4,8 +4,10 @@ import (
 	"time"
 
 	"github.com/disaster37/gobot-fat/event"
+	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/tfp"
 	tfpconfig "github.com/disaster37/gobot-fat/tfp_config"
+	tfpstate "github.com/disaster37/gobot-fat/tfp_state"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"gobot.io/x/gobot"
@@ -15,10 +17,11 @@ import (
 
 // DFPHandler manage all i/o on FAT
 type TFPHandler struct {
-	stateRepository    tfp.Repository
+	state              *models.TFPState
 	arduino            gobot.Adaptor
 	configUsecase      tfpconfig.Usecase
 	eventUsecase       event.Usecase
+	stateUsecase       tfpstate.Usecase
 	robot              *gobot.Robot
 	relayPompPond      *gpio.RelayDriver
 	relayPompWaterfall *gpio.RelayDriver
@@ -31,22 +34,23 @@ type TFPHandler struct {
 }
 
 // NewTFP create handler to manage FAT
-func NewTFP(configHandler *viper.Viper, configUsecase tfpconfig.Usecase, eventUsecase event.Usecase, stateRepository tfp.Repository, eventer gobot.Eventer) (tfp.Gobot, error) {
+func NewTFP(configHandler *viper.Viper, configUsecase tfpconfig.Usecase, eventUsecase event.Usecase, stateUsecase tfpstate.Usecase, state *models.TFPState, eventer gobot.Eventer) (tfp.Gobot, error) {
 
 	// Initialise i/o
 	tfpHandler := &TFPHandler{
-		stateRepository: stateRepository,
-		configUsecase:   configUsecase,
-		eventUsecase:    eventUsecase,
-		configHandler:   configHandler,
-		eventer:         eventer,
+		state:         state,
+		configUsecase: configUsecase,
+		eventUsecase:  eventUsecase,
+		stateUsecase:  stateUsecase,
+		configHandler: configHandler,
+		eventer:       eventer,
 	}
 
 	tfpHandler.init()
 
 	// Initialize robot
 	tfpHandler.robot = gobot.NewRobot(
-		configHandler.GetString("tfp.name"),
+		state.Name,
 		[]gobot.Connection{tfpHandler.arduino},
 		[]gobot.Device{
 			tfpHandler.relayPompPond,
@@ -59,7 +63,7 @@ func NewTFP(configHandler *viper.Viper, configUsecase tfpconfig.Usecase, eventUs
 		tfpHandler.work,
 	)
 
-	log.Infof("Robot %s initialized successfully", configHandler.GetString("tfp.name"))
+	log.Infof("Robot %s initialized successfully", state.Name)
 
 	return tfpHandler, nil
 
@@ -74,6 +78,10 @@ func (h *TFPHandler) init() {
 	h.relayBubbleFilter = gpio.NewRelayDriver(arduino, h.configHandler.GetString("tfp.pin.relay.filter_bubble"))
 	h.relayUVC1 = gpio.NewRelayDriver(arduino, h.configHandler.GetString("tfp.pin.relay.uvc1"))
 	h.relayUVC2 = gpio.NewRelayDriver(arduino, h.configHandler.GetString("tfp.pin.relay.uvc2"))
+}
+
+func (h *TFPHandler) State() models.TFPState {
+	return *h.state
 }
 
 // Start permit to run robot
@@ -109,7 +117,7 @@ func (h *TFPHandler) work() {
 
 	// Debug
 	h.eventer.On("stateChange", func(data interface{}) {
-		log.Debugf("state: %s", h.stateRepository.String())
+		log.Debugf("state: %s", h.state.String())
 	})
 
 	time.Sleep(1 * time.Second)
@@ -123,5 +131,5 @@ func (h *TFPHandler) work() {
 	// Fire event to init saved state
 	h.eventer.Publish("stateChange", "initTFP")
 
-	log.Infof("Robot %s started successfully", h.stateRepository.State().Name)
+	log.Infof("Robot %s started successfully", h.state.Name)
 }

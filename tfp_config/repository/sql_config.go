@@ -2,10 +2,9 @@ package repository
 
 import (
 	"context"
-	"time"
 
 	"github.com/disaster37/gobot-fat/models"
-	"github.com/disaster37/gobot-fat/tfp_config"
+	tfpconfig "github.com/disaster37/gobot-fat/tfp_config"
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -47,8 +46,6 @@ func (h *sqlTFPConfigRepository) Update(ctx context.Context, config *models.TFPC
 	log.Debugf("Config: %s", config)
 
 	config.ID = configIDSQL
-	config.UpdatedAt = time.Now()
-	config.Version++
 
 	err := h.Conn.Save(config).Error
 	if err != nil {
@@ -66,8 +63,6 @@ func (h *sqlTFPConfigRepository) Create(ctx context.Context, config *models.TFPC
 	log.Debugf("Config: %s", config)
 
 	config.ID = configIDSQL
-	config.UpdatedAt = time.Now()
-	config.Version = 1
 
 	err := h.Conn.Create(config).Error
 	if err != nil {

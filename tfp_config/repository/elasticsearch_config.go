@@ -52,7 +52,7 @@ func (h *elasticsearchTFPConfigRepository) Get(ctx context.Context) (*models.TFP
 
 	log.Debugf("Config: %+v", config)
 
-	if config.Version == 0 {
+	if config.CreatedAt == time.Time{} {
 		return nil, nil
 	}
 
@@ -67,8 +67,6 @@ func (h *elasticsearchTFPConfigRepository) Update(ctx context.Context, config *m
 	}
 	log.Debugf("Config: %s", config)
 
-	config.UpdatedAt = time.Now()
-	config.Version++
 
 	data, err := json.Marshal(config)
 	if err != nil {
@@ -104,6 +102,5 @@ func (h *elasticsearchTFPConfigRepository) Create(ctx context.Context, config *m
 	if config == nil {
 		return errors.New("Config can't be null")
 	}
-	config.Version = 0
 	return h.Update(ctx, config)
 }

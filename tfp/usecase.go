@@ -17,8 +17,7 @@ type Usecase interface {
 	GetState(ctx context.Context) (*models.TFPState, error)
 	StartRobot(ctx context.Context) error
 	StopRobot(ctx context.Context) error
-	UVC1BlisterStatus(ctx context.Context) (bool, error)
-	UVC2BlisterStatus(ctx context.Context) (bool, error)
 	UVC1BlisterNew(ctx context.Context) error
 	UVC2BlisterNew(ctx context.Context) error
+	OzoneBlisterNew(ctx context.Context) error
 }

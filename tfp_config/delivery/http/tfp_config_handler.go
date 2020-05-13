@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/disaster37/gobot-fat/models"
-	"github.com/disaster37/gobot-fat/tfp_config"
+	tfpconfig "github.com/disaster37/gobot-fat/tfp_config"
 	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
 )
@@ -29,6 +29,7 @@ func NewTFPConfigHandler(e *echo.Group, us tfpconfig.Usecase) {
 	}
 	e.GET("/tfp-configs", handler.Get)
 	e.POST("/tfp-configs", handler.Update)
+
 }
 
 // Get will get the tfp_config
@@ -45,7 +46,7 @@ func (h *TFPConfigHandler) Get(c echo.Context) error {
 
 		return c.JSON(500, models.JSONAPI{
 			Errors: []models.JSONAPIError{
-				models.JSONAPIError{
+				{
 					Status: "500",
 					Title:  "Error when get tfp_config",
 					Detail: err.Error(),
@@ -65,23 +66,33 @@ func (h *TFPConfigHandler) Get(c echo.Context) error {
 
 // Update permit to update the current TFP config
 func (h *TFPConfigHandler) Update(c echo.Context) error {
-	var config models.TFPConfig
-	err := c.Bind(&config)
+	jsonData := models.NewJSONAPIData(&models.TFPConfig{})
+	err := c.Bind(jsonData)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, err.Error())
 	}
+
+	log.Debugf("Data: %+v", jsonData)
 
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
 
-	err = h.dUsecase.Update(ctx, &config)
+	config := jsonData.Data.(*models.JSONAPIData).Attributes.(*models.TFPConfig)
+
+	err = h.dUsecase.Update(ctx, config)
 
 	if err != nil {
 		log.Errorf("Error when update tfp_config: %s", err.Error())
 		return c.JSON(500, ResponseError{Code: http.StatusInternalServerError, Message: err.Error()})
 	}
 
-	return c.JSON(http.StatusCreated, config)
+	return c.JSON(http.StatusCreated, models.JSONAPI{
+		Data: models.JSONAPIData{
+			Type:       "tfp-configs",
+			Id:         strconv.Itoa(int(config.ID)),
+			Attributes: config,
+		},
+	})
 }

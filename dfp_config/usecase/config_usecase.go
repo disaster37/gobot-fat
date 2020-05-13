@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/disaster37/gobot-fat/dfp_config"
+	dfpconfig "github.com/disaster37/gobot-fat/dfp_config"
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -39,13 +39,13 @@ func (h *configUsecase) Create(c context.Context, config *models.DFPConfig) erro
 	if err != nil {
 		return err
 	}
-	log.Infof("Create config on SQL backend successfully")
+	log.Infof("Create DFP config on SQL backend successfully")
 
 	err = h.configRepoElasticsearch.Create(ctx, config)
 	if err != nil {
-		log.Errorf("Create config on Elasticsearch backend failed")
+		log.Errorf("Create DFP config on Elasticsearch backend failed")
 	}
-	log.Infof("Create config on Elasticsearch backend successfully")
+	log.Infof("Create DFP config on Elasticsearch backend successfully")
 
 	return nil
 }
@@ -64,13 +64,13 @@ func (h *configUsecase) Update(c context.Context, config *models.DFPConfig) erro
 	if err != nil {
 		return err
 	}
-	log.Infof("Update config on SQL backend successfully")
+	log.Infof("Update DFP config on SQL backend successfully")
 
 	err = h.configRepoElasticsearch.Update(ctx, config)
 	if err != nil {
 		log.Errorf("Update config on Elasticsearch backend failed")
 	}
-	log.Infof("Update config on Elasticsearch backend successfully")
+	log.Infof("Update DFP config on Elasticsearch backend successfully")
 
 	return nil
 }
@@ -85,60 +85,62 @@ func (h *configUsecase) Get(ctx context.Context) (*models.DFPConfig, error) {
 
 // Init will init config on backend if needed
 func (h *configUsecase) Init(ctx context.Context, config *models.DFPConfig) error {
-	currentConfig, err := h.configRepoSQL.Get(ctx)
+	sqlConfig, err := h.configRepoSQL.Get(ctx)
 	if err != nil {
 		log.Errorf("Failed to retrive dfpconfig from sql: %s", err.Error())
 		return err
 	}
-	bisConfig, err := h.configRepoElasticsearch.Get(ctx)
+	esConfig, err := h.configRepoElasticsearch.Get(ctx)
 	if err != nil {
 		log.Errorf("Failed to retrive dfpconfig from elastic: %s", err.Error())
 	}
-	if currentConfig == nil && bisConfig == nil {
+	if sqlConfig == nil && esConfig == nil {
 		// No config found
-		
+
 		err = h.Create(ctx, config)
 		if err != nil {
 			log.Errorf("Failed to create dfpconfig on SQL: %s", err.Error())
 			return err
 		}
 		log.Info("Create new dfpconfig on repositories")
-	} else if currentConfig == nil && bisConfig != nil {
+	} else if sqlConfig == nil && esConfig != nil {
 		// Config found only on Elastic
-		bisConfig.Version--
-		err = h.configRepoSQL.Create(ctx, bisConfig)
+		esConfig.Version--
+		err = h.configRepoSQL.Create(ctx, esConfig)
 		if err != nil {
 			log.Errorf("Failed to create dfpconfig on SQL: %s", err.Error())
 			return err
 		}
 		log.Info("Create new dfpconfig on SQL from elastic config")
-	} else if currentConfig != nil && bisConfig == nil {
+	} else if sqlConfig != nil && esConfig == nil {
 		// Config found only on SQL
-		currentConfig.Version--
-		err = h.configRepoElasticsearch.Create(ctx, currentConfig)
+		sqlConfig.Version--
+		err = h.configRepoElasticsearch.Create(ctx, sqlConfig)
 		if err != nil {
 			log.Errorf("Failed to create dfpconfig on Elastic: %s", err.Error())
 		} else {
 			log.Info("Create new dfpconfig on Elastic from SQL config")
 		}
 
-	} else if currentConfig != nil && bisConfig != nil {
-		if currentConfig.Version < bisConfig.Version {
+	} else if sqlConfig != nil && esConfig != nil {
+		if sqlConfig.Version < esConfig.Version {
 			// Config found and last version found on Elastic
-			err = h.Update(ctx, bisConfig)
+			esConfig.Version--
+			err = h.configRepoSQL.Update(ctx, esConfig)
 			if err != nil {
 				log.Errorf("Failed to update dfpconfig on SQL: %s", err.Error())
 				return err
 			}
 			log.Info("Update dfpconfig on SQL from elastic config")
-		} else {
+		} else if sqlConfig.Version > esConfig.Version {
 			// Config found and last version found on SQL
-			err = h.Update(ctx, currentConfig)
+			sqlConfig.Version--
+			err = h.configRepoElasticsearch.Update(ctx, sqlConfig)
 			if err != nil {
-				log.Errorf("Failed to update dfpconfig on SQL: %s", err.Error())
+				log.Errorf("Failed to update dfpconfig on elastic: %s", err.Error())
 				return err
 			}
-			log.Info("Update dfpconfig on SQL from elastic config")
+			log.Info("Update dfpconfig on elastic from SQL config")
 		}
 	}
 

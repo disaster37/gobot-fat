@@ -2,7 +2,6 @@ package models
 
 import (
 	"encoding/json"
-	"time"
 
 	"github.com/jinzhu/gorm"
 )
@@ -11,41 +10,26 @@ import (
 type TFPConfig struct {
 	gorm.Model
 
-	// UVC1Running is true if UVC1 running
-	UVC1Running bool `json:"uvc1_running" gorm:"column:uvc1_running" validate:"required"`
-
-	// UVC2Running is true if UVC2 running
-	UVC2Running bool `json:"uvc2_running" gorm:"column:uvc2_running" validate:"required"`
-
-	// PondPumpRunning is true if pond pump running
-	PondPumpRunning bool `json:"pond_pump_running" gorm:"column:pond_pump_running" validate:"required"`
-
-	// WaterfallPumpRunning is true if Waterfall pump running
-	WaterfallPumpRunning bool `json:"waterfall_pump_running" gorm:"column:waterfall_pump_running" validate:"required"`
-
-	// PondBubbleRunning is true if pond bubble running
-	PondBubbleRunning bool `json:"pond_bubble_running" gorm:"column:pond_bubble_running" validate:"required"`
-
-	// FilterBubbleRunning is true if filter bubble running
-	FilterBubbleRunning bool `json:"filter_bubble_running" gorm:"column:filter_bubble_running" validate:"required"`
-
-	// UVC1BlisterTime is the time usage of UVC1 blister
-	UVC1BlisterTime time.Time `json:"uvc1_blister_time" gorm:"column:uvc1_blister_time" validate:"required"`
-
-	// UVC2BlisterTime is the time usage of UVC2 blister
-	UVC2BlisterTime time.Time `json:"uvc2_blister_time" gorm:"column:uvc2_blister_time" validate:"required"`
-
 	// UVC1BlisterMaxTime is the max usage in hour of UVC1 blister
 	UVC1BlisterMaxTime int64 `json:"uvc1_blister_max_time" gorm:"column:uvc1_blister_max_time" validate:"required"`
 
 	// UVC1BlisterMaxTime is the max usage in hour of UVC2 blister
 	UVC2BlisterMaxTime int64 `json:"uvc2_blister_max_time" gorm:"column:uvc2_blister_max_time" validate:"required"`
 
-	// BacteriumTime is the time when introduce bacterium to power off UVC during 48h
-	BacteriumTime time.Time `json:"bacterium_time" gorm:"column:bacterium_time" validate:"required"`
+	// OzoneBlisterMaxTime is the max usage in hour of ozonne blister
+	OzoneBlisterMaxTime int64 `json:"ozone_blister_max_time" gorm:"column:ozone_blister_max_time" validate:"required"`
 
-	// Version of configuration
-	Version int64 `json:"version" gorm:"column:version;type:bigint" validate:"required"`
+	// IsWaterfallAuto permit to start / stop waterfall pump automatically
+	IsWaterfallAuto bool `json:"is_waterfall_auto" gorm:"column:is_waterfall_auto" validate:"required"`
+
+	// StartTimeWaterfall is the hour of day when start waterfall pump
+	StartTimeWaterfall string `json:"start_time_waterfall" gorm:"column:start_time_waterfall" validate:"required"`
+
+	// StopTimeWaterfall is the hour of day when stop waterfall pump
+	StopTimeWaterfall string `json:"stop_time_waterfall" gorm:"column:stop_time_waterfall" validate:"required"`
+
+	//Mode is ozone, or UVC or none
+	Mode string `json:"mode" gorm:"column:mode" validate:"required"`
 }
 
 func (h *TFPConfig) String() string {
@@ -56,6 +40,6 @@ func (h *TFPConfig) String() string {
 	return string(str)
 }
 
-func (TFPConfig) TableName() string {
+func (h TFPConfig) TableName() string {
 	return "tfpconfig"
 }

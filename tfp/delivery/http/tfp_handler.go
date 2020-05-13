@@ -84,7 +84,7 @@ func (h TFPHandler) StartPondPump(c echo.Context) error {
 		))
 	}
 
-	return c.NoContent(http.StatusOK)
+	return c.NoContent(http.StatusNoContent)
 }
 
 // StartPondPumpWithUVC start pond pump and then UVC
@@ -128,7 +128,7 @@ func (h TFPHandler) StartPondPumpWithUVC(c echo.Context) error {
 		))
 	}
 
-	return c.NoContent(http.StatusOK)
+	return c.NoContent(http.StatusNoContent)
 }
 
 // StopPondPump stop pond pump
@@ -150,7 +150,7 @@ func (h TFPHandler) StopPondPump(c echo.Context) error {
 		))
 	}
 
-	return c.NoContent(http.StatusOK)
+	return c.NoContent(http.StatusNoContent)
 }
 
 // StartWaterfallPump start waterfall pump
@@ -172,7 +172,7 @@ func (h TFPHandler) StartWaterfallPump(c echo.Context) error {
 		))
 	}
 
-	return c.NoContent(http.StatusOK)
+	return c.NoContent(http.StatusNoContent)
 }
 
 // StopWaterfallPump stop waterfall pump
@@ -194,7 +194,7 @@ func (h TFPHandler) StopWaterfallPump(c echo.Context) error {
 		))
 	}
 
-	return c.NoContent(http.StatusOK)
+	return c.NoContent(http.StatusNoContent)
 }
 
 // StartUVC1 start UVC1
@@ -216,7 +216,7 @@ func (h TFPHandler) StartUVC1(c echo.Context) error {
 		))
 	}
 
-	return c.NoContent(http.StatusOK)
+	return c.NoContent(http.StatusNoContent)
 }
 
 // StopUVC1 stop UVC1
@@ -238,7 +238,7 @@ func (h TFPHandler) StopUVC1(c echo.Context) error {
 		))
 	}
 
-	return c.NoContent(http.StatusOK)
+	return c.NoContent(http.StatusNoContent)
 }
 
 // StartUVC2 start UVC2
@@ -260,7 +260,7 @@ func (h TFPHandler) StartUVC2(c echo.Context) error {
 		))
 	}
 
-	return c.NoContent(http.StatusOK)
+	return c.NoContent(http.StatusNoContent)
 }
 
 // StopUVC2 stop UVC2
@@ -282,7 +282,7 @@ func (h TFPHandler) StopUVC2(c echo.Context) error {
 		))
 	}
 
-	return c.NoContent(http.StatusOK)
+	return c.NoContent(http.StatusNoContent)
 }
 
 // StartPondBubble start pond bubble
@@ -304,7 +304,7 @@ func (h TFPHandler) StartPondBubble(c echo.Context) error {
 		))
 	}
 
-	return c.NoContent(http.StatusOK)
+	return c.NoContent(http.StatusNoContent)
 }
 
 // StopPondBubble stop pond bubble
@@ -326,7 +326,7 @@ func (h TFPHandler) StopPondBubble(c echo.Context) error {
 		))
 	}
 
-	return c.NoContent(http.StatusOK)
+	return c.NoContent(http.StatusNoContent)
 }
 
 // StartFilterBubble start filter bubble
@@ -348,7 +348,7 @@ func (h TFPHandler) StartFilterBubble(c echo.Context) error {
 		))
 	}
 
-	return c.NoContent(http.StatusOK)
+	return c.NoContent(http.StatusNoContent)
 }
 
 // StopFilterBubble stop filter bubble
@@ -370,5 +370,5 @@ func (h TFPHandler) StopFilterBubble(c echo.Context) error {
 		))
 	}
 
-	return c.NoContent(http.StatusOK)
+	return c.NoContent(http.StatusNoContent)
 }

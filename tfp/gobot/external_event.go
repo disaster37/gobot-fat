@@ -1,6 +1,8 @@
 package tfpgobot
 
 import (
+	"context"
+
 	log "github.com/sirupsen/logrus"
 )
 
@@ -17,28 +19,33 @@ func (h *TFPHandler) HandleExternalEvent() {
 
 		switch event {
 		case "isEmergencyStop":
-			h.stateRepository.State().IsEmergencyStopped = true
+			h.state.IsEmergencyStopped = true
 			isUpdate = true
 		case "isNotEmergencyStop":
-			h.stateRepository.State().IsEmergencyStopped = false
+			h.state.IsEmergencyStopped = false
 			isUpdate = true
 		case "isSecurity":
-			h.stateRepository.State().IsSecurity = true
+			h.state.IsSecurity = true
 			isUpdate = true
 		case "isNotSecurity":
-			h.stateRepository.State().IsSecurity = false
+			h.state.IsSecurity = false
 			isUpdate = true
 		case "isDisableSecurity":
-			h.stateRepository.State().IsDisableSecurity = true
+			h.state.IsDisableSecurity = true
 			isUpdate = true
 		case "isNotDisableSecurity":
-			h.stateRepository.State().IsDisableSecurity = false
+			h.state.IsDisableSecurity = false
 			isUpdate = true
 		}
 
 		// Publish event to handle new state
 		if isUpdate {
 			h.eventer.Publish("stateChange", "externalEventTFP")
+
+			err := h.stateUsecase.Update(context.Background(), h.state)
+			if err != nil {
+				log.Errorf("Error when save TFP state: %s", err.Error)
+			}
 		}
 	})
 }
