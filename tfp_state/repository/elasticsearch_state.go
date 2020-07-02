@@ -4,11 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"time"
 
 	"github.com/disaster37/gobot-fat/helper"
 	"github.com/disaster37/gobot-fat/models"
-	"github.com/disaster37/gobot-fat/tfp_state"
+	tfpstate "github.com/disaster37/gobot-fat/tfp_state"
 	elastic "github.com/elastic/go-elasticsearch/v7"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -52,7 +51,7 @@ func (h *elasticsearchTFPStateRepository) Get(ctx context.Context) (*models.TFPS
 
 	log.Debugf("state: %+v", state)
 
-	if state.CreatedAt == time.Time{} {
+	if state.CreatedAt.IsZero() {
 		return nil, nil
 	}
 
@@ -66,7 +65,6 @@ func (h *elasticsearchTFPStateRepository) Update(ctx context.Context, state *mod
 		return errors.New("State can't be null")
 	}
 	log.Debugf("state: %s", state)
-
 
 	data, err := json.Marshal(state)
 	if err != nil {

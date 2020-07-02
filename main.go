@@ -22,7 +22,6 @@ import (
 	"github.com/disaster37/gobot-fat/models"
 	tfpHttpDeliver "github.com/disaster37/gobot-fat/tfp/delivery/http"
 	tfpGobot "github.com/disaster37/gobot-fat/tfp/gobot"
-	tfpRepo "github.com/disaster37/gobot-fat/tfp/repository"
 	tfpUsecase "github.com/disaster37/gobot-fat/tfp/usecase"
 	tfpConfigHttpDeliver "github.com/disaster37/gobot-fat/tfp_config/delivery/http"
 	tfpConfigRepo "github.com/disaster37/gobot-fat/tfp_config/repository"
@@ -178,14 +177,15 @@ func main() {
 	}
 	log.Info("Get tfpState successfully")
 
-	// TFP robot
-	tfpR := tfpRepo.NewTFPRepository(tfpState, eventer, tfpConfigU)
-	tfpG, err := tfpGobot.NewTFP(configHandler, tfpConfigU, eventU, tfpR, eventer)
+	// TFP gobot
+	//NewTFP(configHandler *viper.Viper, configUsecase tfpconfig.Usecase, eventUsecase event.Usecase, stateUsecase tfpstate.Usecase, state *models.TFPState, eventer gobot.Eventer)
+	tfpG, err := tfpGobot.NewTFP(configHandler, tfpConfigU, eventU, tfpStateU, tfpState, eventer)
 	if err != nil {
 		log.Errorf("Failed to init TFP gobot: %s", err.Error())
 		panic("Failed to init TFP gobot")
 	}
-	tfpU := tfpUsecase.NewTFPUsecase(tfpG, tfpR, tfpConfigU)
+	//NewTFPUsecase(handler tfp.Gobot, config tfpconfig.Usecase)
+	tfpU := tfpUsecase.NewTFPUsecase(tfpG, tfpConfigU)
 	tfpHttpDeliver.NewTFPHandler(api, tfpU)
 	eventer.AddEvent("tfpPanic")
 	eventer.On("tfpPanic", func(data interface{}) {
@@ -204,6 +204,18 @@ func main() {
 	/*****************************
 	 * INIT DFP
 	 */
+	// DFP state
+	dfpState := &models.DFPState{
+		ID:                 "fat",
+		Name:               "fat",
+		IsWashed:           false,
+		ShouldWash:         false,
+		IsAuto:             true,
+		IsStopped:          false,
+		IsSecurity:         false,
+		IsEmergencyStopped: false,
+		IsDisableSecurity:  false,
+	}
 	// DFP config
 	dfpConfigRepoSQL := dfpConfigRepo.NewSQLDFPConfigRepository(db)
 	dfpConfigRepoES := dfpConfigRepo.NewElasticsearchDFPConfigRepository(es, "dfp-dfpconfig-alias")
@@ -214,7 +226,7 @@ func main() {
 		log.Errorf("Failed to init DFP gobot: %s", err.Error())
 		panic("Failed to init DFP gobot")
 	}
-	defer dfpG.Stop()
+	//defer dfpG.Stop()
 	dfpU := dfpUsecase.NewDFPUsecase(dfpG, dfpR)
 	dfpConfig := &models.DFPConfig{
 		ForceWashingDuration:           180,
@@ -240,8 +252,6 @@ func main() {
 		panic("Failed to retrive dfpconfig from usecase")
 	}
 	log.Info("Get dfpconfig successfully")
-
-	// DFP state
 
 	// DFP robot
 	dfpR.State().IsStopped = dfpConfig.Stopped

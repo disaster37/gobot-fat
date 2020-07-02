@@ -53,10 +53,10 @@ type TFPState struct {
 	IsSecurity bool `json:"is_security" gorm:"column:is_security" validate:"required"`
 
 	// IsEmergencyStopped is stop when all must be stopped
-	IsEmergencyStopped bool `json:"is_emmergency_stopped" gorm:"column:is_security" validate:"required"`
+	IsEmergencyStopped bool `json:"is_emmergency_stopped" gorm:"column:is_emmergency_stopped" validate:"required"`
 
 	// IsDisableSecurity permit to not handle security state
-	IsDisableSecurity bool `json:"is_disable_security" gorm:"column:is_security" validate:"required"`
+	IsDisableSecurity bool `json:"is_disable_security" gorm:"column:is_disable_security" validate:"required"`
 
 	// BacteriumTime is the time when introduce bacterium to power off UVC during 48h
 	BacteriumTime time.Time `json:"bacterium_time" gorm:"column:bacterium_time" validate:"required"`

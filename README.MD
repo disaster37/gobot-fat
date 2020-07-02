@@ -16,9 +16,14 @@ docker run -d --name dfp -ti -p 4040:4040 -v /opt/dfp/data:/opt/dfp/data -v /opt
 
 ## Handle Technical Filter Pond Robot (TFP robot)
 
+### Login
+```bash
+curl -XPOST -H "Content-Type: application/json" http://localhost:4040/token-auth  -d '{"username": "gobot", "password": "gobot"}'
+```
+
 ### Start pond pump
 ```bash
-curl -XPOST -u gobot:gobot http://localhost:4040/api/tfp/action/start_pond_pump
+curl -XPOST -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhZG1pbiI6dHJ1ZSwiZXhwIjoxNTkzOTU3MTk2LCJuYW1lIjoiZ29ib3QifQ.dnblWfYBS3tQ2iokTPmEJpYzCKW8UB-FdXM-KQbMWvI" http://localhost:4040/api/tfps/action/start_pond_pump
 ```
 
 ### Stop pond pump

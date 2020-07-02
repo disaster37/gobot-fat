@@ -11,6 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"gobot.io/x/gobot"
+	"gobot.io/x/gobot/drivers/aio"
 	"gobot.io/x/gobot/drivers/gpio"
 	"gobot.io/x/gobot/platforms/firmata"
 )
@@ -29,6 +30,7 @@ type TFPHandler struct {
 	relayBubbleFilter  *gpio.RelayDriver
 	relayUVC1          *gpio.RelayDriver
 	relayUVC2          *gpio.RelayDriver
+	fake               *aio.AnalogSensorDriver
 	configHandler      *viper.Viper
 	eventer            gobot.Eventer
 }
@@ -59,6 +61,7 @@ func NewTFP(configHandler *viper.Viper, configUsecase tfpconfig.Usecase, eventUs
 			tfpHandler.relayBubbleFilter,
 			tfpHandler.relayUVC1,
 			tfpHandler.relayUVC2,
+			tfpHandler.fake,
 		},
 		tfpHandler.work,
 	)
@@ -78,6 +81,7 @@ func (h *TFPHandler) init() {
 	h.relayBubbleFilter = gpio.NewRelayDriver(arduino, h.configHandler.GetString("tfp.pin.relay.filter_bubble"))
 	h.relayUVC1 = gpio.NewRelayDriver(arduino, h.configHandler.GetString("tfp.pin.relay.uvc1"))
 	h.relayUVC2 = gpio.NewRelayDriver(arduino, h.configHandler.GetString("tfp.pin.relay.uvc2"))
+	h.fake = aio.NewAnalogSensorDriver(arduino, "0")
 }
 
 func (h *TFPHandler) State() models.TFPState {
@@ -91,7 +95,15 @@ func (h *TFPHandler) Start() error {
 }
 
 func (h *TFPHandler) start() {
-	h.robot.Start(false)
+
+	for {
+		err := h.robot.Start(false)
+		if err == nil {
+			break
+		}
+		log.Errorf("Can't connect on TFP robot: %s", err.Error())
+		time.Sleep(10 * time.Second)
+	}
 }
 
 // Stop permit to stop robot
@@ -100,14 +112,13 @@ func (h *TFPHandler) Stop() error {
 }
 
 func (h *TFPHandler) Reconnect() error {
+	//h.Stop()
 	h.arduino.Finalize()
 	h.init()
+
 	err := h.arduino.Connect()
 	if err != nil {
 		return err
-	}
-	for _, device := range *h.robot.Devices() {
-		device.Start()
 	}
 
 	return nil
@@ -130,6 +141,15 @@ func (h *TFPHandler) work() {
 
 	// Fire event to init saved state
 	h.eventer.Publish("stateChange", "initTFP")
+
+	gobot.Every(1*time.Second, func() {
+		val, err := h.fake.Read()
+		log.Debugf("Analog value: %d", val)
+		if err != nil {
+			log.Error(err.Error())
+			h.eventer.Publish("tfpPanic", "detected by fake reader")
+		}
+	})
 
 	log.Infof("Robot %s started successfully", h.state.Name)
 }

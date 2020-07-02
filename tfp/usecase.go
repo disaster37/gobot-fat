@@ -14,7 +14,7 @@ type Usecase interface {
 	UVC2(ctx context.Context, status bool) error
 	PondBubble(ctx context.Context, status bool) error
 	FilterBubble(ctx context.Context, status bool) error
-	GetState(ctx context.Context) (*models.TFPState, error)
+	GetState(ctx context.Context) (models.TFPState, error)
 	StartRobot(ctx context.Context) error
 	StopRobot(ctx context.Context) error
 	UVC1BlisterNew(ctx context.Context) error

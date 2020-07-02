@@ -4,11 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"time"
 
 	"github.com/disaster37/gobot-fat/helper"
 	"github.com/disaster37/gobot-fat/models"
-	"github.com/disaster37/gobot-fat/tfp_config"
+	tfpconfig "github.com/disaster37/gobot-fat/tfp_config"
 	elastic "github.com/elastic/go-elasticsearch/v7"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -52,7 +51,7 @@ func (h *elasticsearchTFPConfigRepository) Get(ctx context.Context) (*models.TFP
 
 	log.Debugf("Config: %+v", config)
 
-	if config.CreatedAt == time.Time{} {
+	if config.CreatedAt.IsZero() {
 		return nil, nil
 	}
 
@@ -66,7 +65,6 @@ func (h *elasticsearchTFPConfigRepository) Update(ctx context.Context, config *m
 		return errors.New("Config can't be null")
 	}
 	log.Debugf("Config: %s", config)
-
 
 	data, err := json.Marshal(config)
 	if err != nil {

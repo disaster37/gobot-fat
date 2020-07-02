@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/disaster37/gobot-fat/models"
+	tfpstate "github.com/disaster37/gobot-fat/tfp_state"
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
