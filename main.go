@@ -20,8 +20,8 @@ import (
 	loginUsecase "github.com/disaster37/gobot-fat/login/usecase"
 	dfpMiddleware "github.com/disaster37/gobot-fat/middleware"
 	"github.com/disaster37/gobot-fat/models"
+	tfpBoard "github.com/disaster37/gobot-fat/tfp/board"
 	tfpHttpDeliver "github.com/disaster37/gobot-fat/tfp/delivery/http"
-	tfpGobot "github.com/disaster37/gobot-fat/tfp/gobot"
 	tfpUsecase "github.com/disaster37/gobot-fat/tfp/usecase"
 	tfpConfigHttpDeliver "github.com/disaster37/gobot-fat/tfp_config/delivery/http"
 	tfpConfigRepo "github.com/disaster37/gobot-fat/tfp_config/repository"
@@ -177,29 +177,21 @@ func main() {
 	}
 	log.Info("Get tfpState successfully")
 
-	// TFP gobot
-	//NewTFP(configHandler *viper.Viper, configUsecase tfpconfig.Usecase, eventUsecase event.Usecase, stateUsecase tfpstate.Usecase, state *models.TFPState, eventer gobot.Eventer)
-	tfpG, err := tfpGobot.NewTFP(configHandler, tfpConfigU, eventU, tfpStateU, tfpState, eventer)
-	if err != nil {
-		log.Errorf("Failed to init TFP gobot: %s", err.Error())
-		panic("Failed to init TFP gobot")
-	}
-	//NewTFPUsecase(handler tfp.Gobot, config tfpconfig.Usecase)
-	tfpU := tfpUsecase.NewTFPUsecase(tfpG, tfpConfigU)
-	tfpHttpDeliver.NewTFPHandler(api, tfpU)
-	eventer.AddEvent("tfpPanic")
-	eventer.On("tfpPanic", func(data interface{}) {
-		log.Debugf("TFP panic error: %+v", data)
-
-		err := tfpG.Reconnect()
-		if err != nil {
-			log.Errorf("Error when reconnect tfp robot: %s", err.Error())
+	// TFP board
+	// Run it on goroutine to not block if offline
+	go func() {
+		for {
+			tfpB, err := tfpBoard.NewTFP(configHandler, tfpConfigU, eventU, tfpStateU, tfpState)
+			if err != nil {
+				log.Errorf("Failed to init TFP board: %s", err.Error())
+				time.Sleep(10 * time.Second)
+			} else {
+				tfpU := tfpUsecase.NewTFPUsecase(tfpB, tfpConfigU)
+				tfpHttpDeliver.NewTFPHandler(api, tfpU)
+				break
+			}
 		}
-
-		log.Info("Robot TFP reconnecting")
-		eventer.Publish("stateChange", "reconnectTFP")
-	})
-	tfpU.StartRobot(ctx)
+	}()
 
 	/*****************************
 	 * INIT DFP

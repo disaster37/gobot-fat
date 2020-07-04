@@ -12,14 +12,14 @@ import (
 )
 
 type tfpUsecase struct {
-	tfp            tfp.Gobot
+	tfp            tfp.Board
 	config         tfpconfig.Usecase
 	state          tfpstate.Usecase
 	contextTimeout time.Duration
 }
 
 // NewTFPUsecase will create new tfpUsecase object of tfp.Usecase interface
-func NewTFPUsecase(handler tfp.Gobot, config tfpconfig.Usecase) tfp.Usecase {
+func NewTFPUsecase(handler tfp.Board, config tfpconfig.Usecase) tfp.Usecase {
 	return &tfpUsecase{
 		tfp:    handler,
 		config: config,
@@ -167,18 +167,6 @@ func (h *tfpUsecase) FilterBubble(c context.Context, status bool) error {
 // GetState return the current state of TFP
 func (h *tfpUsecase) GetState(c context.Context) (models.TFPState, error) {
 	return h.tfp.State(), nil
-}
-
-// StartRobot start the rebot that manage the TFP
-func (h *tfpUsecase) StartRobot(c context.Context) error {
-	h.tfp.Start()
-
-	return nil
-}
-
-// StopRobot stop the robot that manage the TFP
-func (h *tfpUsecase) StopRobot(c context.Context) error {
-	return h.tfp.Stop()
 }
 
 // UVC1BlisterNew update the date when blister changed
