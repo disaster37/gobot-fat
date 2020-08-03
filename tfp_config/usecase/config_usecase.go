@@ -43,9 +43,10 @@ func (h *configUsecase) Create(c context.Context, config *models.TFPConfig) erro
 
 	err = h.configRepoElasticsearch.Create(ctx, config)
 	if err != nil {
-		log.Errorf("Create TFPconfig on Elasticsearch backend failed")
+		log.Errorf("Create TFPconfig on Elasticsearch backend failed: %s", err.Error())
+	} else {
+		log.Infof("Create TFPconfig on Elasticsearch backend successfully")
 	}
-	log.Infof("Create TFPconfig on Elasticsearch backend successfully")
 
 	return nil
 }
@@ -70,9 +71,10 @@ func (h *configUsecase) Update(c context.Context, config *models.TFPConfig) erro
 
 	err = h.configRepoElasticsearch.Update(ctx, config)
 	if err != nil {
-		log.Errorf("Update TFPconfig on Elasticsearch backend failed")
+		log.Errorf("Update TFPconfig on Elasticsearch backend failed: %s", err.Error())
+	} else {
+		log.Infof("Update TFPconfig on Elasticsearch backend successfully")
 	}
-	log.Infof("Update TFPconfig on Elasticsearch backend successfully")
 
 	return nil
 }

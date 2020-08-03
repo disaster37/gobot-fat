@@ -19,10 +19,12 @@ type tfpUsecase struct {
 }
 
 // NewTFPUsecase will create new tfpUsecase object of tfp.Usecase interface
-func NewTFPUsecase(handler tfp.Board, config tfpconfig.Usecase) tfp.Usecase {
+func NewTFPUsecase(handler tfp.Board, config tfpconfig.Usecase, state tfpstate.Usecase, timeout time.Duration) tfp.Usecase {
 	return &tfpUsecase{
-		tfp:    handler,
-		config: config,
+		tfp:            handler,
+		config:         config,
+		contextTimeout: timeout,
+		state:          state,
 	}
 }
 
@@ -75,7 +77,7 @@ func (h *tfpUsecase) WaterfallPump(c context.Context, status bool) error {
 }
 
 func (h *tfpUsecase) UVC1(c context.Context, status bool) error {
-	ctx, cancel := context.WithTimeout(c, h.contextTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 
 	if status {

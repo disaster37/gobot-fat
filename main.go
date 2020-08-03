@@ -20,12 +20,16 @@ import (
 	loginUsecase "github.com/disaster37/gobot-fat/login/usecase"
 	dfpMiddleware "github.com/disaster37/gobot-fat/middleware"
 	"github.com/disaster37/gobot-fat/models"
+	tankBoard "github.com/disaster37/gobot-fat/tank/board"
+	tankHttpDeliver "github.com/disaster37/gobot-fat/tank/delivery/http"
+	tankUsecase "github.com/disaster37/gobot-fat/tank/usecase"
 	tfpBoard "github.com/disaster37/gobot-fat/tfp/board"
 	tfpHttpDeliver "github.com/disaster37/gobot-fat/tfp/delivery/http"
 	tfpUsecase "github.com/disaster37/gobot-fat/tfp/usecase"
 	tfpConfigHttpDeliver "github.com/disaster37/gobot-fat/tfp_config/delivery/http"
 	tfpConfigRepo "github.com/disaster37/gobot-fat/tfp_config/repository"
 	tfpConfigUsecase "github.com/disaster37/gobot-fat/tfp_config/usecase"
+	tfpStateHttpDeliver "github.com/disaster37/gobot-fat/tfp_state/delivery/http"
 	tfpStateRepo "github.com/disaster37/gobot-fat/tfp_state/repository"
 	tfpStateUsecase "github.com/disaster37/gobot-fat/tfp_state/usecase"
 
@@ -113,14 +117,13 @@ func main() {
 	loginU := loginUsecase.NewLoginUsecase(configHandler)
 	ctx := context.Background()
 	loginHttpDeliver.NewLoginHandler(e, loginU)
-	eventer.AddEvent("stateChange")
 
 	/***********************
 	 * INIT TFP
 	 */
 	//TFP config
 	tfpConfigRepoSQL := tfpConfigRepo.NewSQLTFPConfigRepository(db)
-	tfpConfigRepoES := tfpConfigRepo.NewElasticsearchTFPConfigRepository(es, "dfp-tfpconfig-alias")
+	tfpConfigRepoES := tfpConfigRepo.NewElasticsearchTFPConfigRepository(es, configHandler.GetString("elasticsearch.index.tfp_config"))
 	tfpConfigU := tfpConfigUsecase.NewConfigUsecase(tfpConfigRepoES, tfpConfigRepoSQL, timeoutContext)
 	tfpConfig := &models.TFPConfig{
 		UVC1BlisterMaxTime:  6000,
@@ -129,6 +132,7 @@ func main() {
 		IsWaterfallAuto:     false,
 		StartTimeWaterfall:  "10:00",
 		StopTimeWaterfall:   "20:00",
+		Mode:                "none",
 	}
 	err = tfpConfigU.Init(ctx, tfpConfig)
 	if err != nil {
@@ -145,25 +149,26 @@ func main() {
 
 	// TFP state
 	tfpStateRepoSQL := tfpStateRepo.NewSQLTFPStateRepository(db)
-	tfpStateRepoES := tfpStateRepo.NewElasticsearchTFPStateRepository(es, "dfp-tfpstate-alias")
+	tfpStateRepoES := tfpStateRepo.NewElasticsearchTFPStateRepository(es, configHandler.GetString("elasticsearch.index.tfp_state"))
 	tfpStateU := tfpStateUsecase.NewStateUsecase(tfpStateRepoES, tfpStateRepoSQL, timeoutContext)
 	tfpState := &models.TFPState{
-		PondPumpRunning:      true,
-		UVC1Running:          true,
-		UVC2Running:          true,
-		PondBubbleRunning:    true,
-		FilterBubbleRunning:  true,
-		WaterfallPumpRunning: false,
-		IsDisableSecurity:    false,
-		IsSecurity:           false,
-		IsEmergencyStopped:   false,
-		OzoneBlisterNbHour:   0,
-		UVC1BlisterNbHour:    0,
-		UVC2BlisterNbHour:    0,
-		OzoneBlisterTime:     time.Now(),
-		UVC1BlisterTime:      time.Now(),
-		UVC2BlisterTime:      time.Now(),
-		Name:                 configHandler.GetString("tfp.name"),
+		PondPumpRunning:         true,
+		UVC1Running:             true,
+		UVC2Running:             true,
+		PondBubbleRunning:       true,
+		FilterBubbleRunning:     true,
+		WaterfallPumpRunning:    false,
+		IsDisableSecurity:       false,
+		IsSecurity:              false,
+		IsEmergencyStopped:      false,
+		OzoneBlisterNbHour:      0,
+		UVC1BlisterNbHour:       0,
+		UVC2BlisterNbHour:       0,
+		OzoneBlisterTime:        time.Now(),
+		UVC1BlisterTime:         time.Now(),
+		UVC2BlisterTime:         time.Now(),
+		AcknoledgeWaterfallAuto: false,
+		Name:                    configHandler.GetString("tfp.name"),
 	}
 	err = tfpStateU.Init(ctx, tfpState)
 	if err != nil {
@@ -176,6 +181,7 @@ func main() {
 		panic("Failed to retrive tfpState from usecase")
 	}
 	log.Info("Get tfpState successfully")
+	tfpStateHttpDeliver.NewTFPStateHandler(api, tfpStateU)
 
 	// TFP board
 	// Run it on goroutine to not block if offline
@@ -186,8 +192,27 @@ func main() {
 				log.Errorf("Failed to init TFP board: %s", err.Error())
 				time.Sleep(10 * time.Second)
 			} else {
-				tfpU := tfpUsecase.NewTFPUsecase(tfpB, tfpConfigU)
+				tfpU := tfpUsecase.NewTFPUsecase(tfpB, tfpConfigU, tfpStateU, timeoutContext)
 				tfpHttpDeliver.NewTFPHandler(api, tfpU)
+				break
+			}
+		}
+	}()
+
+	/***********************
+	 * INIT Tank
+	 */
+	// Tank1 board
+	// Run it on goroutine to not block if offline
+	go func() {
+		for {
+			tank1B, err := tankBoard.NewTank(configHandler, eventU)
+			if err != nil {
+				log.Errorf("Failed to init Tank1 board: %s", err.Error())
+				time.Sleep(10 * time.Second)
+			} else {
+				tank1U := tankUsecase.NewTankUsecase(tank1B, timeoutContext)
+				tankHttpDeliver.NewTankHandler(api, tank1U)
 				break
 			}
 		}

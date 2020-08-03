@@ -43,9 +43,10 @@ func (h *stateUsecase) Create(c context.Context, state *models.TFPState) error {
 
 	err = h.stateRepoElasticsearch.Create(ctx, state)
 	if err != nil {
-		log.Errorf("Create TFPState on Elasticsearch backend failed")
+		log.Errorf("Create TFPState on Elasticsearch backend failed: %s", err.Error())
+	} else {
+		log.Infof("Create TFPState on Elasticsearch backend successfully")
 	}
-	log.Infof("Create TFPState on Elasticsearch backend successfully")
 
 	return nil
 }
@@ -70,9 +71,10 @@ func (h *stateUsecase) Update(c context.Context, state *models.TFPState) error {
 
 	err = h.stateRepoElasticsearch.Update(ctx, state)
 	if err != nil {
-		log.Errorf("Update TFPState on Elasticsearch backend failed")
+		log.Errorf("Update TFPState on Elasticsearch backend failed: %s", err.Error())
+	} else {
+		log.Infof("Update TFPState on Elasticsearch backend successfully")
 	}
-	log.Infof("Update TFPState on Elasticsearch backend successfully")
 
 	return nil
 }

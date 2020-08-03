@@ -200,6 +200,7 @@ func (h TFPHandler) StopWaterfallPump(c echo.Context) error {
 // StartUVC1 start UVC1
 func (h TFPHandler) StartUVC1(c echo.Context) error {
 	ctx := c.Request().Context()
+
 	if ctx == nil {
 		ctx = context.Background()
 	}

@@ -65,6 +65,7 @@ func (h *TFPHandler) StartPondPump(ctx context.Context) error {
 // StartUVC1 permit to run UVC1
 // The UVC start only if no emergency and no security
 func (h *TFPHandler) StartUVC1(ctx context.Context) error {
+
 	if h.canStartRelay() && h.state.PondPumpRunning {
 		log.Debug("Start UVC1")
 		err := h.relayUVC1.On()
@@ -76,6 +77,7 @@ func (h *TFPHandler) StartUVC1(ctx context.Context) error {
 
 		// Save state only if state change
 		if !h.state.UVC1Running {
+			h.state.UVC1Running = true
 			err = h.stateUsecase.Update(ctx, h.state)
 			if err != nil {
 				return err
@@ -225,7 +227,7 @@ func (h *TFPHandler) StopPondPump(ctx context.Context) error {
 
 	// Save state only if state change
 	if h.state.PondPumpRunning {
-		h.state.PondBubbleRunning = false
+		h.state.PondPumpRunning = false
 		err = h.stateUsecase.Update(ctx, h.state)
 		if err != nil {
 			return err

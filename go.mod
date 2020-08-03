@@ -6,7 +6,7 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.4.1
 	github.com/creack/goselect v0.1.1 // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
-	github.com/disaster37/go-arest v0.0.2-0.20200704134228-a2e20099771b
+	github.com/disaster37/go-arest v0.0.2-0.20200705070542-e6bcd85bae54
 
 	github.com/elastic/go-elasticsearch/v7 v7.6.0
 	github.com/gofrs/uuid v3.3.0+incompatible // indirect
