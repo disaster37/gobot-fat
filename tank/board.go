@@ -1,8 +1,12 @@
 package tank
 
-import "context"
+import (
+	"context"
+
+	"github.com/disaster37/gobot-fat/models"
+)
 
 // Board is the interface to handle I/O
 type Board interface {
-	Level(ctx context.Context) (level int, err error)
+	GetData(ctx context.Context) (data *models.Tank, err error)
 }

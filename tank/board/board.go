@@ -2,6 +2,7 @@ package tankboard
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/disaster37/go-arest"
@@ -18,20 +19,31 @@ type TankHandler struct {
 	board         arest.Arest
 	eventUsecase  event.Usecase
 	configHandler *viper.Viper
-	level         int
+	data          *models.Tank
+	name          string
+	depth         int
+	sensorHeight  int
+	literPerCm    int
+	isOnline      bool
 }
 
 // NewTank create handler to manage Tank
 func NewTank(configHandler *viper.Viper, eventUsecase event.Usecase) (tankHandler tank.Board, err error) {
 
 	//Create client
-	c := arest.NewClient(configHandler.GetString("tank1.url"))
+	c := arest.NewClient(configHandler.GetString("url"))
 
 	// Create struct
 	tankHandler = &TankHandler{
 		board:         c,
 		eventUsecase:  eventUsecase,
 		configHandler: configHandler,
+		name:          configHandler.GetString("name"),
+		depth:         configHandler.GetInt("depth"),
+		sensorHeight:  configHandler.GetInt("sensorHeight"),
+		literPerCm:    configHandler.GetInt("literPerCm"),
+		data:          &models.Tank{},
+		isOnline:      false,
 	}
 
 	// Handle reboot
@@ -41,12 +53,14 @@ func NewTank(configHandler *viper.Viper, eventUsecase event.Usecase) (tankHandle
 	helper.Every(60*time.Second, handleReadDistance(tankHandler.(*TankHandler)))
 
 	// Read current level
-	err = tankHandler.(*TankHandler).readLevel()
+	err = tankHandler.(*TankHandler).read()
 	if err != nil {
 		return nil, err
 	}
 
-	log.Infof("Board %s initialized successfully", configHandler.GetString("tank1.name"))
+	log.Infof("Board %s initialized successfully", configHandler.GetString("name"))
+
+	tankHandler.(*TankHandler).isOnline = true
 
 	return tankHandler, nil
 
@@ -59,23 +73,26 @@ func handleReboot(handler *TankHandler) func() {
 
 		data, err := handler.board.ReadValue("isRebooted")
 		if err != nil {
-			log.Errorf("Error when read value isRebooted: %s", err.Error())
+			log.Errorf("Error when read value isRebooted on board %s: %s", handler.name, err.Error())
+			handler.isOnline = false
 			return
 		}
 
 		if data.(bool) {
-			log.Info("Board tank1 has been rebooted")
+			log.Infof("Board %s has been rebooted", handler.name)
 
 			// Acknolege reboot
 			_, err := handler.board.CallFunction("acknoledgeRebooted", "")
 			if err != nil {
-				log.Errorf("Error when aknoledge reboot: %s", err.Error())
+				log.Errorf("Error when aknoledge reboot on board %s: %s", handler.name, err.Error())
 			}
 
 			// Publish rebooted event
-			handler.sendEvent("reboot_tank1", "board", 0)
+			handler.sendEvent(fmt.Sprintf("reboot_%s", handler.name), "board", 0)
 
-			log.Info("Board tank 1 successfull rebooted")
+			handler.isOnline = true
+
+			log.Infof("Board %s successfull rebooted", handler.name)
 		}
 	}
 }
@@ -84,9 +101,9 @@ func handleReboot(handler *TankHandler) func() {
 func handleReadDistance(handler *TankHandler) func() {
 	return func() {
 
-		err := handler.readLevel()
+		err := handler.read()
 		if err != nil {
-			log.Errorf("Error when read value distance: %s", err.Error())
+			log.Errorf("Error when read value distance on board %s: %s", handler.name, err.Error())
 			return
 		}
 
@@ -99,8 +116,8 @@ func (h *TankHandler) sendEvent(eventType string, eventKind string, distance int
 	var event *models.Event
 	if eventType == "read_distance" {
 		event = &models.Event{
-			SourceID:   h.configHandler.GetString("tank1.id"),
-			SourceName: h.configHandler.GetString("tank1.name"),
+			SourceID:   h.configHandler.GetString("id"),
+			SourceName: h.configHandler.GetString("name"),
 			Timestamp:  time.Now(),
 			EventType:  eventType,
 			EventKind:  eventKind,
@@ -108,8 +125,8 @@ func (h *TankHandler) sendEvent(eventType string, eventKind string, distance int
 		}
 	} else {
 		event = &models.Event{
-			SourceID:   h.configHandler.GetString("tank1.id"),
-			SourceName: h.configHandler.GetString("tank1.name"),
+			SourceID:   h.configHandler.GetString("id"),
+			SourceName: h.configHandler.GetString("name"),
 			Timestamp:  time.Now(),
 			EventType:  eventType,
 			EventKind:  eventKind,
@@ -122,7 +139,7 @@ func (h *TankHandler) sendEvent(eventType string, eventKind string, distance int
 	}
 }
 
-func (h *TankHandler) readLevel() error {
+func (h *TankHandler) read() error {
 	data, err := h.board.ReadValue("distance")
 	if err != nil {
 		return err
@@ -130,13 +147,20 @@ func (h *TankHandler) readLevel() error {
 
 	distance := int(data.(float64))
 
-	log.Debugf("Distance on tank1: %d", distance)
-	h.level = 200 - (distance - 10)
+	log.Debugf("Distance on board %s: %d", h.name, distance)
+	h.data.Level = h.depth - (distance - h.sensorHeight)
+	h.data.Volume = h.data.Level * h.literPerCm
+	h.data.Percent = float64(h.data.Level/h.depth) * 100
 
 	return nil
 }
 
-// Level permit to read current level on tank
-func (h *TankHandler) Level(ctx context.Context) (distance int, err error) {
-	return h.level, nil
+// GetData permit to read current level on tank
+func (h *TankHandler) GetData(ctx context.Context) (data *models.Tank, err error) {
+	return h.data, nil
+}
+
+// IsOnline permit to know is board is online
+func (h *TankHandler) IsOnline(ctx context.Context) bool {
+	return h.isOnline
 }

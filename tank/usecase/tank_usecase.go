@@ -4,35 +4,48 @@ import (
 	"context"
 	"time"
 
+	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/tank"
+	log "github.com/sirupsen/logrus"
 )
 
 type tankUsecase struct {
-	tank           tank.Board
+	tanks          map[string]tank.Board
 	contextTimeout time.Duration
 }
 
 // NewTankUsecase will create new tankUsecase object of tank.Usecase interface
-func NewTankUsecase(handler tank.Board, timeout time.Duration) tank.Usecase {
+func NewTankUsecase(handlers map[string]tank.Board, timeout time.Duration) tank.Usecase {
 	return &tankUsecase{
-		tank:           handler,
+		tanks:          handlers,
 		contextTimeout: timeout,
 	}
 }
 
-// Level return the current watter level on tank
-func (h *tankUsecase) Level(ctx context.Context) (level int, err error) {
-	return h.tank.Level(ctx)
-}
+// Tanks return the current watter level on tank
+func (h *tankUsecase) Tanks(ctx context.Context) (values map[string]*models.Tank, err error) {
 
-// Volume return the current watter volume in liter on tank
-func (h *tankUsecase) Volume(ctx context.Context) (volume int, err error) {
+	for name, tank := range h.tanks {
+		data, err := tank.GetData(ctx)
+		if err != nil {
+			return values, err
+		}
 
-	level, err := h.tank.Level(ctx)
-	if err != nil {
-		return 0, err
+		values[name] = data
 	}
 
-	// 50 liter per cm
-	return 50 * level, nil
+	return values, err
+}
+
+// Tanks return the current watter level on tank
+func (h *tankUsecase) Tank(ctx context.Context, name string) (value *models.Tank, err error) {
+
+	log.Debugf("Name: %s", name)
+
+	if tank, ok := h.tanks[name]; ok {
+		return tank.GetData(ctx)
+
+	}
+
+	return nil, nil
 }
