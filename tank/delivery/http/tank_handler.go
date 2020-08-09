@@ -20,48 +20,69 @@ func NewTankHandler(e *echo.Group, us tank.Usecase) {
 	handler := &TankHandler{
 		dUsecase: us,
 	}
-	e.GET("/tanks", handler.GetState)
+	e.GET("/tanks", handler.GetTanksValues)
+	e.GET("/tanks/:id", handler.GetTankValues)
 
 }
 
-// GetState return the current tank state
-func (h *TankHandler) GetState(c echo.Context) error {
+// GetTanksValues return the current tanks state
+func (h *TankHandler) GetTanksValues(c echo.Context) error {
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
 
-	level, err := h.dUsecase.Level(ctx)
+	values, err := h.dUsecase.Tanks(ctx)
 	if err != nil {
-		log.Errorf("Error when get Tank level: %s", err.Error())
+		log.Errorf("Error when get Tanks values: %s", err.Error())
 		return c.JSON(http.StatusInternalServerError, models.NewJSONAPIerror(
 			"500",
-			"Error when get Tank level",
-			err.Error(),
-			nil,
-		))
-	}
-	volume, err := h.dUsecase.Volume(ctx)
-	if err != nil {
-		log.Errorf("Error when get Tank volume: %s", err.Error())
-		return c.JSON(http.StatusInternalServerError, models.NewJSONAPIerror(
-			"500",
-			"Error when get Tank level",
+			"Error when get Tanks values",
 			err.Error(),
 			nil,
 		))
 	}
 
-	state := map[string]int{
-		"level":  level,
-		"volume": volume,
+	data := make([]models.JSONAPIData, 0, 1)
+	for name, value := range values {
+		data = append(data, models.JSONAPIData{
+			Type:       "tanks",
+			Id:         name,
+			Attributes: value,
+		})
+	}
+
+	return c.JSON(http.StatusOK, models.JSONAPI{
+		Data: data,
+	})
+}
+
+// GetTankValues return the tank value
+func (h *TankHandler) GetTankValues(c echo.Context) error {
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	name := c.Param("id")
+	log.Debugf("Name: %s", name)
+
+	value, err := h.dUsecase.Tank(ctx, name)
+	if err != nil {
+		log.Errorf("Error when get Tank values: %s", err.Error())
+		return c.JSON(http.StatusInternalServerError, models.NewJSONAPIerror(
+			"500",
+			"Error when get Tanks values",
+			err.Error(),
+			nil,
+		))
 	}
 
 	return c.JSON(http.StatusOK, models.JSONAPI{
 		Data: models.JSONAPIData{
 			Type:       "tanks",
-			Id:         "state",
-			Attributes: state,
+			Id:         name,
+			Attributes: value,
 		},
 	})
 }

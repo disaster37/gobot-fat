@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"time"
 
 	"github.com/disaster37/gobot-fat/dfp"
 	"github.com/disaster37/gobot-fat/models"
@@ -9,153 +10,78 @@ import (
 )
 
 type dfpUsecase struct {
-	dfp   dfp.Gobot
-	state dfp.Repository
+	dfp            dfp.Board
+	contextTimeout time.Duration
 }
 
 // NewDFPUsecase will create new dfpUsecase object of dfp.Usecase interface
-func NewDFPUsecase(handler dfp.Gobot, repo dfp.Repository) dfp.Usecase {
+func NewDFPUsecase(handler dfp.Board, timeout time.Duration) dfp.Usecase {
 	return &dfpUsecase{
-		dfp:   handler,
-		state: repo,
+		dfp:            handler,
+		contextTimeout: timeout,
 	}
 }
 
 // Wash will force washing cycle if possible
-// Washing is started only if can wash
-func (h *dfpUsecase) Wash(ctx context.Context) error {
+func (h *dfpUsecase) Wash(c context.Context) error {
 	log.Debugf("Washing is required")
-	err := h.state.SetShouldWash()
-	if err != nil {
-		return err
-	}
-	return nil
+	ctx, cancel := context.WithTimeout(c, h.contextTimeout)
+	defer cancel()
+
+	return h.dfp.ForceWashing(ctx)
+
 }
 
-// Stop will set / unset stop mode
-func (h *dfpUsecase) Stop(ctx context.Context, status bool) error {
-	var err error
-	if status {
-		// Set stop
-		log.Debugf("Set stop is required by API")
-		err = h.state.SetStop()
-	} else {
-		// Unset stop
-		log.Debugf("Unset stop is required by API")
-		err = h.state.UnsetStop()
-	}
+// Stop will set stop mode
+func (h *dfpUsecase) Stop(c context.Context) error {
+	log.Debugf("Stop is required")
+	ctx, cancel := context.WithTimeout(c, h.contextTimeout)
+	defer cancel()
 
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return h.dfp.StopDFP(ctx)
 }
 
-// EmergencyStop will set / unset emergency stop mode
-func (h *dfpUsecase) EmergencyStop(ctx context.Context, status bool) error {
-	var err error
-	if status {
-		// Set emergency stop
-		log.Debugf("Set emergency stop is required by API")
-		err = h.state.SetEmergencyStop()
+// Auto witl set auto mode
+func (h *dfpUsecase) Auto(c context.Context) error {
+	log.Debugf("Auto is required")
+	ctx, cancel := context.WithTimeout(c, h.contextTimeout)
+	defer cancel()
 
-	} else {
-		// Unset emergency stop
-		log.Debugf("Unset emergency stop is required by API")
-		err = h.state.UnsetEmergencyStop()
-	}
-
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return h.dfp.Auto(ctx)
 }
 
-// Auto witl set / unset auto mode
-func (h *dfpUsecase) Auto(ctx context.Context, status bool) error {
-	var err error
+// ManualDrum will start / stop the drum motor
+func (h *dfpUsecase) ManualDrum(c context.Context, status bool) error {
+	ctx, cancel := context.WithTimeout(c, h.contextTimeout)
+	defer cancel()
+
 	if status {
-		// Set auto mode
-		log.Debugf("Set auto is required by API")
-		err = h.state.SetAuto()
-	} else {
-		// Unset auto mode
-		log.Debugf("Unset auto is required by API")
-		err = h.state.UnsetAuto()
-	}
+		// Start drum
+		log.Debugf("Start drum")
+		return h.dfp.StartManualDrum(ctx)
 
-	if err != nil {
-		return err
 	}
+	// Stop drum
+	log.Debugf("Stop drum")
+	return h.dfp.StopManualDrum(ctx)
 
-	return nil
 }
 
-// ForceWashingDrum will start / stop the washing drum motor
-func (h *dfpUsecase) ForceWashingDrum(ctx context.Context, status bool) error {
+// ManualPump will start / stop the pump
+func (h *dfpUsecase) ManualPump(c context.Context, status bool) error {
+	ctx, cancel := context.WithTimeout(c, h.contextTimeout)
+	defer cancel()
+
 	if status {
-		// Start washing drum
-		log.Debugf("Start washing drum by API")
-		h.dfp.StartBarrelMotor()
+		log.Debugf("Start pump")
+		return h.dfp.StartManualPump(ctx)
 
-	} else {
-		// Stop washing drum
-		log.Debugf("Stop washing drum by API")
-		h.dfp.StopBarrelMotor()
 	}
-
-	return nil
-}
-
-// ForceWashingPump will start / stop the washing pump
-func (h *dfpUsecase) ForceWashingPump(ctx context.Context, status bool) error {
-	if status {
-		log.Debugf("Start washing pump by API")
-		h.dfp.StartWashingPump()
-
-	} else {
-		log.Debugf("Stop washing pump by API")
-		h.dfp.StopWashingPump()
-	}
-
-	return nil
-}
-
-// DisableSecurity will set / unset the disable security mode
-func (h *dfpUsecase) DisableSecurity(ctx context.Context, status bool) error {
-	var err error
-	if status {
-		// Disable security
-		log.Debugf("Set disable security by API")
-		err = h.state.SetDisableSecurity()
-	} else {
-		// Enabled security
-		log.Debugf("Unset disable security by API")
-		err = h.state.UnsetDisableSecurity()
-	}
-
-	if err != nil {
-		return err
-	}
-
-	return nil
+	log.Debugf("Stop pump")
+	return h.dfp.StopManualPump(ctx)
 }
 
 // GetState return the current state of DFP
-func (h *dfpUsecase) GetState(ctx context.Context) (*models.DFPState, error) {
-	return h.state.State(), nil
-}
-
-// StartRobot start the rebot that manage the DFP
-func (h *dfpUsecase) StartRobot(ctx context.Context) error {
-	h.dfp.Start()
-
-	return nil
-}
-
-// StopRobot stop the robot that manage the DFP
-func (h *dfpUsecase) StopRobot(ctx context.Context) error {
-	return h.dfp.Stop()
+func (h *dfpUsecase) GetState(ctx context.Context) (models.DFPState, error) {
+	return h.dfp.State(), nil
 }

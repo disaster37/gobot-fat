@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/disaster37/go-arest"
+	"github.com/disaster37/go-arest/rest"
 	"github.com/disaster37/gobot-fat/event"
 	"github.com/disaster37/gobot-fat/helper"
 	"github.com/disaster37/gobot-fat/models"
@@ -20,6 +21,7 @@ type TankHandler struct {
 	eventUsecase  event.Usecase
 	configHandler *viper.Viper
 	data          *models.Tank
+	routines      []*time.Ticker
 	name          string
 	depth         int
 	sensorHeight  int
@@ -28,10 +30,10 @@ type TankHandler struct {
 }
 
 // NewTank create handler to manage Tank
-func NewTank(configHandler *viper.Viper, eventUsecase event.Usecase) (tankHandler tank.Board, err error) {
+func NewTank(configHandler *viper.Viper, eventUsecase event.Usecase) (tankHandler tank.Board) {
 
 	//Create client
-	c := arest.NewClient(configHandler.GetString("url"))
+	c := rest.NewClient(configHandler.GetString("url"))
 
 	// Create struct
 	tankHandler = &TankHandler{
@@ -44,25 +46,12 @@ func NewTank(configHandler *viper.Viper, eventUsecase event.Usecase) (tankHandle
 		literPerCm:    configHandler.GetInt("literPerCm"),
 		data:          &models.Tank{},
 		isOnline:      false,
-	}
-
-	// Handle reboot
-	helper.Every(10*time.Second, handleReboot(tankHandler.(*TankHandler)))
-
-	// Handle read distance
-	helper.Every(60*time.Second, handleReadDistance(tankHandler.(*TankHandler)))
-
-	// Read current level
-	err = tankHandler.(*TankHandler).read()
-	if err != nil {
-		return nil, err
+		routines:      make([]*time.Ticker, 0, 0),
 	}
 
 	log.Infof("Board %s initialized successfully", configHandler.GetString("name"))
 
-	tankHandler.(*TankHandler).isOnline = true
-
-	return tankHandler, nil
+	return tankHandler
 
 }
 
@@ -107,7 +96,7 @@ func handleReadDistance(handler *TankHandler) func() {
 			return
 		}
 
-		handler.sendEvent("read_distance", "sensor", handler.level)
+		handler.sendEvent("read_distance", "sensor", handler.data.Level)
 	}
 }
 
@@ -150,7 +139,7 @@ func (h *TankHandler) read() error {
 	log.Debugf("Distance on board %s: %d", h.name, distance)
 	h.data.Level = h.depth - (distance - h.sensorHeight)
 	h.data.Volume = h.data.Level * h.literPerCm
-	h.data.Percent = float64(h.data.Level/h.depth) * 100
+	h.data.Percent = float64(h.data.Level) / float64(h.depth) * 100
 
 	return nil
 }
@@ -161,6 +150,58 @@ func (h *TankHandler) GetData(ctx context.Context) (data *models.Tank, err error
 }
 
 // IsOnline permit to know is board is online
-func (h *TankHandler) IsOnline(ctx context.Context) bool {
+func (h *TankHandler) IsOnline() bool {
 	return h.isOnline
+}
+
+// Name permit to get the board name
+func (h *TankHandler) Name() string {
+	return h.name
+}
+
+// Start run the main function
+func (h *TankHandler) Start() (err error) {
+
+	// Read arbitrary value to check if board is online
+	_, err = h.board.ReadValue("isRebooted")
+	if err != nil {
+		return err
+	}
+
+	// Read current level
+	err = h.read()
+	if err != nil {
+		return err
+	}
+
+	// Handle reboot
+	h.routines = append(h.routines, helper.Every(10*time.Second, handleReboot(h)))
+
+	// Handle read distance
+	h.routines = append(h.routines, helper.Every(60*time.Second, handleReadDistance(h)))
+
+	h.isOnline = true
+
+	return nil
+}
+
+// Stop stop the functions handle by board
+func (h *TankHandler) Stop() (err error) {
+
+	for _, routine := range h.routines {
+		routine.Stop()
+	}
+
+	h.isOnline = false
+
+	return nil
+
+}
+
+// Board get board info as object
+func (h *TankHandler) Board() *models.Board {
+	return &models.Board{
+		Name:     h.name,
+		IsOnline: h.isOnline,
+	}
 }

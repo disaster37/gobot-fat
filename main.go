@@ -8,18 +8,23 @@ import (
 	"os"
 	"time"
 
-	dfpGobot "github.com/disaster37/gobot-fat/dfp/gobot"
-	dfpRepo "github.com/disaster37/gobot-fat/dfp/repository"
+	boardHttpDeliver "github.com/disaster37/gobot-fat/board/delivery/http"
+	boardUsecase "github.com/disaster37/gobot-fat/board/usecase"
+	dfpBoard "github.com/disaster37/gobot-fat/dfp/board"
+	dfpHttpDeliver "github.com/disaster37/gobot-fat/dfp/delivery/http"
 	dfpUsecase "github.com/disaster37/gobot-fat/dfp/usecase"
-	dfpConfigHttpDeliver "github.com/disaster37/gobot-fat/dfp_config/delivery/http"
 	dfpConfigRepo "github.com/disaster37/gobot-fat/dfp_config/repository"
 	dfpConfigUsecase "github.com/disaster37/gobot-fat/dfp_config/usecase"
+	dfpStateHttpDeliver "github.com/disaster37/gobot-fat/dfp_state/delivery/http"
+	dfpStateRepo "github.com/disaster37/gobot-fat/dfp_state/repository"
+	dfpStateUsecase "github.com/disaster37/gobot-fat/dfp_state/usecase"
 	eventRepo "github.com/disaster37/gobot-fat/event/repository"
 	eventUsecase "github.com/disaster37/gobot-fat/event/usecase"
 	loginHttpDeliver "github.com/disaster37/gobot-fat/login/delivery/http"
 	loginUsecase "github.com/disaster37/gobot-fat/login/usecase"
 	dfpMiddleware "github.com/disaster37/gobot-fat/middleware"
 	"github.com/disaster37/gobot-fat/models"
+	"github.com/disaster37/gobot-fat/tank"
 	tankBoard "github.com/disaster37/gobot-fat/tank/board"
 	tankHttpDeliver "github.com/disaster37/gobot-fat/tank/delivery/http"
 	tankUsecase "github.com/disaster37/gobot-fat/tank/usecase"
@@ -41,7 +46,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
-	"gobot.io/x/gobot"
 )
 
 func main() {
@@ -52,7 +56,7 @@ func main() {
 	formatter.ForceFormatting = true
 	log.SetFormatter(formatter)
 	log.SetOutput(os.Stdout)
-	log.SetLevel(log.DebugLevel)
+	log.SetLevel(log.InfoLevel)
 
 	// Read config file
 	configHandler := viper.New()
@@ -94,6 +98,7 @@ func main() {
 
 	// Create Schema
 	db.AutoMigrate(&models.DFPConfig{})
+	db.AutoMigrate(&models.DFPState{})
 	db.AutoMigrate(&models.TFPConfig{})
 	db.AutoMigrate(&models.TFPState{})
 
@@ -111,12 +116,17 @@ func main() {
 
 	// Init global resources
 	eventRepoES := eventRepo.NewElasticsearchEventRepository(es, "dfp-event-alias")
-	eventer := gobot.NewEventer()
 	timeoutContext := time.Duration(configHandler.GetInt("context.timeout")) * time.Second
 	eventU := eventUsecase.NewEventUsecase(eventRepoES, timeoutContext)
 	loginU := loginUsecase.NewLoginUsecase(configHandler)
 	ctx := context.Background()
 	loginHttpDeliver.NewLoginHandler(e, loginU)
+
+	/***********************
+	 * Board
+	 */
+	boardU := boardUsecase.NewBoardUsecase()
+	boardHttpDeliver.NewBoardHandler(api, boardU)
 
 	/***********************
 	 * INIT TFP
@@ -184,67 +194,28 @@ func main() {
 	tfpStateHttpDeliver.NewTFPStateHandler(api, tfpStateU)
 
 	// TFP board
+	tfpB := tfpBoard.NewTFP(configHandler.Sub("tfp"), tfpConfigU, eventU, tfpStateU, tfpState)
+	boardU.AddBoard(tfpB)
+	tfpU := tfpUsecase.NewTFPUsecase(tfpB, tfpConfigU, tfpStateU, timeoutContext)
+	tfpHttpDeliver.NewTFPHandler(api, tfpU)
 	// Run it on goroutine to not block if offline
-	go func() {
-		for {
-			tfpB, err := tfpBoard.NewTFP(configHandler, tfpConfigU, eventU, tfpStateU, tfpState)
-			if err != nil {
-				log.Errorf("Failed to init TFP board: %s", err.Error())
-				time.Sleep(10 * time.Second)
-			} else {
-				tfpU := tfpUsecase.NewTFPUsecase(tfpB, tfpConfigU, tfpStateU, timeoutContext)
-				tfpHttpDeliver.NewTFPHandler(api, tfpU)
-				break
-			}
-		}
-	}()
 
 	/***********************
-	 * INIT Tank
+	 * Tank 1
 	 */
 	// Tank1 board
-	// Run it on goroutine to not block if offline
-	go func() {
-		for {
-			tank1B, err := tankBoard.NewTank(configHandler, eventU)
-			if err != nil {
-				log.Errorf("Failed to init Tank1 board: %s", err.Error())
-				time.Sleep(10 * time.Second)
-			} else {
-				tank1U := tankUsecase.NewTankUsecase(tank1B, timeoutContext)
-				tankHttpDeliver.NewTankHandler(api, tank1U)
-				break
-			}
-		}
-	}()
+	tank1B := tankBoard.NewTank(configHandler.Sub("tank1"), eventU)
+	boardU.AddBoard(tank1B)
+	tankU := tankUsecase.NewTankUsecase([]tank.Board{tank1B}, timeoutContext)
+	tankHttpDeliver.NewTankHandler(api, tankU)
 
 	/*****************************
 	 * INIT DFP
 	 */
-	// DFP state
-	dfpState := &models.DFPState{
-		ID:                 "fat",
-		Name:               "fat",
-		IsWashed:           false,
-		ShouldWash:         false,
-		IsAuto:             true,
-		IsStopped:          false,
-		IsSecurity:         false,
-		IsEmergencyStopped: false,
-		IsDisableSecurity:  false,
-	}
 	// DFP config
 	dfpConfigRepoSQL := dfpConfigRepo.NewSQLDFPConfigRepository(db)
 	dfpConfigRepoES := dfpConfigRepo.NewElasticsearchDFPConfigRepository(es, "dfp-dfpconfig-alias")
 	dfpConfigU := dfpConfigUsecase.NewConfigUsecase(dfpConfigRepoES, dfpConfigRepoSQL, timeoutContext)
-	dfpR := dfpRepo.NewDFPRepository(dfpState, eventer, dfpConfigU)
-	dfpG, err := dfpGobot.NewDFP(configHandler, dfpConfigU, eventU, dfpR, eventer)
-	if err != nil {
-		log.Errorf("Failed to init DFP gobot: %s", err.Error())
-		panic("Failed to init DFP gobot")
-	}
-	//defer dfpG.Stop()
-	dfpU := dfpUsecase.NewDFPUsecase(dfpG, dfpR)
 	dfpConfig := &models.DFPConfig{
 		ForceWashingDuration:           180,
 		ForceWashingDurationWhenFrozen: 120,
@@ -270,15 +241,40 @@ func main() {
 	}
 	log.Info("Get dfpconfig successfully")
 
-	// DFP robot
-	dfpR.State().IsStopped = dfpConfig.Stopped
-	dfpR.State().IsEmergencyStopped = dfpConfig.EmergencyStopped
-	dfpR.State().IsAuto = dfpConfig.Auto
-	dfpR.State().IsDisableSecurity = dfpConfig.SecurityDisabled
-	dfpR.State().LastWashing = dfpConfig.LastWashing
-	dfpConfigHttpDeliver.NewDFPConfigHandler(api, dfpConfigU)
-	//dfpUsecase.StartRobot(ctx)
-	log.Debug(dfpU)
+	// DFP state
+	dfpStateRepoSQL := dfpStateRepo.NewSQLDFPStateRepository(db)
+	dfpStateRepoES := dfpStateRepo.NewElasticsearchDFPStateRepository(es, configHandler.GetString("elasticsearch.index.dfp_state"))
+	dfpStateU := dfpStateUsecase.NewStateUsecase(dfpStateRepoES, dfpStateRepoSQL, timeoutContext)
+	dfpState := &models.DFPState{
+		Name:               configHandler.GetString("dfp.name"),
+		IsWashed:           false,
+		IsRunning:          true,
+		IsSecurity:         false,
+		IsEmergencyStopped: false,
+		IsDisableSecurity:  false,
+	}
+	err = dfpStateU.Init(ctx, dfpState)
+	if err != nil {
+		log.Errorf("Error appear when init DFP state: %s", err.Error())
+		panic("Failed to init dfpState on SQL")
+	}
+	dfpState, err = dfpStateU.Get(ctx)
+	if err != nil {
+		log.Errorf("Failed to retrive dfpState from usecase")
+		panic("Failed to retrive dfpState from usecase")
+	}
+	log.Info("Get dfpState successfully")
+	dfpStateHttpDeliver.NewDFPStateHandler(api, dfpStateU)
+
+	// DFP board
+	dfpB := dfpBoard.NewDFP(configHandler.Sub("dfp"), dfpConfigU, eventU, dfpStateU, dfpState)
+	boardU.AddBoard(dfpB)
+	dfpU := dfpUsecase.NewDFPUsecase(dfpB, timeoutContext)
+	dfpHttpDeliver.NewDFPHandler(api, dfpU)
+
+	// Starts boards
+	defer boardU.Stops()
+	boardU.Starts()
 
 	// Run web server
 	e.Start(configHandler.GetString("server.address"))

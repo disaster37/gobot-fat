@@ -3,6 +3,7 @@ package tfp
 import (
 	"context"
 
+	"github.com/disaster37/gobot-fat/board"
 	"github.com/disaster37/gobot-fat/models"
 )
 
@@ -22,4 +23,5 @@ type Board interface {
 	StopFilterBubble(ctx context.Context) error
 	StopRelais(ctx context.Context) error
 	State() models.TFPState
+	board.Board
 }

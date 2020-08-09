@@ -10,12 +10,12 @@ import (
 )
 
 type tankUsecase struct {
-	tanks          map[string]tank.Board
+	tanks          []tank.Board
 	contextTimeout time.Duration
 }
 
 // NewTankUsecase will create new tankUsecase object of tank.Usecase interface
-func NewTankUsecase(handlers map[string]tank.Board, timeout time.Duration) tank.Usecase {
+func NewTankUsecase(handlers []tank.Board, timeout time.Duration) tank.Usecase {
 	return &tankUsecase{
 		tanks:          handlers,
 		contextTimeout: timeout,
@@ -25,13 +25,15 @@ func NewTankUsecase(handlers map[string]tank.Board, timeout time.Duration) tank.
 // Tanks return the current watter level on tank
 func (h *tankUsecase) Tanks(ctx context.Context) (values map[string]*models.Tank, err error) {
 
-	for name, tank := range h.tanks {
+	values = make(map[string]*models.Tank)
+
+	for _, tank := range h.tanks {
 		data, err := tank.GetData(ctx)
 		if err != nil {
 			return values, err
 		}
 
-		values[name] = data
+		values[tank.Name()] = data
 	}
 
 	return values, err
@@ -42,9 +44,10 @@ func (h *tankUsecase) Tank(ctx context.Context, name string) (value *models.Tank
 
 	log.Debugf("Name: %s", name)
 
-	if tank, ok := h.tanks[name]; ok {
-		return tank.GetData(ctx)
-
+	for _, tank := range h.tanks {
+		if tank.Name() == name {
+			return tank.GetData(ctx)
+		}
 	}
 
 	return nil, nil

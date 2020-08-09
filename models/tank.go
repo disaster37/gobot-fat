@@ -3,11 +3,11 @@ package models
 // Tank store values measured per distance sensor
 type Tank struct {
 	// The current level of water in cm
-	Level int
+	Level int `json:"level"`
 
 	// The current volume of water in liter
-	Volume int
+	Volume int `json:"volume"`
 
 	// The ratio of water
-	Percent float64
+	Percent float64 `json:"percent"`
 }

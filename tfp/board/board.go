@@ -6,6 +6,7 @@ import (
 
 	"github.com/disaster37/go-arest"
 	"github.com/disaster37/go-arest/device/gpio/relay"
+	"github.com/disaster37/go-arest/rest"
 	"github.com/disaster37/gobot-fat/event"
 	"github.com/disaster37/gobot-fat/helper"
 	"github.com/disaster37/gobot-fat/models"
@@ -30,119 +31,33 @@ type TFPHandler struct {
 	relayUVC1          relay.Relay
 	relayUVC2          relay.Relay
 	configHandler      *viper.Viper
+	isOnline           bool
+	routines           []*time.Ticker
 }
 
 // NewTFP create handler to manage FAT
-func NewTFP(configHandler *viper.Viper, configUsecase tfpconfig.Usecase, eventUsecase event.Usecase, stateUsecase tfpstate.Usecase, state *models.TFPState) (tfpHandler tfp.Board, err error) {
+func NewTFP(configHandler *viper.Viper, configUsecase tfpconfig.Usecase, eventUsecase event.Usecase, stateUsecase tfpstate.Usecase, state *models.TFPState) (tfpHandler tfp.Board) {
 
 	//Create client
-	c := arest.NewClient(configHandler.GetString("tfp.url"))
-
-	// Initialise i/o
-	outputNO := relay.NewOutput()
-	outputNO.SetOutputNO()
-	outputNC := relay.NewOutput()
-	outputNC.SetOutputNC()
-	signalHigh := arest.NewLevel()
-	signalHigh.SetLevelHigh()
-
-	relayState := relay.NewState()
-	if state.PondPumpRunning {
-		relayState.SetStateOn()
-	} else {
-		relayState.SetStateOff()
-	}
-	relayPompPond, err := relay.NewRelay(c, configHandler.GetInt("tfp.pin.relay.pond_pomp"), signalHigh, outputNC, relayState)
-	if err != nil {
-		return nil, err
-	}
-
-	relayState = relay.NewState()
-	if state.UVC1Running {
-		relayState.SetStateOn()
-	} else {
-		relayState.SetStateOff()
-	}
-	relayUVC1, err := relay.NewRelay(c, configHandler.GetInt("tfp.pin.relay.uvc1"), signalHigh, outputNC, relayState)
-	if err != nil {
-		return nil, err
-	}
-
-	relayState = relay.NewState()
-	if state.UVC2Running {
-		relayState.SetStateOn()
-	} else {
-		relayState.SetStateOff()
-	}
-	relayUVC2, err := relay.NewRelay(c, configHandler.GetInt("tfp.pin.relay.uvc2"), signalHigh, outputNC, relayState)
-	if err != nil {
-		return nil, err
-	}
-
-	relayState = relay.NewState()
-	if state.PondBubbleRunning {
-		relayState.SetStateOn()
-	} else {
-		relayState.SetStateOff()
-	}
-	relayBubblePond, err := relay.NewRelay(c, configHandler.GetInt("tfp.pin.relay.pond_bubble"), signalHigh, outputNC, relayState)
-	if err != nil {
-		return nil, err
-	}
-
-	relayState = relay.NewState()
-	if state.FilterBubbleRunning {
-		relayState.SetStateOn()
-	} else {
-		relayState.SetStateOff()
-	}
-	relayBubbleFilter, err := relay.NewRelay(c, configHandler.GetInt("tfp.pin.relay.filter_bubble"), signalHigh, outputNC, relayState)
-	if err != nil {
-		return nil, err
-	}
-
-	relayState = relay.NewState()
-	if state.WaterfallPumpRunning {
-		relayState.SetStateOn()
-	} else {
-		relayState.SetStateOff()
-	}
-	relayPompWaterfall, err := relay.NewRelay(c, configHandler.GetInt("tfp.pin.relay.waterfall_pomp"), signalHigh, outputNO, relayState)
-	if err != nil {
-		return nil, err
-	}
+	c := rest.NewClient(configHandler.GetString("url"))
 
 	// Create struct
 	tfpHandler = &TFPHandler{
-		board:              c,
-		state:              state,
-		configUsecase:      configUsecase,
-		eventUsecase:       eventUsecase,
-		stateUsecase:       stateUsecase,
-		configHandler:      configHandler,
-		relayPompPond:      relayPompPond,
-		relayUVC1:          relayUVC1,
-		relayUVC2:          relayUVC2,
-		relayBubbleFilter:  relayBubbleFilter,
-		relayBubblePond:    relayBubblePond,
-		relayPompWaterfall: relayPompWaterfall,
+		board:         c,
+		state:         state,
+		configUsecase: configUsecase,
+		eventUsecase:  eventUsecase,
+		stateUsecase:  stateUsecase,
+		configHandler: configHandler,
+		routines:      make([]*time.Ticker, 0, 0),
+		isOnline:      false,
 	}
 
-	// Handle reboot
-	helper.Every(10*time.Second, handleReboot(tfpHandler.(*TFPHandler)))
-
-	// Handle blister time
-	helper.Every(1*time.Hour, handleBlisterTime(tfpHandler.(*TFPHandler)))
-
-	// Handle watrefall auto
-	helper.Every(1*time.Minute, handleWaterfallAuto(tfpHandler.(*TFPHandler)))
-
-	log.Infof("Board %s initialized successfully", state.Name)
-
-	return tfpHandler, nil
+	return tfpHandler
 
 }
 
+// State return the current state
 func (h *TFPHandler) State() models.TFPState {
 	return *h.state
 }
@@ -155,11 +70,12 @@ func handleReboot(handler *TFPHandler) func() {
 		data, err := handler.board.ReadValue("isRebooted")
 		if err != nil {
 			log.Errorf("Error when read value isRebooted: %s", err.Error())
+			handler.isOnline = false
 			return
 		}
 
 		if data.(bool) {
-			log.Info("Board TFP has been rebooted, start to reset relays")
+			log.Info("Board %s has been rebooted, reset state", handler.Name())
 
 			// Reset all relays
 			err = handler.relayBubbleFilter.Reset()
@@ -198,7 +114,7 @@ func handleReboot(handler *TFPHandler) func() {
 				log.Errorf("Error when aknoledge reboot: %s", err.Error())
 			}
 
-			log.Info("All relays reset sucessfully")
+			handler.isOnline = true
 		}
 	}
 }
@@ -323,4 +239,139 @@ func handleWaterfallAuto(handler *TFPHandler) func() {
 		}
 
 	}
+}
+
+// Name is the board name
+func (h *TFPHandler) Name() string {
+	return h.state.Name
+}
+
+// IsOnline is true if board is online
+func (h *TFPHandler) IsOnline() bool {
+	return h.isOnline
+}
+
+// Board get public board data
+func (h *TFPHandler) Board() *models.Board {
+	return &models.Board{
+		Name:     h.state.Name,
+		IsOnline: h.isOnline,
+	}
+}
+
+// Start run the main board function
+func (h *TFPHandler) Start() error {
+
+	// Read arbitrary value to check if board is online
+	_, err := h.board.ReadValue("isRebooted")
+	if err != nil {
+		return err
+	}
+
+	// Initialise i/o
+	outputNO := relay.NewOutput()
+	outputNO.SetOutputNO()
+	outputNC := relay.NewOutput()
+	outputNC.SetOutputNC()
+	signalHigh := arest.NewLevel()
+	signalHigh.SetLevelHigh()
+
+	relayState := relay.NewState()
+	if h.state.PondPumpRunning {
+		relayState.SetStateOn()
+	} else {
+		relayState.SetStateOff()
+	}
+	relayPompPond, err := relay.NewRelay(h.board, h.configHandler.GetInt("pin.relay.pond_pomp"), signalHigh, outputNC, relayState)
+	if err != nil {
+		return err
+	}
+	h.relayPompPond = relayPompPond
+
+	relayState = relay.NewState()
+	if h.state.UVC1Running {
+		relayState.SetStateOn()
+	} else {
+		relayState.SetStateOff()
+	}
+	relayUVC1, err := relay.NewRelay(h.board, h.configHandler.GetInt("pin.relay.uvc1"), signalHigh, outputNC, relayState)
+	if err != nil {
+		return err
+	}
+	h.relayUVC1 = relayUVC1
+
+	relayState = relay.NewState()
+	if h.state.UVC2Running {
+		relayState.SetStateOn()
+	} else {
+		relayState.SetStateOff()
+	}
+	relayUVC2, err := relay.NewRelay(h.board, h.configHandler.GetInt("pin.relay.uvc2"), signalHigh, outputNC, relayState)
+	if err != nil {
+		return err
+	}
+	h.relayUVC2 = relayUVC2
+
+	relayState = relay.NewState()
+	if h.state.PondBubbleRunning {
+		relayState.SetStateOn()
+	} else {
+		relayState.SetStateOff()
+	}
+	relayBubblePond, err := relay.NewRelay(h.board, h.configHandler.GetInt("pin.relay.pond_bubble"), signalHigh, outputNC, relayState)
+	if err != nil {
+		return err
+	}
+	h.relayBubblePond = relayBubblePond
+
+	relayState = relay.NewState()
+	if h.state.FilterBubbleRunning {
+		relayState.SetStateOn()
+	} else {
+		relayState.SetStateOff()
+	}
+	relayBubbleFilter, err := relay.NewRelay(h.board, h.configHandler.GetInt("pin.relay.filter_bubble"), signalHigh, outputNC, relayState)
+	if err != nil {
+		return err
+	}
+	h.relayBubbleFilter = relayBubbleFilter
+
+	relayState = relay.NewState()
+	if h.state.WaterfallPumpRunning {
+		relayState.SetStateOn()
+	} else {
+		relayState.SetStateOff()
+	}
+	relayPompWaterfall, err := relay.NewRelay(h.board, h.configHandler.GetInt("pin.relay.waterfall_pomp"), signalHigh, outputNO, relayState)
+	if err != nil {
+		return err
+	}
+	h.relayPompWaterfall = relayPompWaterfall
+
+	// Handle reboot
+	h.routines = append(h.routines, helper.Every(10*time.Second, handleReboot(h)))
+
+	// Handle blister time
+	h.routines = append(h.routines, helper.Every(1*time.Hour, handleBlisterTime(h)))
+
+	// Handle watrefall auto
+	h.routines = append(h.routines, helper.Every(1*time.Minute, handleWaterfallAuto(h)))
+
+	h.isOnline = true
+
+	log.Infof("Board %s initialized successfully", h.Name())
+
+	return nil
+
+}
+
+// Stop permit to stop the board
+func (h *TFPHandler) Stop() error {
+	for _, routine := range h.routines {
+		routine.Stop()
+	}
+
+	log.Infof("Board %s sucessfully stoped", h.Name())
+
+	return nil
 }
