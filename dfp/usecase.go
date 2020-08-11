@@ -10,7 +10,7 @@ import (
 type Usecase interface {
 	Wash(ctx context.Context) error
 	Stop(ctx context.Context) error
-	Auto(ctx context.Context) error
+	Start(ctx context.Context) error
 	ManualDrum(ctx context.Context, status bool) error
 	ManualPump(ctx context.Context, status bool) error
 	GetState(ctx context.Context) (models.DFPState, error)

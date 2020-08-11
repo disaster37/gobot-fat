@@ -15,7 +15,7 @@ import (
 	"github.com/disaster37/gobot-fat/event"
 	"github.com/disaster37/gobot-fat/helper"
 	"github.com/disaster37/gobot-fat/models"
-	"github.com/labstack/gommon/log"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
@@ -34,7 +34,7 @@ type DFPHandler struct {
 	ledGreen         led.Led
 	ledRed           led.Led
 	ledButtons       []led.Led
-	buttonAuto       button.Button
+	buttonStart      button.Button
 	buttonStop       button.Button
 	buttonForceDrum  button.Button
 	buttonForcePump  button.Button
@@ -43,6 +43,9 @@ type DFPHandler struct {
 	captorSecurities []button.Button
 	captorWaters     []button.Button
 	config           *models.DFPConfig
+	timerLED         *time.Timer
+	turnOffLED       bool
+	isRunning        bool
 }
 
 // NewDFP create handler to manage FAT
@@ -56,8 +59,11 @@ func NewDFP(configHandler *viper.Viper, configUsecase dfpconfig.Usecase, eventUs
 		configHandler:    configHandler,
 		routines:         make([]*time.Ticker, 0, 0),
 		isOnline:         false,
+		isRunning:        false,
 		captorSecurities: make([]button.Button, 0, 0),
 		captorWaters:     make([]button.Button, 0, 0),
+		timerLED:         time.NewTimer(60 * time.Second),
+		turnOffLED:       false,
 	}
 
 	return dfpHandler
@@ -86,8 +92,8 @@ func (h *DFPHandler) Board() *models.Board {
 	}
 }
 
-// Auto put DFP on auto mode
-func (h *DFPHandler) Auto(ctx context.Context) error {
+// StartDFP start DFP
+func (h *DFPHandler) StartDFP(ctx context.Context) error {
 	if !h.state.IsRunning {
 		h.state.IsRunning = true
 		err := h.stateUsecase.Update(context.Background(), h.state)
@@ -95,9 +101,22 @@ func (h *DFPHandler) Auto(ctx context.Context) error {
 			return err
 		}
 
-		log.Debug("Put DFP on auto mode")
+		h.sendEvent("start_dfp", "board")
+
+		log.Debug("Start DFP")
 	} else {
-		log.Debug("DFP already on auto mode")
+		log.Debug("DFP already running")
+	}
+
+	if !h.state.Security() {
+		err := h.ledGreen.TurnOn()
+		if err != nil {
+			return err
+		}
+		err = h.ledRed.TurnOff()
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -106,11 +125,7 @@ func (h *DFPHandler) Auto(ctx context.Context) error {
 // StopDFP stop dfp
 func (h *DFPHandler) StopDFP(ctx context.Context) error {
 
-	err := h.relayDrum.Off()
-	if err != nil {
-		return err
-	}
-	err = h.relayPump.Off()
+	err := h.stopDFP()
 	if err != nil {
 		return err
 	}
@@ -121,19 +136,23 @@ func (h *DFPHandler) StopDFP(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
+
+		h.sendEvent("stop_dfp", "board")
+
+		log.Debug("Stop DFP")
+	} else {
+		log.Debug("DFP Already stopped")
 	}
 
 	return err
 }
 
-// ForceWashing push washing buton on DFP
+// ForceWashing run imediate washing if state permit it
 func (h *DFPHandler) ForceWashing(ctx context.Context) error {
 
 	if h.state.ShouldWash() {
-		err := h.wash()
-		if err != nil {
-			return err
-		}
+
+		h.wash()
 
 		log.Debug("Run wash successfully")
 	} else {
@@ -150,6 +169,8 @@ func (h *DFPHandler) StartManualDrum(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
+
+		h.sendEvent("manual_start_drum", "motor")
 		log.Debug("Start drum successfully")
 	} else {
 		log.Debug("Drum can't start because of state")
@@ -160,6 +181,9 @@ func (h *DFPHandler) StartManualDrum(ctx context.Context) error {
 
 // StopManualDrum stop drum
 func (h *DFPHandler) StopManualDrum(ctx context.Context) error {
+
+	h.sendEvent("manual_stop_drum", "motor")
+
 	return h.relayDrum.Off()
 }
 
@@ -171,6 +195,9 @@ func (h *DFPHandler) StartManualPump(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
+
+		h.sendEvent("manual_start_pump", "motor")
+
 		log.Debug("Start pump successfully")
 	} else {
 		log.Debug("Can't start pump because of state")
@@ -181,13 +208,14 @@ func (h *DFPHandler) StartManualPump(ctx context.Context) error {
 
 // StopManualPump stop pump
 func (h *DFPHandler) StopManualPump(ctx context.Context) error {
+	h.sendEvent("manual_stop_pump", "motor")
 	return h.relayPump.Off()
 }
 
 // Start run the main board function
 func (h *DFPHandler) Start() error {
 
-	c, err := serial.NewClient(h.configHandler.GetString("url"))
+	c, err := serial.NewClient(h.configHandler.GetString("url"), 1*time.Second, false)
 	if err != nil {
 		return err
 	}
@@ -205,8 +233,6 @@ func (h *DFPHandler) Start() error {
 		return err
 	}
 	h.config = config
-
-	// Init I/O
 
 	// Relay
 	NORelay := relay.NewOutput()
@@ -228,17 +254,23 @@ func (h *DFPHandler) Start() error {
 	h.relayPump = relayPump
 
 	// Buttons
-	buttonAuto, err := button.NewButton(h.board, h.configHandler.GetInt("pin.button.auto"), highSignal, true)
+	buttonStart, err := button.NewButton(h.board, h.configHandler.GetInt("pin.button.start"), highSignal, true)
 	if err != nil {
 		return err
 	}
-	h.buttonAuto = buttonAuto
+	h.buttonStart = buttonStart
 
 	buttonStop, err := button.NewButton(h.board, h.configHandler.GetInt("pin.button.stop"), highSignal, true)
 	if err != nil {
 		return err
 	}
 	h.buttonStop = buttonStop
+
+	buttonWash, err := button.NewButton(h.board, h.configHandler.GetInt("pin.button.wash"), highSignal, true)
+	if err != nil {
+		return err
+	}
+	h.buttonWash = buttonWash
 
 	buttonForceDrum, err := button.NewButton(h.board, h.configHandler.GetInt("pin.button.force_drump"), highSignal, true)
 	if err != nil {
@@ -292,7 +324,7 @@ func (h *DFPHandler) Start() error {
 	} else {
 		defaultLedState = false
 	}
-	ledGreen, err := led.NewLed(h.board, h.configHandler.GetInt("led.pin.green"), defaultLedState)
+	ledGreen, err := led.NewLed(h.board, h.configHandler.GetInt("pin.led.green"), defaultLedState)
 	if err != nil {
 		return err
 	}
@@ -303,55 +335,73 @@ func (h *DFPHandler) Start() error {
 	} else {
 		defaultLedState = false
 	}
-	ledRed, err := led.NewLed(h.board, h.configHandler.GetInt("led.pin.red"), defaultLedState)
+	ledRed, err := led.NewLed(h.board, h.configHandler.GetInt("pin.led.red"), defaultLedState)
 	if err != nil {
 		return err
 	}
 	h.ledRed = ledRed
 
-	ledButtonAuto, err := led.NewLed(h.board, h.configHandler.GetInt("led.pin.button_auto"), false)
+	ledButtonAuto, err := led.NewLed(h.board, h.configHandler.GetInt("pin.led.button_auto"), false)
 	if err != nil {
 		return err
 	}
 	h.ledButtons = append(h.ledButtons, ledButtonAuto)
 
-	ledButtonStop, err := led.NewLed(h.board, h.configHandler.GetInt("led.pin.button_stop"), false)
+	ledButtonStop, err := led.NewLed(h.board, h.configHandler.GetInt("pin.led.button_stop"), false)
 	if err != nil {
 		return err
 	}
 	h.ledButtons = append(h.ledButtons, ledButtonStop)
 
-	ledButtonForceDrum, err := led.NewLed(h.board, h.configHandler.GetInt("led.pin.button_force_drum"), false)
+	ledButtonForceDrum, err := led.NewLed(h.board, h.configHandler.GetInt("pin.led.button_force_drum"), false)
 	if err != nil {
 		return err
 	}
 	h.ledButtons = append(h.ledButtons, ledButtonForceDrum)
 
-	ledButtonForcePump, err := led.NewLed(h.board, h.configHandler.GetInt("led.pin.button_force_pump"), false)
+	ledButtonForcePump, err := led.NewLed(h.board, h.configHandler.GetInt("pin.led.button_force_pump"), false)
 	if err != nil {
 		return err
 	}
 	h.ledButtons = append(h.ledButtons, ledButtonForcePump)
 
-	ledButtonWash, err := led.NewLed(h.board, h.configHandler.GetInt("led.pin.button_wash"), false)
+	ledButtonWash, err := led.NewLed(h.board, h.configHandler.GetInt("pin.led.button_wash"), false)
 	if err != nil {
 		return err
 	}
 	h.ledButtons = append(h.ledButtons, ledButtonWash)
 
-	ledButtonSet, err := led.NewLed(h.board, h.configHandler.GetInt("led.pin.button_set"), false)
+	ledButtonSet, err := led.NewLed(h.board, h.configHandler.GetInt("pin.led.button_set"), false)
 	if err != nil {
 		return err
 	}
 	h.ledButtons = append(h.ledButtons, ledButtonSet)
 
+	ledLCDEnable, err := led.NewLed(h.board, h.configHandler.GetInt("pin.led.lcd_enable"), false)
+	if err != nil {
+		return err
+	}
+	h.ledButtons = append(h.ledButtons, ledLCDEnable)
+
+	ledLCDLED, err := led.NewLed(h.board, h.configHandler.GetInt("pin.led.lcd_led"), false)
+	if err != nil {
+		return err
+	}
+	h.ledButtons = append(h.ledButtons, ledLCDLED)
+
 	// Handle reboot
 	h.routines = append(h.routines, helper.Every(10*time.Second, handleReboot(h)))
 
+	// Handle config
+	h.routines = append(h.routines, helper.Every(60*time.Second, handleConfig(h)))
+
 	// Handle state
-	//h.routines = append(h.routines, helper.Every(1*time.Second, handleState(h)))
+	h.isRunning = true
+	go handleState(h)
 
 	h.isOnline = true
+
+	h.sendEvent("board_dfp_start", "board")
 
 	log.Infof("Board %s initialized successfully", h.Name())
 
@@ -365,322 +415,11 @@ func (h *DFPHandler) Stop() error {
 		routine.Stop()
 	}
 
+	h.isRunning = false
+
+	h.sendEvent("board_dfp_stop", "board")
+
 	log.Infof("Board %s sucessfully stoped", h.Name())
 
 	return nil
-}
-
-// handleReboot permit to check on background if board is rebooted
-// If board is rebooted, it wil reset with current state
-func handleReboot(handler *DFPHandler) func() {
-	return func() {
-
-		data, err := handler.board.ReadValue("isRebooted")
-		if err != nil {
-			log.Errorf("Error when read value isRebooted: %s", err.Error())
-			handler.isOnline = false
-			return
-		}
-
-		if data.(bool) {
-			log.Info("Board %s has been rebooted, reset state", handler.Name())
-
-			// Auto mode
-			if handler.state.IsRunning && !handler.state.IsEmergencyStopped {
-				err := handler.Auto(context.Background())
-				if err != nil {
-					log.Errorf("Error when reset auto mode: %s", err.Error())
-				} else {
-					log.Info("Successfully reset auto mode")
-				}
-
-			} else {
-				// Stop / Ermergency mode
-				err := handler.StopDFP(context.Background())
-				if err != nil {
-					log.Errorf("Error when reset stop mode: %s", err.Error())
-				} else {
-					log.Info("Seccessfully reset stop mode")
-				}
-			}
-
-			// Washing
-			if handler.state.IsWashed {
-				err := handler.ForceWashing(context.Background())
-				if err != nil {
-					log.Errorf("Error when reset wash: %s", err.Error())
-				} else {
-					log.Info("Successfully reset wash")
-				}
-			}
-
-			// Acknolege reboot
-			_, err := handler.board.CallFunction("acknoledgeRebooted", "")
-			if err != nil {
-				log.Errorf("Error when aknoledge reboot on board %s: %s", handler.Name(), err.Error())
-			}
-
-			handler.isOnline = true
-
-		}
-	}
-}
-
-func handleState(h *DFPHandler) {
-	for {
-
-		// Read all values
-		err := h.buttonAuto.Read()
-		if err != nil {
-			log.Errorf("Error when read button auto: %s", err.Error())
-		}
-		err = h.buttonForceDrum.Read()
-		if err != nil {
-			log.Errorf("Error when read button force drum: %s", err.Error())
-		}
-		err = h.buttonForcePump.Read()
-		if err != nil {
-			log.Errorf("Error when read button force pump: %s", err.Error())
-		}
-		err = h.buttonSet.Read()
-		if err != nil {
-			log.Errorf("Error when read button set: %s", err.Error())
-		}
-		err = h.buttonStop.Read()
-		if err != nil {
-			log.Errorf("Error when read button stop: %s", err.Error())
-		}
-		err = h.buttonWash.Read()
-		if err != nil {
-			log.Errorf("Error when read button wash; %s", err.Error())
-		}
-		for i, captor := range h.captorWaters {
-			err := captor.Read()
-			if err != nil {
-				log.Errorf("Error when read water captor %d: %s", i, err.Error())
-			}
-		}
-		for i, captor := range h.captorSecurities {
-			err := captor.Read()
-			if err != nil {
-				log.Errorf("Error when read security captor %d: %s", i, err.Error())
-			}
-		}
-
-		// Manage Security captor first
-		for _, captor := range h.captorSecurities {
-			if captor.IsPushed() && !h.state.IsDisableSecurity {
-				h.state.IsSecurity = true
-				err := h.StopDFP(context.Background())
-				if err != nil {
-					h.forceStopMotors()
-					log.Errorf("Error when stop motor because of security state")
-				}
-				break
-			}
-		}
-
-		buttonPushed := false
-
-		// Stop / Auto button pushed
-		if h.buttonStop.IsPushed() {
-			buttonPushed = true
-			err = h.StopDFP(context.Background())
-			if err != nil {
-				log.Errorf("Error when stop DFP: %s", err.Error())
-			}
-		} else if h.buttonAuto.IsPushed() {
-			buttonPushed = true
-			err = h.Auto(context.Background())
-			if err != nil {
-				log.Errorf("Error when set auto mode: %s", err.Error())
-			}
-		}
-
-		// Force drum button
-		if h.buttonForceDrum.IsPushed() {
-			buttonPushed = true
-			err = h.StartManualDrum(context.Background())
-			if err != nil {
-				log.Errorf("Error when force drum motor: %s", err.Error())
-			}
-		} else if h.buttonForceDrum.IsReleazed() {
-			err = h.StartManualDrum(context.Background())
-			if err != nil {
-				log.Errorf("Error when stop drum motor: %s", err.Error())
-			}
-		}
-
-		// Force pump
-		if h.buttonForcePump.IsPushed() {
-			buttonPushed = true
-			err := h.StartManualPump(context.Background())
-			if err != nil {
-				log.Errorf("Error when force pump: %s", err.Error())
-			}
-		} else if h.buttonForcePump.IsReleazed() {
-			err := h.StopManualPump(context.Background())
-			if err != nil {
-				log.Errorf("Error when stop pump: %s", err.Error)
-			}
-		}
-
-		// Force wash
-		if h.buttonWash.IsPushed() {
-			buttonPushed = true
-			err := h.ForceWashing(context.Background())
-			if err != nil {
-				log.Errorf("Error when force washing: %s", err.Error)
-			}
-		}
-
-		//Set button
-		if h.buttonSet.IsPushed() {
-			buttonPushed = true
-		}
-
-		// Manage button led and screen
-		//@TODO
-		if buttonPushed {
-
-		}
-
-		// Manage captor state
-		for _, captor := range h.captorWaters {
-			if captor.IsPushed() && time.Now().After(h.state.LastWashing.Add(time.Duration(h.config.WaitTimeBetweenWashing)*time.Second)) {
-				err := h.ForceWashing(context.Background())
-				if err != nil {
-					log.Errorf("Error when run wash: %s", err.Error())
-				}
-				break
-			}
-		}
-
-	}
-}
-
-func (h *DFPHandler) sendEvent(eventType string, eventKind string) {
-	event := &models.Event{
-		SourceID:   h.state.Name,
-		SourceName: h.state.Name,
-		Timestamp:  time.Now(),
-		EventType:  eventType,
-		EventKind:  eventKind,
-	}
-	err := h.eventUsecase.Store(context.Background(), event)
-	if err != nil {
-		log.Errorf("Error when store new event: %s", err.Error())
-	}
-}
-
-func (h *DFPHandler) wash() error {
-
-	h.state.IsWashed = true
-
-	// Blink led
-	timerLed := h.ledGreen.Blink(time.Duration(h.config.StartWashingPumpBeforeWashing+h.config.WashingDuration) * time.Second)
-	go func() {
-		isTimerLedFinished := false
-		go func() {
-			for !isTimerLedFinished {
-				if !h.state.IsWashed {
-					timerLed.Stop()
-					break
-				}
-				time.Sleep(1 * time.Millisecond)
-			}
-		}()
-		<-timerLed.C
-		isTimerLedFinished = true
-	}()
-
-	// Start pump and wait some time
-	timerPump := time.NewTimer(time.Duration(h.config.StartWashingPumpBeforeWashing) * time.Second)
-	isTimerPumpFinished := true
-	go func() {
-		for !isTimerPumpFinished {
-			if !h.state.ShouldMotorStart() {
-				timerPump.Stop()
-				break
-			}
-			time.Sleep(1 * time.Millisecond)
-		}
-	}()
-	err := h.relayPump.On()
-	if err != nil {
-		isTimerPumpFinished = true
-		return err
-	}
-	<-timerPump.C
-	isTimerPumpFinished = true
-
-	// Start drum and wait some time
-	timerWashing := time.NewTimer(time.Duration(h.config.WashingDuration) * time.Second)
-	isTimerWashingFinished := false
-	go func() {
-		for !isTimerWashingFinished {
-			if !h.state.ShouldMotorStart() {
-				timerWashing.Stop()
-				break
-			}
-			time.Sleep(1 * time.Millisecond)
-		}
-	}()
-	err = h.relayDrum.On()
-	if err != nil {
-		isTimerWashingFinished = true
-		h.forceStopMotors()
-		return err
-	}
-	<-timerWashing.C
-	isTimerWashingFinished = true
-
-	// Stop all
-	err = h.relayDrum.Off()
-	if err != nil {
-		h.forceStopMotors()
-		return err
-	}
-
-	err = h.relayPump.Off()
-	if err != nil {
-		h.forceStopMotors()
-		return err
-	}
-
-	h.state.IsWashed = false
-	h.state.LastWashing = time.Now()
-	err = h.stateUsecase.Update(context.Background(), h.state)
-	if err != nil {
-		return err
-	}
-
-	h.sendEvent("washing", "motor")
-
-	log.Debugf("Washing successfully finished")
-	return nil
-
-}
-
-func (h *DFPHandler) forceStopMotors() {
-	go func() {
-		isOk := false
-		for !isOk {
-			isOk = true
-			err := h.relayDrum.Off()
-			if err != nil {
-				log.Errorf("Error appear when try to stop drum: %s", err.Error())
-				isOk = false
-			}
-
-			err = h.relayPump.Off()
-			if err != nil {
-				log.Errorf("Error appear when try to stop pump: %s", err.Error())
-				isOk = false
-			}
-
-		}
-
-		h.state.IsWashed = false
-	}()
 }

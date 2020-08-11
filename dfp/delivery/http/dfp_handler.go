@@ -20,7 +20,7 @@ func NewDFPHandler(e *echo.Group, us dfp.Usecase) {
 	handler := &DFPHandler{
 		dUsecase: us,
 	}
-	e.POST("/dfps/action/auto", handler.Auto)
+	e.POST("/dfps/action/start", handler.Start)
 	e.POST("/dfps/action/stop", handler.Stop)
 	e.POST("/dfps/action/wash", handler.Wash)
 	e.POST("/dfps/action/manual_start_drum", handler.ManualStartDrum)
@@ -60,19 +60,19 @@ func (h DFPHandler) GetState(c echo.Context) error {
 }
 
 // Auto put DFP on auto mode
-func (h DFPHandler) Auto(c echo.Context) error {
+func (h DFPHandler) Start(c echo.Context) error {
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
 
-	err := h.dUsecase.Auto(ctx)
+	err := h.dUsecase.Start(ctx)
 
 	if err != nil {
-		log.Errorf("Error when post auto: %s", err.Error())
+		log.Errorf("Error when post start: %s", err.Error())
 		return c.JSON(500, models.NewJSONAPIerror(
 			"500",
-			"Error when set auto mode",
+			"Error when start DFP",
 			err.Error(),
 			nil,
 		))
@@ -94,7 +94,7 @@ func (h DFPHandler) Stop(c echo.Context) error {
 		log.Errorf("Error when post stop: %s", err.Error())
 		return c.JSON(500, models.NewJSONAPIerror(
 			"500",
-			"Error when set stop mode",
+			"Error when stop DFP",
 			err.Error(),
 			nil,
 		))

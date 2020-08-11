@@ -66,6 +66,12 @@ func main() {
 		panic(err)
 	}
 
+	level, err := log.ParseLevel(configHandler.GetString("log.level"))
+	if err != nil {
+		panic(err)
+	}
+	log.SetLevel(level)
+
 	// Init backend connexion
 	isConnected := false
 	var db *gorm.DB
@@ -194,20 +200,23 @@ func main() {
 	tfpStateHttpDeliver.NewTFPStateHandler(api, tfpStateU)
 
 	// TFP board
-	tfpB := tfpBoard.NewTFP(configHandler.Sub("tfp"), tfpConfigU, eventU, tfpStateU, tfpState)
-	boardU.AddBoard(tfpB)
-	tfpU := tfpUsecase.NewTFPUsecase(tfpB, tfpConfigU, tfpStateU, timeoutContext)
-	tfpHttpDeliver.NewTFPHandler(api, tfpU)
-	// Run it on goroutine to not block if offline
+	if configHandler.GetBool("tfp.enable") {
+		tfpB := tfpBoard.NewTFP(configHandler.Sub("tfp"), tfpConfigU, eventU, tfpStateU, tfpState)
+		boardU.AddBoard(tfpB)
+		tfpU := tfpUsecase.NewTFPUsecase(tfpB, tfpConfigU, tfpStateU, timeoutContext)
+		tfpHttpDeliver.NewTFPHandler(api, tfpU)
+	}
 
 	/***********************
 	 * Tank 1
 	 */
 	// Tank1 board
-	tank1B := tankBoard.NewTank(configHandler.Sub("tank1"), eventU)
-	boardU.AddBoard(tank1B)
-	tankU := tankUsecase.NewTankUsecase([]tank.Board{tank1B}, timeoutContext)
-	tankHttpDeliver.NewTankHandler(api, tankU)
+	if configHandler.GetBool("tank1.enable") {
+		tank1B := tankBoard.NewTank(configHandler.Sub("tank1"), eventU)
+		boardU.AddBoard(tank1B)
+		tankU := tankUsecase.NewTankUsecase([]tank.Board{tank1B}, timeoutContext)
+		tankHttpDeliver.NewTankHandler(api, tankU)
+	}
 
 	/*****************************
 	 * INIT DFP
@@ -267,10 +276,12 @@ func main() {
 	dfpStateHttpDeliver.NewDFPStateHandler(api, dfpStateU)
 
 	// DFP board
-	dfpB := dfpBoard.NewDFP(configHandler.Sub("dfp"), dfpConfigU, eventU, dfpStateU, dfpState)
-	boardU.AddBoard(dfpB)
-	dfpU := dfpUsecase.NewDFPUsecase(dfpB, timeoutContext)
-	dfpHttpDeliver.NewDFPHandler(api, dfpU)
+	if configHandler.GetBool("dfp.enable") {
+		dfpB := dfpBoard.NewDFP(configHandler.Sub("dfp"), dfpConfigU, eventU, dfpStateU, dfpState)
+		boardU.AddBoard(dfpB)
+		dfpU := dfpUsecase.NewDFPUsecase(dfpB, timeoutContext)
+		dfpHttpDeliver.NewDFPHandler(api, dfpU)
+	}
 
 	// Starts boards
 	defer boardU.Stops()

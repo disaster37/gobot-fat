@@ -42,12 +42,12 @@ func (h *dfpUsecase) Stop(c context.Context) error {
 }
 
 // Auto witl set auto mode
-func (h *dfpUsecase) Auto(c context.Context) error {
-	log.Debugf("Auto is required")
+func (h *dfpUsecase) Start(c context.Context) error {
+	log.Debugf("Start is required")
 	ctx, cancel := context.WithTimeout(c, h.contextTimeout)
 	defer cancel()
 
-	return h.dfp.Auto(ctx)
+	return h.dfp.StartDFP(ctx)
 }
 
 // ManualDrum will start / stop the drum motor

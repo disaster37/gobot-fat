@@ -49,3 +49,12 @@ func (h *DFPState) ShouldMotorStart() bool {
 
 	return true
 }
+
+// Security return true id security and security not disabled
+func (h *DFPState) Security() bool {
+	if h.IsSecurity && !h.IsDisableSecurity {
+		return true
+	}
+
+	return false
+}

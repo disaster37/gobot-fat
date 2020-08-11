@@ -5,10 +5,11 @@ go 1.13
 require (
 	github.com/DATA-DOG/go-sqlmock v1.4.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
-	github.com/disaster37/go-arest v0.0.2-0.20200809141205-c0465c7c9f18
+	github.com/disaster37/go-arest v0.0.2-0.20200811214609-e3d25729875d
 
 	github.com/elastic/go-elasticsearch/v7 v7.6.0
 	github.com/gofrs/uuid v3.3.0+incompatible // indirect
+	github.com/imkira/go-observer v1.0.3 // indirect
 	github.com/jinzhu/gorm v1.9.11
 	github.com/labstack/echo/v4 v4.1.11
 	github.com/labstack/gommon v0.3.0
@@ -20,7 +21,7 @@ require (
 	github.com/stretchr/testify v1.4.0
 	github.com/x-cray/logrus-prefixed-formatter v0.5.2
 	golang.org/x/net v0.0.0-20200625001655-4c5254603344 // indirect
-	google.golang.org/appengine v1.6.6
+	golang.org/x/sys v0.0.0-20200810151505-1b9f1253b3ed // indirect
 
 )
 
