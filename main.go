@@ -150,7 +150,9 @@ func main() {
 		StopTimeWaterfall:   "20:00",
 		Mode:                "none",
 	}
+
 	err = tfpConfigU.Init(ctx, tfpConfig)
+
 	if err != nil {
 		log.Errorf("Error appear when init TFP config: %s", err.Error())
 		panic("Failed to init tfpconfig on SQL")
@@ -268,6 +270,7 @@ func main() {
 		panic("Failed to init dfpState on SQL")
 	}
 	dfpState, err = dfpStateU.Get(ctx)
+	log.Debugf("DFP state after init it: %s", dfpState)
 	if err != nil {
 		log.Errorf("Failed to retrive dfpState from usecase")
 		panic("Failed to retrive dfpState from usecase")
@@ -284,8 +287,8 @@ func main() {
 	}
 
 	// Starts boards
-	defer boardU.Stops()
-	boardU.Starts()
+	defer boardU.Stops(ctx)
+	boardU.Starts(ctx)
 
 	// Run web server
 	e.Start(configHandler.GetString("server.address"))

@@ -79,8 +79,8 @@ func (h *elasticsearchTFPStateRepository) Update(ctx context.Context, state *mod
 		h.Conn.Index.WithContext(ctx),
 		h.Conn.Index.WithPretty(),
 	)
-	log.Debug("Err: %s", err)
-	log.Debugf("Resp: %s", res.String)
+
+	log.Debugf("Resp: %s", res.String())
 	if err != nil {
 		return err
 	}

@@ -24,46 +24,75 @@ func NewBoardUsecase() board.Usecase {
 
 // GetBoards return the public data for all boards
 func (h *boardUsecase) GetBoards(ctx context.Context) ([]*models.Board, error) {
-	boardsData := make([]*models.Board, 0, len(h.boards))
 
-	for _, board := range h.boards {
-		boardsData = append(boardsData, board.Board())
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+		boardsData := make([]*models.Board, 0, len(h.boards))
+
+		for _, board := range h.boards {
+			boardsData = append(boardsData, board.Board())
+		}
+
+		return boardsData, nil
 	}
-
-	return boardsData, nil
 }
 
+// AddBoard add board on list
 func (h *boardUsecase) AddBoard(board board.Board) {
 	h.boards = append(h.boards, board)
 }
 
-func (h *boardUsecase) Starts() {
-
-	for _, board := range h.boards {
-		go h.startBoard(board)
-	}
-}
-
-func (h *boardUsecase) Stops() {
-	for _, board := range h.boards {
-		err := board.Stop()
-		if err != nil {
-			log.Errorf("Failed to stop successfully board %s: %s", board.Name, err.Error())
+// Starts start each board on background
+// If board failed to start, it try again while context not canceled
+func (h *boardUsecase) Starts(ctx context.Context) {
+	select {
+	case <-ctx.Done():
+		log.Infof("Context canceled: %s", ctx.Err())
+		return
+	default:
+		for _, board := range h.boards {
+			go h.startBoard(ctx, board)
 		}
+		return
 	}
 }
 
-func (h *boardUsecase) startBoard(board board.Board) {
+// Stops stop each board
+func (h *boardUsecase) Stops(ctx context.Context) {
+	select {
+	case <-ctx.Done():
+		log.Infof("Context canceled: %s", ctx.Err())
+		return
+	default:
+		for _, board := range h.boards {
+			err := board.Stop(ctx)
+			if err != nil {
+				log.Errorf("Failed to stop successfully board %s: %s", board.Name(), err.Error())
+			}
+		}
+		return
+	}
+}
 
-	log.Infof("Start board %s", board.Name())
+// startBoard start board and try while context not canceled
+func (h *boardUsecase) startBoard(ctx context.Context, board board.Board) {
 	for {
+		select {
+		case <-ctx.Done():
+			log.Infof("Context canceled: %s", ctx.Err())
+			return
+		default:
+			log.Infof("Start board %s", board.Name())
 
-		err := board.Start()
-		if err != nil {
-			log.Errorf("Failed to init board: %s", board.Name(), err.Error())
-			time.Sleep(10 * time.Second)
-		} else {
-			break
+			err := board.Start(ctx)
+			if err != nil {
+				log.Errorf("Failed to init board %s: %s", board.Name(), err.Error())
+				time.Sleep(10 * time.Second)
+			} else {
+				return
+			}
 		}
 	}
 }

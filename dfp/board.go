@@ -8,7 +8,7 @@ import (
 )
 
 type Board interface {
-	// Auto put dfp on auto
+	// StartDFP put dfp on auto
 	StartDFP(ctx context.Context) error
 
 	// StopDFP stop dfp and disable auto

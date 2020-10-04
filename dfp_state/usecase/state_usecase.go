@@ -89,15 +89,21 @@ func (h *stateUsecase) Get(ctx context.Context) (*models.DFPState, error) {
 
 // Init will init state on backend if needed
 func (h *stateUsecase) Init(ctx context.Context, state *models.DFPState) error {
+
+	esCtx, cancel := context.WithTimeout(ctx, h.contextTimeout)
+	defer cancel()
+
 	sqlState, err := h.stateRepoSQL.Get(ctx)
 	if err != nil {
 		log.Errorf("Failed to retrive DfpState from sql: %s", err.Error())
 		return err
 	}
-	esState, err := h.stateRepoElasticsearch.Get(ctx)
+	log.Debugf("DFP state from SQL: %s", sqlState)
+	esState, err := h.stateRepoElasticsearch.Get(esCtx)
 	if err != nil {
 		log.Errorf("Failed to retrive DfpState from elastic: %s", err.Error())
 	}
+	log.Debugf("DFP state from ES: %s", esState)
 	if sqlState == nil && esState == nil {
 		// No state found
 
@@ -117,7 +123,7 @@ func (h *stateUsecase) Init(ctx context.Context, state *models.DFPState) error {
 		log.Info("Create new dfpState on SQL from elastic state")
 	} else if sqlState != nil && esState == nil {
 		// State found only on SQL
-		err = h.stateRepoElasticsearch.Create(ctx, sqlState)
+		err = h.stateRepoElasticsearch.Create(esCtx, sqlState)
 		if err != nil {
 			log.Errorf("Failed to create dfpState on Elastic: %s", err.Error())
 		} else {
@@ -135,7 +141,7 @@ func (h *stateUsecase) Init(ctx context.Context, state *models.DFPState) error {
 			log.Info("Update dfpState on SQL from elastic state")
 		} else if sqlState.UpdatedAt.After(esState.UpdatedAt) {
 			// State found and last version found on SQL
-			err = h.stateRepoElasticsearch.Update(ctx, sqlState)
+			err = h.stateRepoElasticsearch.Update(esCtx, sqlState)
 			if err != nil {
 				log.Errorf("Failed to update dfpState on SQL: %s", err.Error())
 				return err

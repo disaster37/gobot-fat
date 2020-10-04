@@ -89,15 +89,20 @@ func (h *configUsecase) Get(ctx context.Context) (*models.TFPConfig, error) {
 
 // Init will init config on backend if needed
 func (h *configUsecase) Init(ctx context.Context, config *models.TFPConfig) error {
+
+	esCtx, cancel := context.WithTimeout(ctx, h.contextTimeout)
+	defer cancel()
+
 	sqlConfig, err := h.configRepoSQL.Get(ctx)
 	if err != nil {
 		log.Errorf("Failed to retrive tfpconfig from sql: %s", err.Error())
 		return err
 	}
-	esConfig, err := h.configRepoElasticsearch.Get(ctx)
+	esConfig, err := h.configRepoElasticsearch.Get(esCtx)
 	if err != nil {
 		log.Errorf("Failed to retrive tfpconfig from elastic: %s", err.Error())
 	}
+
 	if sqlConfig == nil && esConfig == nil {
 		// No config found
 
@@ -108,6 +113,7 @@ func (h *configUsecase) Init(ctx context.Context, config *models.TFPConfig) erro
 		}
 		log.Info("Create new tfpconfig on repositories")
 	} else if sqlConfig == nil && esConfig != nil {
+
 		// Config found only on Elastic
 		err = h.configRepoSQL.Create(ctx, esConfig)
 		if err != nil {
@@ -116,8 +122,10 @@ func (h *configUsecase) Init(ctx context.Context, config *models.TFPConfig) erro
 		}
 		log.Info("Create new tfpconfig on SQL from elastic config")
 	} else if sqlConfig != nil && esConfig == nil {
+
 		// Config found only on SQL
-		err = h.configRepoElasticsearch.Create(ctx, sqlConfig)
+		err = h.configRepoElasticsearch.Create(esCtx, sqlConfig)
+
 		if err != nil {
 			log.Errorf("Failed to create tfpconfig on Elastic: %s", err.Error())
 		} else {
@@ -135,7 +143,7 @@ func (h *configUsecase) Init(ctx context.Context, config *models.TFPConfig) erro
 			log.Info("Update tfpconfig on SQL from elastic config")
 		} else if sqlConfig.UpdatedAt.After(esConfig.UpdatedAt) {
 			// Config found and last version found on SQL
-			err = h.configRepoElasticsearch.Update(ctx, sqlConfig)
+			err = h.configRepoElasticsearch.Update(esCtx, sqlConfig)
 			if err != nil {
 				log.Errorf("Failed to update tfpconfig on SQL: %s", err.Error())
 				return err

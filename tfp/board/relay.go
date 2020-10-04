@@ -18,7 +18,7 @@ func (h *TFPHandler) canStartRelay() bool {
 	return false
 }
 
-func (h *TFPHandler) sendEvent(eventType string, eventKind string) {
+func (h *TFPHandler) sendEvent(ctx context.Context, eventType string, eventKind string) {
 	event := &models.Event{
 		SourceID:   h.state.Name,
 		SourceName: h.state.Name,
@@ -26,7 +26,7 @@ func (h *TFPHandler) sendEvent(eventType string, eventKind string) {
 		EventType:  eventType,
 		EventKind:  eventKind,
 	}
-	err := h.eventUsecase.Store(context.Background(), event)
+	err := h.eventUsecase.Store(ctx, event)
 	if err != nil {
 		log.Errorf("Error when store new event: %s", err.Error())
 	}
@@ -37,12 +37,12 @@ func (h *TFPHandler) sendEvent(eventType string, eventKind string) {
 func (h *TFPHandler) StartPondPump(ctx context.Context) error {
 	if h.canStartRelay() {
 		log.Debug("Start pond pump")
-		err := h.relayPompPond.On()
+		err := h.relayPompPond.On(ctx)
 		if err != nil {
 			return err
 		}
 
-		h.sendEvent("start_pond_pump", "pump")
+		h.sendEvent(ctx, "start_pond_pump", "pump")
 
 		// Save state only if state change
 		if !h.state.PondPumpRunning {
@@ -68,12 +68,12 @@ func (h *TFPHandler) StartUVC1(ctx context.Context) error {
 
 	if h.canStartRelay() && h.state.PondPumpRunning {
 		log.Debug("Start UVC1")
-		err := h.relayUVC1.On()
+		err := h.relayUVC1.On(ctx)
 		if err != nil {
 			return err
 		}
 
-		h.sendEvent("start_uvc1", "uvc")
+		h.sendEvent(ctx, "start_uvc1", "uvc")
 
 		// Save state only if state change
 		if !h.state.UVC1Running {
@@ -98,12 +98,12 @@ func (h *TFPHandler) StartUVC1(ctx context.Context) error {
 func (h *TFPHandler) StartUVC2(ctx context.Context) error {
 	if h.canStartRelay() && h.state.PondPumpRunning {
 		log.Debug("Start UVC2")
-		err := h.relayUVC2.On()
+		err := h.relayUVC2.On(ctx)
 		if err != nil {
 			return err
 		}
 
-		h.sendEvent("start_uvc2", "uvc")
+		h.sendEvent(ctx, "start_uvc2", "uvc")
 
 		// Save state only if state change
 		if !h.state.UVC2Running {
@@ -155,12 +155,12 @@ func (h *TFPHandler) StartPondPumpWithUVC(ctx context.Context) error {
 func (h *TFPHandler) StopUVC1(ctx context.Context) error {
 	log.Debug("Stop UVC1")
 
-	err := h.relayUVC1.Off()
+	err := h.relayUVC1.Off(ctx)
 	if err != nil {
 		return err
 	}
 
-	h.sendEvent("stop_uvc1", "uvc")
+	h.sendEvent(ctx, "stop_uvc1", "uvc")
 
 	// Save state only if state change
 	if h.state.UVC1Running {
@@ -182,12 +182,12 @@ func (h *TFPHandler) StopUVC1(ctx context.Context) error {
 func (h *TFPHandler) StopUVC2(ctx context.Context) error {
 	log.Debug("Stop UVC2")
 
-	err := h.relayUVC2.Off()
+	err := h.relayUVC2.Off(ctx)
 	if err != nil {
 		return err
 	}
 
-	h.sendEvent("stop_uvc2", "uvc")
+	h.sendEvent(ctx, "stop_uvc2", "uvc")
 
 	// Save state only if state change
 	if h.state.UVC2Running {
@@ -218,12 +218,12 @@ func (h *TFPHandler) StopPondPump(ctx context.Context) error {
 		return err
 	}
 
-	err = h.relayPompPond.Off()
+	err = h.relayPompPond.Off(ctx)
 	if err != nil {
 		return err
 	}
 
-	h.sendEvent("stop_pond_pump", "pump")
+	h.sendEvent(ctx, "stop_pond_pump", "pump")
 
 	// Save state only if state change
 	if h.state.PondPumpRunning {
@@ -244,12 +244,12 @@ func (h *TFPHandler) StopPondPump(ctx context.Context) error {
 func (h *TFPHandler) StartWaterfallPump(ctx context.Context) error {
 	if h.canStartRelay() {
 		log.Debug("Start waterfall pump")
-		err := h.relayPompWaterfall.On()
+		err := h.relayPompWaterfall.On(ctx)
 		if err != nil {
 			return err
 		}
 
-		h.sendEvent("start_watterfall_pump", "pump")
+		h.sendEvent(ctx, "start_watterfall_pump", "pump")
 
 		// Save state only if state change
 		if !h.state.WaterfallPumpRunning {
@@ -275,12 +275,12 @@ func (h *TFPHandler) StartWaterfallPump(ctx context.Context) error {
 func (h *TFPHandler) StopWaterfallPump(ctx context.Context) error {
 	log.Debug("Stop waterfall pump")
 
-	err := h.relayPompWaterfall.Off()
+	err := h.relayPompWaterfall.Off(ctx)
 	if err != nil {
 		return err
 	}
 
-	h.sendEvent("stop_waterfall_pump", "pump")
+	h.sendEvent(ctx, "stop_waterfall_pump", "pump")
 
 	// Save state only if state change
 	if h.state.WaterfallPumpRunning {
@@ -301,12 +301,12 @@ func (h *TFPHandler) StopWaterfallPump(ctx context.Context) error {
 func (h *TFPHandler) StartPondBubble(ctx context.Context) error {
 	if h.canStartRelay() {
 		log.Debug("Start pond bubble")
-		err := h.relayBubblePond.On()
+		err := h.relayBubblePond.On(ctx)
 		if err != nil {
 			return err
 		}
 
-		h.sendEvent("start_pond_bubble", "bubble")
+		h.sendEvent(ctx, "start_pond_bubble", "bubble")
 
 		// Save state only if state change
 		if !h.state.PondBubbleRunning {
@@ -332,12 +332,12 @@ func (h *TFPHandler) StartPondBubble(ctx context.Context) error {
 func (h *TFPHandler) StopPondBubble(ctx context.Context) error {
 	log.Debug("Stop pond bubble")
 
-	err := h.relayBubblePond.Off()
+	err := h.relayBubblePond.Off(ctx)
 	if err != nil {
 		return err
 	}
 
-	h.sendEvent("stop_pond_bubble", "bubble")
+	h.sendEvent(ctx, "stop_pond_bubble", "bubble")
 
 	// Save state only if state change
 	if h.state.PondBubbleRunning {
@@ -358,12 +358,12 @@ func (h *TFPHandler) StopPondBubble(ctx context.Context) error {
 func (h *TFPHandler) StartFilterBubble(ctx context.Context) error {
 	if h.canStartRelay() {
 		log.Debug("Start filter bubble")
-		err := h.relayBubbleFilter.On()
+		err := h.relayBubbleFilter.On(ctx)
 		if err != nil {
 			return err
 		}
 
-		h.sendEvent("start_filter_bubble", "bubble")
+		h.sendEvent(ctx, "start_filter_bubble", "bubble")
 
 		// Save state only if state change
 		if !h.state.FilterBubbleRunning {
@@ -389,12 +389,12 @@ func (h *TFPHandler) StartFilterBubble(ctx context.Context) error {
 func (h *TFPHandler) StopFilterBubble(ctx context.Context) error {
 	log.Debug("Stop filter bubble")
 
-	err := h.relayBubbleFilter.Off()
+	err := h.relayBubbleFilter.Off(ctx)
 	if err != nil {
 		return err
 	}
 
-	h.sendEvent("start_filter_bubble", "bubble")
+	h.sendEvent(ctx, "start_filter_bubble", "bubble")
 
 	// Save state only if state change
 	if h.state.FilterBubbleRunning {
@@ -409,131 +409,6 @@ func (h *TFPHandler) StopFilterBubble(ctx context.Context) error {
 
 	return err
 }
-
-/*
-// HandleRelay manage the relay state
-func (h *TFPHandler) HandleRelay() {
-
-	// Handle ermergency stop
-	h.eventer.On("stateChange", func(data interface{}) {
-		event := data.(string)
-
-		log.Debugf("Receive event %s", event)
-
-		// Stop relais
-		if h.state.IsEmergencyStopped {
-			h.StopRelais(context.Background())
-		}
-	})
-
-	// Handle security
-	h.eventer.On("stateChange", func(data interface{}) {
-		event := data.(string)
-
-		log.Debugf("Receive event %s", event)
-
-		// Stop pump
-		if h.state.IsSecurity && !h.state.IsDisableSecurity {
-			err := h.StopPondPump(context.Background())
-			if err != nil {
-				log.Errorf("Failed to stop Pond pump: %s", err.Error())
-			}
-
-			err = h.StopWaterfallPump(context.Background())
-			if err != nil {
-				log.Errorf("Failed to stop waterfall pump: %s", err.Error())
-			}
-		}
-	})
-
-	// Handle relay
-	h.eventer.On("stateChange", func(data interface{}) {
-		event := data.(string)
-
-		log.Debugf("Receive event %s", event)
-
-		if event == "initTFP" || event == "reconnectTFP" {
-			// Manage pond pump
-			if h.state.PondPumpRunning {
-				err := h.StartPondPump(context.Background())
-				if err != nil {
-					log.Errorf("Failed to start pond pump: %s", err.Error())
-				}
-			} else {
-				err := h.StopPondPump(context.Background())
-				if err != nil {
-					log.Errorf("Failed to stop pond pump: %s", err.Error())
-				}
-			}
-
-			// Manage UVC1
-			if h.state.UVC1Running {
-				err := h.StartUVC1(context.Background())
-				if err != nil {
-					log.Errorf("Failed to start UVC1: %s", err.Error())
-				}
-			} else {
-				err := h.StopUVC1(context.Background())
-				if err != nil {
-					log.Errorf("Failed to sop UVC1: %s", err.Error())
-				}
-			}
-
-			// Manage UVC2
-			if h.state.UVC2Running {
-				err := h.StartUVC2(context.Background())
-				if err != nil {
-					log.Errorf("Failed to start UVC2: %s", err.Error())
-				}
-			} else {
-				err := h.StopUVC2(context.Background())
-				if err != nil {
-					log.Errorf("Failed to stop UVC2: %s", err.Error())
-				}
-			}
-
-			// Manage waterfall pump
-			if h.state.WaterfallPumpRunning {
-				err := h.StartWaterfallPump(context.Background())
-				if err != nil {
-					log.Errorf("Failed to start Waterfall pump: %s", err.Error())
-				}
-			} else {
-				err := h.StopWaterfallPump(context.Background())
-				if err != nil {
-					log.Errorf("Failed to stop waterfall pump: %s", err.Error())
-				}
-			}
-
-			// Manage pond bubble
-			if h.state.PondBubbleRunning {
-				err := h.StartPondBubble(context.Background())
-				if err != nil {
-					log.Errorf("Failed to start pond bubble: %s", err.Error())
-				}
-			} else {
-				err := h.StopPondBubble(context.Background())
-				if err != nil {
-					log.Errorf("Failed to stop Pond bubble: %s", err.Error())
-				}
-			}
-
-			// Manage filter bubble
-			if h.state.FilterBubbleRunning {
-				err := h.StartFilterBubble(context.Background())
-				if err != nil {
-					log.Errorf("Failed to start filter bubble: %s", err.Error())
-				}
-			} else {
-				err := h.StopFilterBubble(context.Background())
-				if err != nil {
-					log.Errorf("Failed to stop filter bubble")
-				}
-			}
-		}
-	})
-}
-*/
 
 // StopRelais stop all relais
 func (h *TFPHandler) StopRelais(ctx context.Context) error {

@@ -4,16 +4,16 @@ import (
 	"context"
 	"time"
 
-	"github.com/disaster37/go-arest"
-	"github.com/disaster37/go-arest/device/gpio/button"
-	"github.com/disaster37/go-arest/device/gpio/led"
-	"github.com/disaster37/go-arest/device/gpio/relay"
-	"github.com/disaster37/go-arest/serial"
+	"github.com/disaster37/go-arest/arest"
+	"github.com/disaster37/go-arest/arest/device/gpio/button"
+	"github.com/disaster37/go-arest/arest/device/gpio/led"
+	"github.com/disaster37/go-arest/arest/device/gpio/relay"
+	"github.com/disaster37/go-arest/arest/serial"
+	"github.com/disaster37/gobot-fat/board"
 	"github.com/disaster37/gobot-fat/dfp"
 	dfpconfig "github.com/disaster37/gobot-fat/dfp_config"
 	dfpstate "github.com/disaster37/gobot-fat/dfp_state"
 	"github.com/disaster37/gobot-fat/event"
-	"github.com/disaster37/gobot-fat/helper"
 	"github.com/disaster37/gobot-fat/models"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -28,7 +28,7 @@ type DFPHandler struct {
 	stateUsecase     dfpstate.Usecase
 	configHandler    *viper.Viper
 	isOnline         bool
-	routines         []*time.Ticker
+	chStop           chan bool
 	relayDrum        relay.Relay
 	relayPump        relay.Relay
 	ledGreen         led.Led
@@ -57,7 +57,7 @@ func NewDFP(configHandler *viper.Viper, configUsecase dfpconfig.Usecase, eventUs
 		eventUsecase:     eventUsecase,
 		stateUsecase:     stateUsecase,
 		configHandler:    configHandler,
-		routines:         make([]*time.Ticker, 0, 0),
+		chStop:           make(chan bool),
 		isOnline:         false,
 		isRunning:        false,
 		captorSecurities: make([]button.Button, 0, 0),
@@ -96,12 +96,12 @@ func (h *DFPHandler) Board() *models.Board {
 func (h *DFPHandler) StartDFP(ctx context.Context) error {
 	if !h.state.IsRunning {
 		h.state.IsRunning = true
-		err := h.stateUsecase.Update(context.Background(), h.state)
+		err := h.stateUsecase.Update(ctx, h.state)
 		if err != nil {
 			return err
 		}
 
-		h.sendEvent("start_dfp", "board")
+		h.sendEvent(ctx, "start_dfp", "board")
 
 		log.Debug("Start DFP")
 	} else {
@@ -109,11 +109,11 @@ func (h *DFPHandler) StartDFP(ctx context.Context) error {
 	}
 
 	if !h.state.Security() {
-		err := h.ledGreen.TurnOn()
+		err := h.ledGreen.TurnOn(ctx)
 		if err != nil {
 			return err
 		}
-		err = h.ledRed.TurnOff()
+		err = h.ledRed.TurnOff(ctx)
 		if err != nil {
 			return err
 		}
@@ -125,35 +125,42 @@ func (h *DFPHandler) StartDFP(ctx context.Context) error {
 // StopDFP stop dfp
 func (h *DFPHandler) StopDFP(ctx context.Context) error {
 
-	err := h.stopDFP()
-	if err != nil {
+	routine := board.NewRoutine(ctx, h.stopDFP)
+	select {
+	case err := <-routine.Error():
 		return err
+	case <-routine.Result():
+		break
 	}
 
 	if h.state.IsRunning {
 		h.state.IsRunning = false
-		err := h.stateUsecase.Update(context.Background(), h.state)
+		err := h.stateUsecase.Update(ctx, h.state)
 		if err != nil {
 			return err
 		}
 
-		h.sendEvent("stop_dfp", "board")
+		h.sendEvent(ctx, "stop_dfp", "board")
 
 		log.Debug("Stop DFP")
 	} else {
 		log.Debug("DFP Already stopped")
 	}
 
-	return err
+	return nil
 }
 
 // ForceWashing run imediate washing if state permit it
 func (h *DFPHandler) ForceWashing(ctx context.Context) error {
 
 	if h.state.ShouldWash() {
-
-		h.wash()
-
+		routine := board.NewRoutine(ctx, h.wash)
+		select {
+		case err := <-routine.Error():
+			return err
+		case <-routine.Result():
+			break
+		}
 		log.Debug("Run wash successfully")
 	} else {
 		log.Debug("Wash can't be start because of state")
@@ -165,12 +172,12 @@ func (h *DFPHandler) ForceWashing(ctx context.Context) error {
 // StartManualDrum start drum
 func (h *DFPHandler) StartManualDrum(ctx context.Context) error {
 	if !h.state.IsEmergencyStopped {
-		err := h.relayDrum.On()
+		err := h.relayDrum.On(ctx)
 		if err != nil {
 			return err
 		}
 
-		h.sendEvent("manual_start_drum", "motor")
+		h.sendEvent(ctx, "manual_start_drum", "motor")
 		log.Debug("Start drum successfully")
 	} else {
 		log.Debug("Drum can't start because of state")
@@ -182,21 +189,21 @@ func (h *DFPHandler) StartManualDrum(ctx context.Context) error {
 // StopManualDrum stop drum
 func (h *DFPHandler) StopManualDrum(ctx context.Context) error {
 
-	h.sendEvent("manual_stop_drum", "motor")
+	h.sendEvent(ctx, "manual_stop_drum", "motor")
 
-	return h.relayDrum.Off()
+	return h.relayDrum.Off(ctx)
 }
 
 // StartManualPump push startPump buton on DFP
 func (h *DFPHandler) StartManualPump(ctx context.Context) error {
 
 	if !h.state.IsEmergencyStopped {
-		err := h.relayPump.On()
+		err := h.relayPump.On(ctx)
 		if err != nil {
 			return err
 		}
 
-		h.sendEvent("manual_start_pump", "motor")
+		h.sendEvent(ctx, "manual_start_pump", "motor")
 
 		log.Debug("Start pump successfully")
 	} else {
@@ -208,12 +215,17 @@ func (h *DFPHandler) StartManualPump(ctx context.Context) error {
 
 // StopManualPump stop pump
 func (h *DFPHandler) StopManualPump(ctx context.Context) error {
-	h.sendEvent("manual_stop_pump", "motor")
-	return h.relayPump.Off()
+	err := h.relayPump.Off(ctx)
+	h.sendEvent(ctx, "manual_stop_pump", "motor")
+	return err
 }
 
 // Start run the main board function
-func (h *DFPHandler) Start() error {
+func (h *DFPHandler) Start(ctx context.Context) error {
+
+	// Put timeout to start
+	ctxWithTiemout, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
 
 	c, err := serial.NewClient(h.configHandler.GetString("url"), 1*time.Second, false)
 	if err != nil {
@@ -222,13 +234,13 @@ func (h *DFPHandler) Start() error {
 	h.board = c
 
 	// Read arbitrary value to check if board is online
-	_, err = h.board.ReadValue("isRebooted")
+	_, err = h.board.ReadValue(ctxWithTiemout, "isRebooted")
 	if err != nil {
 		return err
 	}
 
 	// Load config
-	config, err := h.configUsecase.Get(context.Background())
+	config, err := h.configUsecase.Get(ctx)
 	if err != nil {
 		return err
 	}
@@ -390,18 +402,20 @@ func (h *DFPHandler) Start() error {
 	h.ledButtons = append(h.ledButtons, ledLCDLED)
 
 	// Handle reboot
-	h.routines = append(h.routines, helper.Every(10*time.Second, handleReboot(h)))
+	h.handleReboot(ctx)
+	board.NewHandler(ctx, 10*time.Second, h.chStop, h.handleReboot)
 
 	// Handle config
-	h.routines = append(h.routines, helper.Every(60*time.Second, handleConfig(h)))
+	h.handleConfig(ctx)
+	board.NewHandler(ctx, 10*time.Second, h.chStop, h.handleConfig)
 
 	// Handle state
 	h.isRunning = true
-	go handleState(h)
+	board.NewHandler(ctx, 1*time.Nanosecond, h.chStop, h.handleState)
 
 	h.isOnline = true
 
-	h.sendEvent("board_dfp_start", "board")
+	h.sendEvent(ctx, "board_dfp_start", "board")
 
 	log.Infof("Board %s initialized successfully", h.Name())
 
@@ -410,14 +424,13 @@ func (h *DFPHandler) Start() error {
 }
 
 // Stop permit to stop the board
-func (h *DFPHandler) Stop() error {
-	for _, routine := range h.routines {
-		routine.Stop()
-	}
+func (h *DFPHandler) Stop(ctx context.Context) error {
+
+	h.chStop <- true
 
 	h.isRunning = false
 
-	h.sendEvent("board_dfp_stop", "board")
+	h.sendEvent(ctx, "board_dfp_stop", "board")
 
 	log.Infof("Board %s sucessfully stoped", h.Name())
 

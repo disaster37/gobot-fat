@@ -85,12 +85,16 @@ func (h *configUsecase) Get(ctx context.Context) (*models.DFPConfig, error) {
 
 // Init will init config on backend if needed
 func (h *configUsecase) Init(ctx context.Context, config *models.DFPConfig) error {
+
+	esCtx, cancel := context.WithTimeout(ctx, h.contextTimeout)
+	defer cancel()
+
 	sqlConfig, err := h.configRepoSQL.Get(ctx)
 	if err != nil {
 		log.Errorf("Failed to retrive dfpconfig from sql: %s", err.Error())
 		return err
 	}
-	esConfig, err := h.configRepoElasticsearch.Get(ctx)
+	esConfig, err := h.configRepoElasticsearch.Get(esCtx)
 	if err != nil {
 		log.Errorf("Failed to retrive dfpconfig from elastic: %s", err.Error())
 	}
@@ -115,7 +119,7 @@ func (h *configUsecase) Init(ctx context.Context, config *models.DFPConfig) erro
 	} else if sqlConfig != nil && esConfig == nil {
 		// Config found only on SQL
 		sqlConfig.Version--
-		err = h.configRepoElasticsearch.Create(ctx, sqlConfig)
+		err = h.configRepoElasticsearch.Create(esCtx, sqlConfig)
 		if err != nil {
 			log.Errorf("Failed to create dfpconfig on Elastic: %s", err.Error())
 		} else {
@@ -135,7 +139,7 @@ func (h *configUsecase) Init(ctx context.Context, config *models.DFPConfig) erro
 		} else if sqlConfig.Version > esConfig.Version {
 			// Config found and last version found on SQL
 			sqlConfig.Version--
-			err = h.configRepoElasticsearch.Update(ctx, sqlConfig)
+			err = h.configRepoElasticsearch.Update(esCtx, sqlConfig)
 			if err != nil {
 				log.Errorf("Failed to update dfpconfig on elastic: %s", err.Error())
 				return err

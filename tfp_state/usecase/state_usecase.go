@@ -89,12 +89,16 @@ func (h *stateUsecase) Get(ctx context.Context) (*models.TFPState, error) {
 
 // Init will init state on backend if needed
 func (h *stateUsecase) Init(ctx context.Context, state *models.TFPState) error {
+
+	esCtx, cancel := context.WithTimeout(ctx, h.contextTimeout)
+	defer cancel()
+
 	sqlState, err := h.stateRepoSQL.Get(ctx)
 	if err != nil {
 		log.Errorf("Failed to retrive tfpState from sql: %s", err.Error())
 		return err
 	}
-	esState, err := h.stateRepoElasticsearch.Get(ctx)
+	esState, err := h.stateRepoElasticsearch.Get(esCtx)
 	if err != nil {
 		log.Errorf("Failed to retrive tfpState from elastic: %s", err.Error())
 	}
@@ -117,7 +121,7 @@ func (h *stateUsecase) Init(ctx context.Context, state *models.TFPState) error {
 		log.Info("Create new tfpState on SQL from elastic state")
 	} else if sqlState != nil && esState == nil {
 		// State found only on SQL
-		err = h.stateRepoElasticsearch.Create(ctx, sqlState)
+		err = h.stateRepoElasticsearch.Create(esCtx, sqlState)
 		if err != nil {
 			log.Errorf("Failed to create tfpState on Elastic: %s", err.Error())
 		} else {
@@ -135,7 +139,7 @@ func (h *stateUsecase) Init(ctx context.Context, state *models.TFPState) error {
 			log.Info("Update tfpState on SQL from elastic state")
 		} else if sqlState.UpdatedAt.After(esState.UpdatedAt) {
 			// State found and last version found on SQL
-			err = h.stateRepoElasticsearch.Update(ctx, sqlState)
+			err = h.stateRepoElasticsearch.Update(esCtx, sqlState)
 			if err != nil {
 				log.Errorf("Failed to update tfpState on SQL: %s", err.Error())
 				return err

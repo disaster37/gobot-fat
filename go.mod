@@ -5,7 +5,7 @@ go 1.13
 require (
 	github.com/DATA-DOG/go-sqlmock v1.4.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
-	github.com/disaster37/go-arest v0.0.2-0.20200811214609-e3d25729875d
+	github.com/disaster37/go-arest v0.0.2-0.20200926103622-fcb0f329d115
 
 	github.com/elastic/go-elasticsearch/v7 v7.6.0
 	github.com/gofrs/uuid v3.3.0+incompatible // indirect
@@ -21,7 +21,7 @@ require (
 	github.com/stretchr/testify v1.4.0
 	github.com/x-cray/logrus-prefixed-formatter v0.5.2
 	golang.org/x/net v0.0.0-20200625001655-4c5254603344 // indirect
-	golang.org/x/sys v0.0.0-20200810151505-1b9f1253b3ed // indirect
+	golang.org/x/sys v0.0.0-20200831180312-196b9ba8737a // indirect
 
 )
 
