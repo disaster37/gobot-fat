@@ -11,7 +11,7 @@ import (
 // handleReboot permit to check on background if board is rebooted
 // If board is rebooted, it wil reset with current state
 func (h *DFPHandler) handleReboot(ctx context.Context) {
-	log.Debug("Handle reboot fired")
+	log.Debug("Handle reboot")
 
 	data, err := h.board.ReadValue(ctx, "isRebooted")
 	if err != nil {
@@ -23,9 +23,36 @@ func (h *DFPHandler) handleReboot(ctx context.Context) {
 	if data.(bool) {
 		log.Infof("Board %s has been rebooted, reset state", h.Name())
 
-		if h.isRunning {
-			h.Stop(ctx)
-			h.Start(ctx)
+		// Running / stopped
+		if h.state.IsRunning && !h.state.IsEmergencyStopped {
+			err := h.StartDFP(ctx)
+			if err != nil {
+				log.Errorf("Error when reset start mode: %s", err.Error())
+			} else {
+				log.Info("Successfully reset start mode")
+			}
+
+		} else {
+			// Stop / Ermergency mode
+			err := h.StopDFP(ctx)
+			if err != nil {
+				log.Errorf("Error when reset stop mode: %s", err.Error())
+			} else {
+				log.Info("Seccessfully reset stop mode")
+			}
+		}
+
+		// Washing
+		if h.state.IsWashed {
+			routine := board.NewRoutine(ctx, h.wash)
+			select {
+			case err := <-routine.Error():
+				log.Errorf("Error when reset wash: %s", err.Error())
+			case <-routine.Result():
+				break
+			}
+			log.Info("Successfully reset wash")
+
 		}
 
 		// Acknolege reboot
