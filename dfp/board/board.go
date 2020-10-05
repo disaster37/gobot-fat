@@ -2,7 +2,6 @@ package dfpboard
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	"github.com/disaster37/gobot-arest/plateforms/arest"
@@ -44,7 +43,6 @@ type DFPBoard struct {
 	captorSecurityUnder *gpio.ButtonDriver
 	config              *models.DFPConfig
 	isRunning           bool
-	mutexState          sync.Mutex
 	gobot.Eventer
 }
 
@@ -121,6 +119,8 @@ func NewDFPBoard(configHandler *viper.Viper, configUsecase dfpconfig.Usecase, ev
 
 func (h *DFPBoard) work() {
 
+	ctx := context.TODO()
+
 	/****************
 	 * Init state
 	 */
@@ -142,6 +142,114 @@ func (h *DFPBoard) work() {
 	}
 
 	/*******
+	 * Routines on backgroup
+	 */
+	// Update state
+	go func() {
+		out := h.Subscribe()
+		for {
+			select {
+			case evt := <-out:
+				switch evt.Name {
+				case "state":
+					err := h.stateUsecase.Update(ctx, evt.Data.(*models.DFPState))
+					if err != nil {
+						log.Errorf("Error when update DFP state: %s", err.Error())
+					}
+				case "stop":
+					return
+				}
+			}
+		}
+	}()
+
+	// Load config
+	go func() {
+		out := h.Subscribe()
+		duration := 1 * time.Minute
+		timer := time.NewTicker(duration)
+		for {
+			select {
+			case evt := <-out:
+				switch evt.Name {
+				case "stop":
+					return
+				}
+			case <-timer.C:
+				timer = time.NewTicker(duration)
+				config, err := h.configUsecase.Get(ctx)
+				if err != nil {
+					log.Errorf("Error when load DFP config: %s", err.Error())
+					continue
+				}
+
+				h.config = config
+			}
+		}
+	}()
+
+	// Handle security captor
+	go func() {
+		out := h.Subscribe()
+		for {
+			select {
+			case evt := <-out:
+				switch evt.Name {
+				case "stop":
+					return
+				}
+			default:
+				if h.captorSecurityUpper.Active || h.captorSecurityUnder.Active {
+					// Set security mode
+					if !h.state.IsSecurity {
+						log.Info("Set security mode")
+						h.state.IsSecurity = true
+						h.turnOnRedLed()
+						h.forceStopRelais()
+						h.Publish("security", true)
+						h.Publish("state", h.state)
+					}
+				} else {
+					// Unset security mode
+					if h.state.IsSecurity {
+						log.Info("Unset security mode")
+						h.state.IsSecurity = false
+						h.turnOffRedLed()
+						h.Publish("security", false)
+						h.Publish("state", h.state)
+					}
+				}
+			}
+		}
+	}()
+
+	// Auto wash events
+	go func() {
+		timer := time.NewTicker(time.Duration(h.config.WaitTimeBetweenWashing) * time.Second)
+		out := h.Subscribe()
+		for {
+			select {
+			case evt := <-out:
+				switch evt.Name {
+				case "stop":
+					return
+				case "wash":
+					select {
+					case <-timer.C:
+						// Timer finished
+						h.wash()
+						timer = time.NewTicker(time.Duration(h.config.WaitTimeBetweenWashing) * time.Second)
+					default:
+						if log.IsLevelEnabled(log.DebugLevel) {
+							log.Debug("Wash not lauched because of need to wait some time before run again")
+						}
+					}
+				}
+			}
+		}
+	}()
+
+	/*******
 	 * Process on button events
 	 */
 
@@ -153,20 +261,117 @@ func (h *DFPBoard) work() {
 
 		if !h.state.IsRunning {
 			h.state.IsRunning = true
-			h.updateState()
-			h.sendEvent("board", "dfp_start")
+			h.turnOnGreenLed()
+			h.Publish("state", h.state)
+			h.sendEvent(ctx, "board", "dfp_start")
 		}
 	})
 
 	// When button stop
+	h.buttonStop.On(gpio.ButtonPush, func(s interface{}) {
+		if log.IsLevelEnabled(log.DebugLevel) {
+			log.Debug("Button stop pushed")
+		}
+
+		if h.state.IsRunning {
+			h.state.IsRunning = false
+			h.turnOffGreenLed()
+			h.Publish("state", h.state)
+			h.sendEvent(ctx, "board", "dfp_stop")
+		}
+	})
 
 	// When button wash
+	h.buttonWash.On(gpio.ButtonPush, func(s interface{}) {
+		if log.IsLevelEnabled(log.DebugLevel) {
+			log.Debug("Button wash pushed")
+		}
+
+		// Run force wash if not already wash, or is not on emergency stopped
+		if !h.state.IsWashed && !h.state.IsEmergencyStopped {
+			if log.IsLevelEnabled(log.DebugLevel) {
+				log.Debug("Run force wash")
+				h.wash()
+			}
+		}
+	})
 
 	// When button force drum
+	h.buttonForceDrum.On(gpio.ButtonPush, func(s interface{}) {
+		if log.IsLevelEnabled(log.DebugLevel) {
+			log.Debug("Button force drum pushed")
+		}
+
+		// Run force drum if not already wash, or is not on emergency stopped
+		if !h.state.IsWashed && !h.state.IsEmergencyStopped {
+			if log.IsLevelEnabled(log.DebugLevel) {
+				log.Debug("Run force drum")
+				h.startDrum()
+			}
+		}
+	})
+	h.buttonForceDrum.On(gpio.ButtonRelease, func(s interface{}) {
+		if log.IsLevelEnabled(log.DebugLevel) {
+			log.Debug("Button force drum released")
+		}
+
+		// Stop force drum if not already wash
+		if !h.state.IsWashed {
+			if log.IsLevelEnabled(log.DebugLevel) {
+				log.Debug("Stop force drum")
+				h.stopDrum()
+			}
+		}
+	})
 
 	// When button force pump
+	h.buttonForcePump.On(gpio.ButtonPush, func(s interface{}) {
+		if log.IsLevelEnabled(log.DebugLevel) {
+			log.Debug("Button force pump pushed")
+		}
+
+		// Run force pump if not already wash, or is not on emergency stopped
+		if !h.state.IsWashed && !h.state.IsEmergencyStopped {
+			if log.IsLevelEnabled(log.DebugLevel) {
+				log.Debug("Run force pump")
+				h.startPump()
+			}
+		}
+	})
+	h.buttonForcePump.On(gpio.ButtonRelease, func(s interface{}) {
+		if log.IsLevelEnabled(log.DebugLevel) {
+			log.Debug("Button force pump released")
+		}
+
+		// Stop force pump if not already wash
+		if !h.state.IsWashed {
+			if log.IsLevelEnabled(log.DebugLevel) {
+				log.Debug("Stop force pump")
+				h.stopPump()
+			}
+		}
+	})
 
 	// When button set
+	h.buttonSet.On(gpio.ButtonPush, func(s interface{}) {
+		if log.IsLevelEnabled(log.DebugLevel) {
+			log.Debug("Button set pushed")
+		}
+	})
+
+	// When water captor ask wash
+	wash := func(s interface{}) {
+		if log.IsLevelEnabled(log.DebugLevel) {
+			log.Debug("Water captor pushed")
+		}
+
+		// Lauch event only if can wash
+		if h.state.ShouldWash() {
+			h.Publish("wash", true)
+		}
+	}
+	h.captorWaterUpper.On(gpio.ButtonPush, wash)
+	h.captorWaterUnder.On(gpio.ButtonPush, wash)
 
 }
 
@@ -201,4 +406,16 @@ func (h *DFPBoard) Start(ctx context.Context) (err error) {
 
 	return h.gobot.Start(false)
 
+}
+
+// Stop permit to stop gobot.
+// It send event of name `stop`. It can be used to stop routines.
+func (h *DFPBoard) Stop(ctx context.Context) (err error) {
+
+	err = h.gobot.Stop()
+	if err != nil {
+		return err
+	}
+
+	h.Publish("stop", true)
 }

@@ -2,7 +2,7 @@ package dfpboard
 
 import log "github.com/sirupsen/logrus"
 
-func (h *DFPBoard) startDrump() {
+func (h *DFPBoard) startDrum() {
 	err := h.relayDrum.On()
 	if err != nil {
 		log.Errorf("Error when start drum: %s", err.Error())
@@ -14,7 +14,7 @@ func (h *DFPBoard) startDrump() {
 	}
 }
 
-func (h *DFPBoard) stopDrump() {
+func (h *DFPBoard) stopDrum() {
 	err := h.relayDrum.Off()
 	if err != nil {
 		log.Errorf("Error when stop drum: %s", err.Error())
