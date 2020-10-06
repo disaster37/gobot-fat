@@ -27,7 +27,7 @@ func (h *DFPBoard) turnOffGreenLed() {
 }
 
 func (h *DFPBoard) turnOnRedLed() {
-	err := h.ledGreen.On()
+	err := h.ledRed.On()
 	if err != nil {
 		log.Errorf("Error when turn on RedLed: %s", err.Error())
 		return
@@ -39,7 +39,7 @@ func (h *DFPBoard) turnOnRedLed() {
 }
 
 func (h *DFPBoard) turnOffRedLed() {
-	err := h.ledGreen.Off()
+	err := h.ledRed.Off()
 	if err != nil {
 		log.Errorf("Error when turn of RedLed: %s", err.Error())
 		return

@@ -12,13 +12,6 @@ func (h *DFPBoard) wash() {
 
 }
 
-func (h *DFPBoard) updateState() {
-
-	h.mutexState.Lock()
-	defer h.mutexState.Unlock()
-
-}
-
 func (h *DFPBoard) sendEvent(ctx context.Context, kind string, name string, args ...interface{}) {
 	event := &models.Event{
 		SourceID:   h.state.Name,

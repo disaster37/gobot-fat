@@ -52,9 +52,9 @@ func (h *DFPBoard) stopPump() {
 
 func (h *DFPBoard) forceStopRelais() {
 	go func() {
-		isErr := false
+		isErr := true
 
-		for !isErr {
+		for isErr {
 			isErr = false
 			err := h.relayDrum.Off()
 			if err != nil {

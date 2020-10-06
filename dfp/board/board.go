@@ -47,7 +47,7 @@ type DFPBoard struct {
 }
 
 //NewDFPBoard return the DFP board with all IO created but not started
-func NewDFPBoard(configHandler *viper.Viper, configUsecase dfpconfig.Usecase, eventUsecase event.Usecase, stateUsecase dfpstate.Usecase, state *models.DFPState) (dfpBoard *DFPBoard) {
+func NewDFP(configHandler *viper.Viper, configUsecase dfpconfig.Usecase, eventUsecase event.Usecase, stateUsecase dfpstate.Usecase, state *models.DFPState) (dfpBoard *DFPBoard) {
 
 	dfpBoard = &DFPBoard{
 		configHandler: configHandler,
@@ -76,7 +76,7 @@ func NewDFPBoard(configHandler *viper.Viper, configUsecase dfpconfig.Usecase, ev
 	dfpBoard.buttonStop.DefaultState = 1
 	dfpBoard.buttonWash = gpio.NewButtonDriver(dfpBoard.board, configHandler.GetString("pin.button.wash"))
 	dfpBoard.buttonWash.DefaultState = 1
-	dfpBoard.buttonForceDrum = gpio.NewButtonDriver(dfpBoard.board, configHandler.GetString("pin.button.force_drump"))
+	dfpBoard.buttonForceDrum = gpio.NewButtonDriver(dfpBoard.board, configHandler.GetString("pin.button.force_drum"))
 	dfpBoard.buttonForceDrum.DefaultState = 1
 	dfpBoard.buttonForcePump = gpio.NewButtonDriver(dfpBoard.board, configHandler.GetString("pin.button.force_pump"))
 	dfpBoard.buttonForcePump.DefaultState = 1
@@ -127,10 +127,16 @@ func (h *DFPBoard) work() {
 
 	// If run normally
 	if h.state.IsRunning && !h.state.IsSecurity && !h.state.IsEmergencyStopped {
+		if log.IsLevelEnabled(log.DebugLevel) {
+			log.Debug("DFP run...")
+		}
 		h.turnOnGreenLed()
 		h.turnOffRedLed()
 	} else {
 		// It stopped or security
+		if log.IsLevelEnabled(log.DebugLevel) {
+			log.Debug("DFP stopped or in security")
+		}
 		h.forceStopRelais()
 		h.turnOffGreenLed()
 		h.turnOnRedLed()
@@ -259,12 +265,11 @@ func (h *DFPBoard) work() {
 			log.Debug("Button start pushed")
 		}
 
-		if !h.state.IsRunning {
-			h.state.IsRunning = true
-			h.turnOnGreenLed()
-			h.Publish("state", h.state)
-			h.sendEvent(ctx, "board", "dfp_start")
+		err := h.StartDFP(ctx)
+		if err != nil {
+			log.Errorf("When start DFP: %s", err.Error())
 		}
+
 	})
 
 	// When button stop
@@ -273,12 +278,11 @@ func (h *DFPBoard) work() {
 			log.Debug("Button stop pushed")
 		}
 
-		if h.state.IsRunning {
-			h.state.IsRunning = false
-			h.turnOffGreenLed()
-			h.Publish("state", h.state)
-			h.sendEvent(ctx, "board", "dfp_stop")
+		err := h.StopDFP(ctx)
+		if err != nil {
+			log.Errorf("When stop DFP: %s", err.Error())
 		}
+
 	})
 
 	// When button wash
@@ -291,65 +295,64 @@ func (h *DFPBoard) work() {
 		if !h.state.IsWashed && !h.state.IsEmergencyStopped {
 			if log.IsLevelEnabled(log.DebugLevel) {
 				log.Debug("Run force wash")
-				h.wash()
+				err := h.ForceWashing(ctx)
+				if err != nil {
+					log.Errorf("When force washing: %s", err.Error())
+				}
 			}
 		}
 	})
 
-	// When button force drum
+	// Manual drum
 	h.buttonForceDrum.On(gpio.ButtonPush, func(s interface{}) {
+		// Start
 		if log.IsLevelEnabled(log.DebugLevel) {
 			log.Debug("Button force drum pushed")
 		}
 
-		// Run force drum if not already wash, or is not on emergency stopped
-		if !h.state.IsWashed && !h.state.IsEmergencyStopped {
-			if log.IsLevelEnabled(log.DebugLevel) {
-				log.Debug("Run force drum")
-				h.startDrum()
-			}
+		err := h.StartManualDrum(ctx)
+		if err != nil {
+			log.Errorf("When start manual drum: %s", err.Error())
 		}
+
 	})
 	h.buttonForceDrum.On(gpio.ButtonRelease, func(s interface{}) {
+		// Stop
 		if log.IsLevelEnabled(log.DebugLevel) {
 			log.Debug("Button force drum released")
 		}
 
-		// Stop force drum if not already wash
-		if !h.state.IsWashed {
-			if log.IsLevelEnabled(log.DebugLevel) {
-				log.Debug("Stop force drum")
-				h.stopDrum()
-			}
+		err := h.StopManualDrum(ctx)
+		if err != nil {
+			log.Errorf("When stop manual drum: %s", err.Error())
 		}
+
 	})
 
-	// When button force pump
+	// Manual pump
 	h.buttonForcePump.On(gpio.ButtonPush, func(s interface{}) {
+		// Start
 		if log.IsLevelEnabled(log.DebugLevel) {
 			log.Debug("Button force pump pushed")
 		}
 
-		// Run force pump if not already wash, or is not on emergency stopped
-		if !h.state.IsWashed && !h.state.IsEmergencyStopped {
-			if log.IsLevelEnabled(log.DebugLevel) {
-				log.Debug("Run force pump")
-				h.startPump()
-			}
+		err := h.StartManualPump(ctx)
+		if err != nil {
+			log.Errorf("When start manual pump: %s", err.Error())
 		}
+
 	})
 	h.buttonForcePump.On(gpio.ButtonRelease, func(s interface{}) {
+		// Stop
 		if log.IsLevelEnabled(log.DebugLevel) {
 			log.Debug("Button force pump released")
 		}
 
-		// Stop force pump if not already wash
-		if !h.state.IsWashed {
-			if log.IsLevelEnabled(log.DebugLevel) {
-				log.Debug("Stop force pump")
-				h.stopPump()
-			}
+		err := h.StopManualPump(ctx)
+		if err != nil {
+			log.Errorf("When stop manual pump: %s", err.Error())
 		}
+
 	})
 
 	// When button set
@@ -377,6 +380,18 @@ func (h *DFPBoard) work() {
 
 // Start will init some item, like INPUT_PULLUP button, then start gobot
 func (h *DFPBoard) Start(ctx context.Context) (err error) {
+
+	// Load config
+	config, err := h.configUsecase.Get(context.TODO())
+	if err != nil {
+		return err
+	}
+	h.config = config
+
+	if log.IsLevelEnabled(log.DebugLevel) {
+		log.Debugf("Current config: %+v", h.config)
+		log.Debugf("Current state %+v", h.state)
+	}
 
 	// Start connection on board and set INPUT_PULLUP on some pins
 	err = h.board.Connect()
@@ -418,4 +433,138 @@ func (h *DFPBoard) Stop(ctx context.Context) (err error) {
 	}
 
 	h.Publish("stop", true)
+
+	return nil
+}
+
+// Name return the current board name
+func (h *DFPBoard) Name() string {
+	return h.gobot.Name
+}
+
+// Board return public board data
+func (h *DFPBoard) Board() *models.Board {
+	return &models.Board{
+		Name:     h.Name(),
+		IsOnline: h.isOnline,
+	}
+}
+
+// IsOnline return is board is online
+func (h *DFPBoard) IsOnline() bool {
+	return h.isOnline
+}
+
+// StartDFP put dfp on auto
+func (h *DFPBoard) StartDFP(ctx context.Context) (err error) {
+
+	if !h.state.IsRunning {
+		h.state.IsRunning = true
+		err = h.ledGreen.On()
+		if err != nil {
+			return
+		}
+		h.Publish("state", h.state)
+		h.sendEvent(ctx, "board", "dfp_start")
+	}
+
+	return
+}
+
+// StopDFP stop dfp and disable auto
+func (h *DFPBoard) StopDFP(ctx context.Context) (err error) {
+
+	if h.state.IsRunning {
+		h.state.IsRunning = false
+		err = h.ledGreen.Off()
+		if err != nil {
+			return
+		}
+		h.Publish("state", h.state)
+		h.sendEvent(ctx, "board", "dfp_stop")
+	}
+
+	return
+}
+
+// ForceWashing start a washing cycle
+func (h *DFPBoard) ForceWashing(ctx context.Context) (err error) {
+	return
+}
+
+// StartManualDrum force start drum motor
+// Only if not already wash and is not on emergency stopped
+func (h *DFPBoard) StartManualDrum(ctx context.Context) (err error) {
+
+	if !h.state.IsWashed && !h.state.IsEmergencyStopped {
+		if log.IsLevelEnabled(log.DebugLevel) {
+			log.Debug("Run force drum")
+		}
+
+		err = h.relayDrum.On()
+		if err != nil {
+			return
+		}
+
+	}
+	return
+}
+
+// StopManualDrum force stop drum motor
+// Only if not current washing
+func (h *DFPBoard) StopManualDrum(ctx context.Context) (err error) {
+
+	if !h.state.IsWashed {
+		if log.IsLevelEnabled(log.DebugLevel) {
+			log.Debug("Stop force drum")
+		}
+
+		err = h.relayDrum.Off()
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+
+// StartManualPump force start pump
+// Only if not already wash and is not on emergency stopped
+func (h *DFPBoard) StartManualPump(ctx context.Context) (err error) {
+
+	if !h.state.IsWashed && !h.state.IsEmergencyStopped {
+		if log.IsLevelEnabled(log.DebugLevel) {
+			log.Debug("Run force pump")
+		}
+
+		err = h.relayPump.On()
+		if err != nil {
+			return
+		}
+	}
+
+	return
+}
+
+// StopManualPump force stop pump
+// Only if not already wash
+func (h *DFPBoard) StopManualPump(ctx context.Context) (err error) {
+
+	// Stop force pump
+	if !h.state.IsWashed {
+		if log.IsLevelEnabled(log.DebugLevel) {
+			log.Debug("Stop force pump")
+		}
+
+		err = h.relayPump.Off()
+		if err != nil {
+			return
+		}
+	}
+
+	return
+}
+
+// State return copy of current state
+func (h *DFPBoard) State() (state models.DFPState) {
+	return *h.state
 }

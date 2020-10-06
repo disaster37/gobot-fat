@@ -7,7 +7,7 @@ require (
 	github.com/apache/thrift v0.13.0 // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/disaster37/go-arest v0.0.2-0.20200926103622-fcb0f329d115
-	github.com/disaster37/gobot-arest v1.0.3
+	github.com/disaster37/gobot-arest v1.0.4-0.20201006181359-b9f344b3bbc6
 
 	github.com/elastic/go-elasticsearch/v7 v7.9.0
 	github.com/jinzhu/gorm v1.9.16
