@@ -7,8 +7,8 @@ services:
             PGDATA: /var/lib/postgresql/data/pgdata
             POSTGRES_DB: dfp
             POSTGRES_USER: dfp
-        volumes: 
-            - /data/dfp:/var/lib/postgresql/data
+        #volumes: 
+        #    - /data/dfp:/var/lib/postgresql/data
         network_mode: "host"
         ports:
             - 5432:5432

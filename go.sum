@@ -68,6 +68,14 @@ github.com/disaster37/gobot-arest v1.0.3 h1:bBFatFfAo4djtdxfddxGreqLTGxQXiCLlb3L
 github.com/disaster37/gobot-arest v1.0.3/go.mod h1:EQ2pT2n2fl/P7XNp0pN3cvUBJYLHfJ5YXOFBw079pus=
 github.com/disaster37/gobot-arest v1.0.4-0.20201006181359-b9f344b3bbc6 h1:B8MGB6eRByuweJnb2YQOQ6DigUZP+8ClUneaC33/LzM=
 github.com/disaster37/gobot-arest v1.0.4-0.20201006181359-b9f344b3bbc6/go.mod h1:EQ2pT2n2fl/P7XNp0pN3cvUBJYLHfJ5YXOFBw079pus=
+github.com/disaster37/gobot-arest v1.0.4-0.20201010074941-5be6f65d2fa5 h1:eEI6a4Wr7AwElsTFMcm7TF7W//o4WMOXBh9h6CiAHLQ=
+github.com/disaster37/gobot-arest v1.0.4-0.20201010074941-5be6f65d2fa5/go.mod h1:EQ2pT2n2fl/P7XNp0pN3cvUBJYLHfJ5YXOFBw079pus=
+github.com/disaster37/gobot-arest v1.0.4-0.20201010080522-670dcde8bf72 h1:xOoPGwjXNxVELqU2y9QIX8oQwVXWizYIwi1RYIfUfEg=
+github.com/disaster37/gobot-arest v1.0.4-0.20201010080522-670dcde8bf72/go.mod h1:EQ2pT2n2fl/P7XNp0pN3cvUBJYLHfJ5YXOFBw079pus=
+github.com/disaster37/gobot-arest v1.0.4 h1:QLPx5PV2Pu1Vd/LxDLiQzQ8CyDrYezZ2kfI5W3KpqsY=
+github.com/disaster37/gobot-arest v1.0.4/go.mod h1:EQ2pT2n2fl/P7XNp0pN3cvUBJYLHfJ5YXOFBw079pus=
+github.com/disaster37/gobot-arest v1.0.5-0.20201011165441-f7f04e61c7e7 h1:Lm6LkORJj7QH0F/c0FHMlO2DYE7TGpJ26SHUgOFBURc=
+github.com/disaster37/gobot-arest v1.0.5-0.20201011165441-f7f04e61c7e7/go.mod h1:EQ2pT2n2fl/P7XNp0pN3cvUBJYLHfJ5YXOFBw079pus=
 github.com/donovanhide/eventsource v0.0.0-20171031113327-3ed64d21fb0b/go.mod h1:56wL82FO0bfMU5RvfXoIwSOP2ggqqxT+tAfNEIyxuHw=
 github.com/eapache/go-resiliency v1.1.0/go.mod h1:kFI+JgMyC7bLPUVY133qvEBtVayf5mFgVsvEsIPBvNs=
 github.com/eapache/go-xerial-snappy v0.0.0-20180814174437-776d5712da21/go.mod h1:+020luEh2TKB4/GOp8oxxtq0Daoen/Cii55CzbTV6DU=

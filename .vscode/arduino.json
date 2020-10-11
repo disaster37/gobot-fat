@@ -1,6 +1,6 @@
 {
     "board": "arduino:avr:mega",
-    "configuration": "cpu=atmega2560",
-    "sketch": "../../Arduino/master/fat/fat.ino",
-    "port": "/dev/ttyUSB0"
+    "sketch": "../../Arduino/mkr1010_tank1/mkr1010_tank1.ino",
+    "port": "/dev/ttyUSB0",
+    "configuration": "cpu=atmega2560"
 }
