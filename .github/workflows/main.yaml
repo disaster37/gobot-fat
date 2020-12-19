@@ -33,4 +33,4 @@ jobs:
                 --platform=linux/arm/v8,linux/arm64 \
                 --output "type=image,push=true" \
                 --file ./Dockerfile . \
-                --tag $(echo "${DOCKER_USERNAME}" | tr '[:upper:]' '[:lower:]')/ttrss:latest
+                --tag disaster37/gobot-api:latest
