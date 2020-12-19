@@ -39,14 +39,6 @@ jobs:
             with:
                 context: .
                 file: ./Dockerfile
-                platforms: linux/amd64,linux/arm64
+                platforms: linux/amd64,linux/arm64,linux/arm/v8
                 push: true
-                tags: disaster37/gobot-api:latest
-        -
-            name: Build dockerfile (with push)
-            run: |
-                docker buildx build \
-                --platform=linux/amd64,linux/arm64,linux/arm/v7 \ 
-                --output "type=image,push=true" \
-                --file ./Dockerfile . \
-                --tag disaster37/gobot-api:latest
+                tags: disaster/gobot-api:latest
