@@ -1,15 +1,12 @@
-FROM arm64v8/golang:latest as builder
+FROM golang:latest as builder
 WORKDIR /go/src/app
 COPY . .
 RUN \
   go build -o dfp
 
 
-FROM arm64v8/alpine:latest
-
-
+FROM alpine:latest
 COPY --from=builder /go/src/app/dfp /opt/dfp/bin/dfp
-
 RUN \
   chmod +x /opt/dfp/bin/dfp &&\
   mkdir -p /opt/dfp/config &&\
@@ -21,13 +18,8 @@ RUN \
   apk upgrade &&\
   apk add --update curl bash wget tzdata &&\
   rm -rf /tmp/* /var/cache/apk/*
-
 ENV TZ "Europe/Paris"
-
 WORKDIR "/opt/dfp"
-
 EXPOSE "4040"
-
 VOLUME [ "/opt/dfp/data" ]
-
 CMD [ "/opt/dfp/bin/dfp" ]
