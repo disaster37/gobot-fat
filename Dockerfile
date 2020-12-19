@@ -15,10 +15,12 @@ RUN \
   adduser -g "DFP user" -D -h /opt/dfp -G dfp -s /bin/sh -u 1000 dfp &&\
   chown -R dfp:dfp /opt/dfp &&\
   apk upgrade
-RUN apk add --update curl
+RUN apk add curl
+
+# Break buildx on github
 #RUN apk add --update bash
 #RUN apk add --update wget
-RUN apk add --update tzdata
+RUN apk add tzdata
 RUN   rm -rf /tmp/* /var/cache/apk/*
 ENV TZ "Europe/Paris"
 WORKDIR "/opt/dfp"
