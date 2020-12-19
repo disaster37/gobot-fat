@@ -41,4 +41,4 @@ jobs:
                 file: ./Dockerfile
                 platforms: linux/arm/v8
                 push: true
-                tags: disaster/gobot-api:latest
+                tags: disaster/dfp-api:latest
