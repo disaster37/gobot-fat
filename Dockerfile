@@ -1,17 +1,14 @@
-FROM arm32v6/alpine:latest as builder
-
-WORKDIR /root
-
+FROM arm64v8/golang:latest as builder
+WORKDIR /go/src/app
+COPY . .
 RUN \
-  apk add --update git curl go &&\
-  git clone https://github.com/disaster37/gobot-fat.git &&\
-  cd gobot-fat &&\
-  go build
-
-FROM arm32v6/alpine:latest
+  go build -o dfp
 
 
-COPY --from=builder /root/gobot-fat/gobot-fat /opt/dfp/bin/dfp
+FROM arm64v8/alpine:latest
+
+
+COPY --from=builder /go/src/app/dfp /opt/dfp/bin/dfp
 
 RUN \
   chmod +x /opt/dfp/bin/dfp &&\
@@ -22,8 +19,10 @@ RUN \
   adduser -g "DFP user" -D -h /opt/dfp -G dfp -s /bin/sh -u 1000 dfp &&\
   chown -R dfp:dfp /opt/dfp &&\
   apk upgrade &&\
-  apk add --update curl bash &&\
+  apk add --update curl bash wget tzdata &&\
   rm -rf /tmp/* /var/cache/apk/*
+
+ENV TZ "Europe/Paris"
 
 WORKDIR "/opt/dfp"
 
@@ -31,4 +30,4 @@ EXPOSE "4040"
 
 VOLUME [ "/opt/dfp/data" ]
 
-CMD [ "bin/dfp" ]
+CMD [ "/opt/dfp/bin/dfp" ]
