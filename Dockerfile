@@ -2,10 +2,10 @@ FROM golang:1.15 as builder
 WORKDIR /go/src/app
 COPY . .
 RUN \
-  CGO_ENABLED=0 go build -o dfp
+  CGO_ENABLED=0 go build
 
 FROM alpine:3.12
-COPY --from=builder /go/src/app/dfp /opt/dfp/bin/dfp
+COPY --from=builder /go/src/app/gobot-fat /opt/dfp/bin/dfp
 RUN \
   chmod +x /opt/dfp/bin/dfp &&\
   mkdir -p /opt/dfp/config &&\
