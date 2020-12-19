@@ -4,6 +4,7 @@ COPY . .
 RUN \
   CGO_ENABLED=0 go build
 
+
 FROM alpine:3.12
 COPY --from=builder /go/src/app/gobot-fat /opt/dfp/bin/dfp
 RUN \
