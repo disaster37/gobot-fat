@@ -20,7 +20,7 @@ RUN apk add curl
 # Break buildx on github
 #RUN apk add --update bash
 #RUN apk add --update wget
-RUN apk add tzdata
+#RUN apk add tzdata
 RUN   rm -rf /tmp/* /var/cache/apk/*
 ENV TZ "Europe/Paris"
 WORKDIR "/opt/dfp"
