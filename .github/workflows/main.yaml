@@ -30,7 +30,7 @@ jobs:
             name: Build dockerfile (with push)
             run: |
                 docker buildx build \
-                --platform=linux/arm/v8,linux/arm64 \
+                --platform=linux/arm/v8 \ 
                 --output "type=image,push=true" \
                 --file ./Dockerfile . \
                 --tag disaster37/gobot-api:latest
