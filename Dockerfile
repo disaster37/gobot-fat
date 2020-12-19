@@ -17,7 +17,7 @@ RUN \
   apk upgrade
 RUN apk add --update curl
 #RUN apk add --update bash
-RUN apk add --update wget
+#RUN apk add --update wget
 RUN apk add --update tzdata
 RUN   rm -rf /tmp/* /var/cache/apk/*
 ENV TZ "Europe/Paris"
