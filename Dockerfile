@@ -4,7 +4,7 @@ COPY . .
 RUN \
   CGO_ENABLED=0 go build -o dfp
 
-FROM alpine:latest
+FROM alpine:3.12
 COPY --from=builder /go/src/app/dfp /opt/dfp/bin/dfp
 RUN \
   chmod +x /opt/dfp/bin/dfp &&\
@@ -14,9 +14,12 @@ RUN \
   addgroup -g 1000 dfp && \
   adduser -g "DFP user" -D -h /opt/dfp -G dfp -s /bin/sh -u 1000 dfp &&\
   chown -R dfp:dfp /opt/dfp &&\
-  apk upgrade &&\
-  apk add --update curl bash wget tzdata &&\
-  rm -rf /tmp/* /var/cache/apk/*
+  apk upgrade
+RUN apk add --update curl
+RUN apk add --update bash
+RUN apk add --update wget
+RUN apk add --update tzdata
+RUN   rm -rf /tmp/* /var/cache/apk/*
 ENV TZ "Europe/Paris"
 WORKDIR "/opt/dfp"
 EXPOSE "4040"
