@@ -1,4 +1,4 @@
-name: '[builder] CI for master'
+name: '[builder] CI for release'
 
 on:
   push:
@@ -28,7 +28,8 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-      - name: Build and push release
+      - name: Build and push master
+        if: contains(github.ref, 'refs/heads')
         id: docker_build
         uses: docker/build-push-action@v2
         with:
@@ -37,5 +38,16 @@ jobs:
           platforms: linux/arm/v8
           push: true
           tags: |
-            disaster/dfp-api:${{ github.ref }}
+            disaster/dfp-api:master
+      - name: Build and push master
+        if: contains(github.ref, 'refs/tags')
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/arm/v8
+          push: true
+          tags: |
+            disaster/dfp-api:${GITHUB_REF#refs/tags/}
       
