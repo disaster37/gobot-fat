@@ -13,6 +13,7 @@ import (
 	dfpBoard "github.com/disaster37/gobot-fat/dfp/board"
 	dfpHttpDeliver "github.com/disaster37/gobot-fat/dfp/delivery/http"
 	dfpUsecase "github.com/disaster37/gobot-fat/dfp/usecase"
+	dfpConfigHttpDeliver "github.com/disaster37/gobot-fat/dfp_config/delivery/http"
 	dfpConfigRepo "github.com/disaster37/gobot-fat/dfp_config/repository"
 	dfpConfigUsecase "github.com/disaster37/gobot-fat/dfp_config/usecase"
 	dfpStateHttpDeliver "github.com/disaster37/gobot-fat/dfp_state/delivery/http"
@@ -251,6 +252,7 @@ func main() {
 		panic("Failed to retrive dfpconfig from usecase")
 	}
 	log.Info("Get dfpconfig successfully")
+	dfpConfigHttpDeliver.NewDFPConfigHandler(api, dfpConfigU)
 
 	// DFP state
 	dfpStateRepoSQL := dfpStateRepo.NewSQLDFPStateRepository(db)
