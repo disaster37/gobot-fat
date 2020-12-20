@@ -1,4 +1,5 @@
 FROM golang:1.15 as builder
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 WORKDIR /go/src/app
 COPY . .
 RUN \
@@ -6,6 +7,7 @@ RUN \
 
 
 FROM alpine:3.12
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 COPY --from=builder /go/src/app/gobot-fat /opt/dfp/bin/dfp
 RUN \
   chmod +x /opt/dfp/bin/dfp &&\
@@ -15,13 +17,8 @@ RUN \
   addgroup -g 1000 dfp && \
   adduser -g "DFP user" -D -h /opt/dfp -G dfp -s /bin/sh -u 1000 dfp &&\
   chown -R dfp:dfp /opt/dfp &&\
-  apk upgrade
-RUN apk add curl
-
-# Break buildx on github
-#RUN apk add --update bash
-#RUN apk add --update wget
-#RUN apk add tzdata
+  apk upgrade &&\
+  apk add --update curl bash wget tzdata
 RUN   rm -rf /tmp/* /var/cache/apk/*
 ENV TZ "Europe/Paris"
 WORKDIR "/opt/dfp"
