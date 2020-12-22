@@ -7,5 +7,5 @@ type Board struct {
 	Name string `json:"name"`
 
 	// IsOnline is true if board is online
-	IsOnline bool `json:"isOnline"`
+	IsOnline bool `json:"is_online"`
 }
