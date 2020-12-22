@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/disaster37/gobot-fat/dfp_config"
+	dfpconfig "github.com/disaster37/gobot-fat/dfp_config"
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
@@ -63,23 +63,33 @@ func (h *DFPConfigHandler) Get(c echo.Context) error {
 }
 
 func (h *DFPConfigHandler) Update(c echo.Context) error {
-	var config models.DFPConfig
-	err := c.Bind(&config)
+	jsonData := models.NewJSONAPIData(&models.DFPConfig{})
+	err := c.Bind(jsonData)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, err.Error())
 	}
+
+	log.Debugf("Data: %+v", jsonData)
 
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
 
-	err = h.dUsecase.Update(ctx, &config)
+	config := jsonData.Data.(*models.JSONAPIData).Attributes.(*models.DFPConfig)
+
+	err = h.dUsecase.Update(ctx, config)
 
 	if err != nil {
 		log.Errorf("Error when update dfp_config: %s", err.Error())
 		return c.JSON(500, ResponseError{Code: http.StatusInternalServerError, Message: err.Error()})
 	}
 
-	return c.JSON(http.StatusCreated, config)
+	return c.JSON(http.StatusCreated, models.JSONAPI{
+		Data: models.JSONAPIData{
+			Type:       "dfp-configs",
+			Id:         strconv.Itoa(int(config.ID)),
+			Attributes: config,
+		},
+	})
 }
