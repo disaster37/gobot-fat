@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/jinzhu/gorm"
 )
@@ -30,6 +31,15 @@ type TFPConfig struct {
 
 	//Mode is ozone, or UVC or none
 	Mode string `json:"mode" gorm:"column:mode" validate:"required"`
+
+	// UVC1BlisterTime is the date when replace UVC1 blister
+	UVC1BlisterTime time.Time `json:"uvc1_blister_time" gorm:"column:uvc1_blister_time" validate:"required"`
+
+	// UVC2BlisterTime is the date when replace UVC2 blister
+	UVC2BlisterTime time.Time `json:"uvc2_blister_time" gorm:"column:uvc2_blister_time" validate:"required"`
+
+	// OzoneBlisterTime is the date when replace Ozone blister
+	OzoneBlisterTime time.Time `json:"ozone_blister_time" gorm:"column:ozone_blister_time" validate:"required"`
 }
 
 func (h *TFPConfig) String() string {

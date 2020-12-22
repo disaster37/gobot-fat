@@ -31,20 +31,11 @@ type TFPState struct {
 	// FilterBubbleRunning is true if filter bubble running
 	FilterBubbleRunning bool `json:"filter_bubble_running" gorm:"column:filter_bubble_running" validate:"required"`
 
-	// UVC1BlisterTime is the date when replace UVC1 blister
-	UVC1BlisterTime time.Time `json:"uvc1_blister_time" gorm:"column:uvc1_blister_time" validate:"required"`
-
 	// UVC1BlisterNbHour is the blister usage in hour of UVC1
 	UVC1BlisterNbHour int64 `json:"uvc1_blister_nb_hour" gorm:"column:uvc1_blister_nb_hour" validate:"required"`
 
-	// UVC2BlisterTime is the date when replace UVC2 blister
-	UVC2BlisterTime time.Time `json:"uvc2_blister_time" gorm:"column:uvc2_blister_time" validate:"required"`
-
 	// UVC2BlisterNbHour is the blister usage in hour of UVC2
 	UVC2BlisterNbHour int64 `json:"uvc2_blister_nb_hour" gorm:"column:uvc2_blister_nb_hour" validate:"required"`
-
-	// OzoneBlisterTime is the date when replace Ozone blister
-	OzoneBlisterTime time.Time `json:"ozone_blister_time" gorm:"column:ozone_blister_time" validate:"required"`
 
 	// OzoneBlisterNbHour is the blister usage in hour of Ozone
 	OzoneBlisterNbHour int64 `json:"ozone_blister_nb_hour" gorm:"column:ozone_blister_nb_hour" validate:"required"`

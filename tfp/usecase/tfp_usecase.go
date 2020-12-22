@@ -177,10 +177,19 @@ func (h *tfpUsecase) UVC1BlisterNew(c context.Context) error {
 	if err != nil {
 		return err
 	}
+	config, err := h.config.Get(c)
+	if err != nil {
+		return err
+	}
 
-	state.UVC1BlisterTime = time.Now()
+	config.UVC1BlisterTime = time.Now()
+	state.UVC1BlisterNbHour = 0
 
 	err = h.state.Update(c, state)
+	if err != nil {
+		return err
+	}
+	err = h.config.Update(c, config)
 	if err != nil {
 		return err
 	}
@@ -194,10 +203,19 @@ func (h *tfpUsecase) UVC2BlisterNew(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	config, err := h.config.Get(ctx)
+	if err != nil {
+		return err
+	}
 
-	state.UVC2BlisterTime = time.Now()
+	config.UVC2BlisterTime = time.Now()
+	state.UVC2BlisterNbHour = 0
 
 	err = h.state.Update(ctx, state)
+	if err != nil {
+		return err
+	}
+	err = h.config.Update(ctx, config)
 	if err != nil {
 		return err
 	}
@@ -211,10 +229,19 @@ func (h *tfpUsecase) OzoneBlisterNew(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	config, err := h.config.Get(ctx)
+	if err != nil {
+		return err
+	}
 
-	state.OzoneBlisterTime = time.Now()
+	config.OzoneBlisterTime = time.Now()
+	state.OzoneBlisterNbHour = 0
 
 	err = h.state.Update(ctx, state)
+	if err != nil {
+		return err
+	}
+	err = h.config.Update(ctx, config)
 	if err != nil {
 		return err
 	}

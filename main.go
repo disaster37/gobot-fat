@@ -150,6 +150,9 @@ func main() {
 		StartTimeWaterfall:  "10:00",
 		StopTimeWaterfall:   "20:00",
 		Mode:                "none",
+		OzoneBlisterTime:    time.Now(),
+		UVC1BlisterTime:     time.Now(),
+		UVC2BlisterTime:     time.Now(),
 	}
 
 	err = tfpConfigU.Init(ctx, tfpConfig)
@@ -183,9 +186,6 @@ func main() {
 		OzoneBlisterNbHour:      0,
 		UVC1BlisterNbHour:       0,
 		UVC2BlisterNbHour:       0,
-		OzoneBlisterTime:        time.Now(),
-		UVC1BlisterTime:         time.Now(),
-		UVC2BlisterTime:         time.Now(),
 		AcknoledgeWaterfallAuto: false,
 		Name:                    configHandler.GetString("tfp.name"),
 	}

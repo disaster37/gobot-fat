@@ -119,13 +119,24 @@ func (h *TFPHandler) handleReboot(ctx context.Context) {
 // handleBlisterTime permit to increment the number of hour of each blister enabled
 func (h *TFPHandler) handleBlisterTime(ctx context.Context) {
 
+	// Update config
 	config, err := h.configUsecase.Get(ctx)
 	if err != nil {
 		log.Errorf("Error when read config to check if UVC2 or ozone: %s", err.Error())
 		return
 	}
 
+	// Update state (change blister from UI)
+	state, err := h.stateUsecase.Get(ctx)
+	if err != nil {
+		log.Errorf("Error when read state to check the current blister time: %s", err.Error())
+		return
+	}
+
 	isUpdated := false
+	h.state.UVC1BlisterNbHour = state.UVC1BlisterNbHour
+	h.state.UVC2BlisterNbHour = state.UVC2BlisterNbHour
+	h.state.OzoneBlisterNbHour = state.OzoneBlisterNbHour
 
 	switch config.Mode {
 	case "ozone":
