@@ -33,6 +33,9 @@ func NewTFPHandler(e *echo.Group, us tfp.Usecase) {
 	e.POST("/tfps/action/stop_pond_bubble", handler.StopPondBubble)
 	e.POST("/tfps/action/start_filter_bubble", handler.StartFilterBubble)
 	e.POST("/tfps/action/stop_filter_bubble", handler.StopFilterBubble)
+	e.POST("/tfps/action/change_uvc1_blister", handler.ChangeUVC1Blister)
+	e.POST("/tfps/action/change_uvc2_blister", handler.ChangeUVC2Blister)
+	e.POST("/tfps/action/change_ozone_blister", handler.ChangeOzoneBlister)
 	e.GET("/tfps", handler.GetState)
 
 }
@@ -366,6 +369,72 @@ func (h TFPHandler) StopFilterBubble(c echo.Context) error {
 		return c.JSON(500, models.NewJSONAPIerror(
 			"500",
 			"Error when stop filter bubble",
+			err.Error(),
+			nil,
+		))
+	}
+
+	return c.NoContent(http.StatusNoContent)
+}
+
+// ChangeUVC1Blister update to now the UVC1 blister
+func (h TFPHandler) ChangeUVC1Blister(c echo.Context) error {
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	err := h.dUsecase.UVC1BlisterNew(ctx)
+
+	if err != nil {
+		log.Errorf("Error when post change_uvc1_blister: %s", err.Error())
+		return c.JSON(500, models.NewJSONAPIerror(
+			"500",
+			"Error when change UVC1 blister",
+			err.Error(),
+			nil,
+		))
+	}
+
+	return c.NoContent(http.StatusNoContent)
+}
+
+// ChangeUVC2Blister update to now the UVC2 blister
+func (h TFPHandler) ChangeUVC2Blister(c echo.Context) error {
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	err := h.dUsecase.UVC2BlisterNew(ctx)
+
+	if err != nil {
+		log.Errorf("Error when post change_uvc2_blister: %s", err.Error())
+		return c.JSON(500, models.NewJSONAPIerror(
+			"500",
+			"Error when change UVC2 blister",
+			err.Error(),
+			nil,
+		))
+	}
+
+	return c.NoContent(http.StatusNoContent)
+}
+
+// ChangeOzoneBlister update to now the ozone blister
+func (h TFPHandler) ChangeOzoneBlister(c echo.Context) error {
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	err := h.dUsecase.OzoneBlisterNew(ctx)
+
+	if err != nil {
+		log.Errorf("Error when post change_ozone_blister: %s", err.Error())
+		return c.JSON(500, models.NewJSONAPIerror(
+			"500",
+			"Error when change ozone blister",
 			err.Error(),
 			nil,
 		))
