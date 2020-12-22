@@ -235,11 +235,6 @@ func main() {
 		WaitTimeBetweenWashing:         30,
 		WashingDuration:                8,
 		StartWashingPumpBeforeWashing:  2,
-		Stopped:                        false,
-		EmergencyStopped:               false,
-		Auto:                           true,
-		SecurityDisabled:               false,
-		LastWashing:                    time.Now(),
 	}
 	err = dfpConfigU.Init(ctx, dfpConfig)
 	if err != nil {

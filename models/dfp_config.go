@@ -2,7 +2,6 @@ package models
 
 import (
 	"encoding/json"
-	"time"
 
 	"github.com/jinzhu/gorm"
 )
@@ -28,21 +27,6 @@ type DFPConfig struct {
 
 	// StartWashingPumpBeforeWashing is the time in seconds witch we start washing pump before run washing cycle
 	StartWashingPumpBeforeWashing int `json:"start_washing_pump_before_washing" gorm:"column:start_washing_pump_before_washing;type:bigint" validate:"required"`
-
-	// Stopped is true if DFP must be stopped
-	Stopped bool `json:"stopped" gorm:"column:stopped" validate:"required"`
-
-	// Emergency stopped is true if DFP must be stopped
-	EmergencyStopped bool `json:"emergency_stopped" gorm:"column:emergency_stopped" validate:"required"`
-
-	// Auto is true if DFP is in auto mode
-	Auto bool `json:"auto" gorm:"column:auto" validate:"required"`
-
-	// SecurityDisabled is true if security is disabled
-	SecurityDisabled bool `json:"security_disabled" gorm:"column:security_disabled" validate:"required"`
-
-	// LastWashing is the date of last washing time
-	LastWashing time.Time `json:"last_washing" gorm:"column:lastwashing"`
 
 	// Version of configuration
 	Version int64 `json:"version" gorm:"column:version;type:bigint" validate:"required"`
