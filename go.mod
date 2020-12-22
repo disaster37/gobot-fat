@@ -20,6 +20,7 @@ require (
 	github.com/stretchr/testify v1.6.1
 	github.com/x-cray/logrus-prefixed-formatter v0.5.2
 	gobot.io/x/gobot v1.14.0
+	github.com/stianeikeland/go-rpio/v4 v4.4.0
 
 )
 

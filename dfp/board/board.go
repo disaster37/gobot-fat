@@ -2,24 +2,23 @@ package dfpboard
 
 import (
 	"context"
-	"time"
 
-	"github.com/disaster37/gobot-arest/plateforms/arest"
-	"github.com/disaster37/gobot-arest/plateforms/arest/client"
 	dfpconfig "github.com/disaster37/gobot-fat/dfp_config"
 	dfpstate "github.com/disaster37/gobot-fat/dfp_state"
 	"github.com/disaster37/gobot-fat/event"
 	"github.com/disaster37/gobot-fat/models"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"github.com/stianeikeland/go-rpio/v4"
 	"gobot.io/x/gobot"
 	"gobot.io/x/gobot/drivers/gpio"
+	"gobot.io/x/gobot/platforms/raspi"
 )
 
 // DFPBoard is the DFP board
 type DFPBoard struct {
 	state               *models.DFPState
-	board               *arest.Adaptor
+	board               *raspi.Adaptor
 	gobot               *gobot.Robot
 	configUsecase       dfpconfig.Usecase
 	eventUsecase        event.Usecase
@@ -55,7 +54,7 @@ func NewDFP(configHandler *viper.Viper, configUsecase dfpconfig.Usecase, eventUs
 		eventUsecase:  eventUsecase,
 		stateUsecase:  stateUsecase,
 		state:         state,
-		board:         arest.NewSerialAdaptor(configHandler.GetString("port"), configHandler.GetString("name"), configHandler.GetDuration("timeout")*time.Second),
+		board:         raspi.NewAdaptor(),
 		Eventer:       gobot.NewEventer(),
 	}
 
@@ -151,12 +150,16 @@ func (h *DFPBoard) Start(ctx context.Context) (err error) {
 		h.configHandler.GetInt("pin.captor.security_under"),
 	}
 
-	for _, pin := range listPins {
-		err = h.board.Board.SetPinMode(ctx, pin, client.ModeInputPullup)
-		if err != nil {
-			return err
-		}
+	err = rpio.Open()
+	if err != nil {
+		return err
 	}
+	for _, pin := range listPins {
+		pin := rpio.Pin(pin)
+		pin.Input()
+		pin.PullUp()
+	}
+	rpio.Close()
 
 	return h.gobot.Start(false)
 
