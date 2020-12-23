@@ -29,6 +29,9 @@ import (
 	tankBoard "github.com/disaster37/gobot-fat/tank/board"
 	tankHttpDeliver "github.com/disaster37/gobot-fat/tank/delivery/http"
 	tankUsecase "github.com/disaster37/gobot-fat/tank/usecase"
+	tankConfigHttpDeliver "github.com/disaster37/gobot-fat/tank_config/delivery/http"
+	tankConfigRepo "github.com/disaster37/gobot-fat/tank_config/repository"
+	tankConfigUsecase "github.com/disaster37/gobot-fat/tank_config/usecase"
 	tfpBoard "github.com/disaster37/gobot-fat/tfp/board"
 	tfpHttpDeliver "github.com/disaster37/gobot-fat/tfp/delivery/http"
 	tfpUsecase "github.com/disaster37/gobot-fat/tfp/usecase"
@@ -108,6 +111,7 @@ func main() {
 	db.AutoMigrate(&models.DFPState{})
 	db.AutoMigrate(&models.TFPConfig{})
 	db.AutoMigrate(&models.TFPState{})
+	db.AutoMigrate(&models.TankConfig{})
 
 	// Init web server
 	e := echo.New()
@@ -211,11 +215,36 @@ func main() {
 	}
 
 	/***********************
-	 * Tank 1
+	 * Tank
 	 */
+	//Tank config
+	tankConfigRepoSQL := tankConfigRepo.NewSQLTankConfigRepository(db)
+	tankConfigRepoES := tankConfigRepo.NewElasticsearchTankConfigRepository(es, configHandler.GetString("elasticsearch.index.tank_config"))
+	tankConfigU := tankConfigUsecase.NewConfigUsecase(tankConfigRepoES, tankConfigRepoSQL, timeoutContext)
+	tank1Config := &models.TankConfig{
+		Name:         configHandler.GetString("tank1.name"),
+		Depth:        200,
+		SensorHeight: 20,
+		LiterPerCm:   50,
+	}
+
+	err = tankConfigU.Init(ctx, tank1Config)
+
+	if err != nil {
+		log.Errorf("Error appear when init Tank 1 config: %s", err.Error())
+		panic("Failed to init tank 1 config on SQL")
+	}
+	tank1Config, err = tankConfigU.Get(ctx, configHandler.GetString("tank1.name"))
+	if err != nil {
+		log.Errorf("Failed to retrive tank1config from usecase")
+		panic("Failed to retrive tank1config from usecase")
+	}
+	log.Info("Get tank1config successfully")
+	tankConfigHttpDeliver.NewTankConfigHandler(api, tankConfigU)
+
 	// Tank1 board
 	if configHandler.GetBool("tank1.enable") {
-		tank1B := tankBoard.NewTank(configHandler.Sub("tank1"), eventU)
+		tank1B := tankBoard.NewTank(configHandler.Sub("tank1"), tankConfigU, eventU)
 		boardU.AddBoard(tank1B)
 		tankU := tankUsecase.NewTankUsecase([]tank.Board{tank1B}, timeoutContext)
 		tankHttpDeliver.NewTankHandler(api, tankU)

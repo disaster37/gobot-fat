@@ -11,6 +11,7 @@ import (
 	"github.com/disaster37/gobot-fat/event"
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/tank"
+	tankconfig "github.com/disaster37/gobot-fat/tank_config"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -19,18 +20,16 @@ import (
 type TankHandler struct {
 	board         arest.Arest
 	eventUsecase  event.Usecase
+	configUsecase tankconfig.Usecase
 	configHandler *viper.Viper
 	data          *models.Tank
 	chStop        chan bool
 	name          string
-	depth         int
-	sensorHeight  int
-	literPerCm    int
 	isOnline      bool
 }
 
 // NewTank create handler to manage Tank
-func NewTank(configHandler *viper.Viper, eventUsecase event.Usecase) (tankHandler tank.Board) {
+func NewTank(configHandler *viper.Viper, configUsecase tankconfig.Usecase, eventUsecase event.Usecase) (tankHandler tank.Board) {
 
 	//Create client
 	c := rest.NewClient(configHandler.GetString("url"))
@@ -41,9 +40,7 @@ func NewTank(configHandler *viper.Viper, eventUsecase event.Usecase) (tankHandle
 		eventUsecase:  eventUsecase,
 		configHandler: configHandler,
 		name:          configHandler.GetString("name"),
-		depth:         configHandler.GetInt("depth"),
-		sensorHeight:  configHandler.GetInt("sensorHeight"),
-		literPerCm:    configHandler.GetInt("literPerCm"),
+		configUsecase: configUsecase,
 		data:          &models.Tank{},
 		isOnline:      false,
 		chStop:        make(chan bool),
@@ -132,12 +129,18 @@ func (h *TankHandler) read(ctx context.Context) error {
 		return err
 	}
 
-	distance := int(data.(float64))
+	distance := int64(data.(float64))
+
+	// Load current config
+	config, err := h.configUsecase.Get(ctx, h.configHandler.GetString("name"))
+	if err != nil {
+		return err
+	}
 
 	log.Debugf("Distance on board %s: %d", h.name, distance)
-	h.data.Level = h.depth - (distance - h.sensorHeight)
-	h.data.Volume = h.data.Level * h.literPerCm
-	h.data.Percent = float64(h.data.Level) / float64(h.depth) * 100
+	h.data.Level = int(config.Depth - (distance - config.SensorHeight))
+	h.data.Volume = h.data.Level * int(config.LiterPerCm)
+	h.data.Percent = float64(h.data.Level) / float64(config.Depth) * 100
 
 	return nil
 }

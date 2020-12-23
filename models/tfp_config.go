@@ -40,6 +40,9 @@ type TFPConfig struct {
 
 	// OzoneBlisterTime is the date when replace Ozone blister
 	OzoneBlisterTime time.Time `json:"ozone_blister_time" gorm:"column:ozone_blister_time" validate:"required"`
+
+	// Version of configuration
+	Version int64 `json:"version" gorm:"column:version;type:bigint" validate:"required"`
 }
 
 func (h *TFPConfig) String() string {
