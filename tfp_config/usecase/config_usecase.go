@@ -6,6 +6,7 @@ import (
 
 	"github.com/disaster37/gobot-fat/models"
 	tfpconfig "github.com/disaster37/gobot-fat/tfp_config"
+	"github.com/disaster37/gobot-fat/usecase"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
@@ -14,6 +15,7 @@ type configUsecase struct {
 	configRepoElasticsearch tfpconfig.Repository
 	configRepoSQL           tfpconfig.Repository
 	contextTimeout          time.Duration
+	usecase.Usecase
 }
 
 // NewConfigUsecase will create new configUsecase object of tfpconfig.Usecase interface
@@ -85,72 +87,4 @@ func (h *configUsecase) Get(ctx context.Context) (*models.TFPConfig, error) {
 	defer cancel()
 
 	return h.configRepoSQL.Get(ctx)
-}
-
-// Init will init config on backend if needed
-func (h *configUsecase) Init(ctx context.Context, config *models.TFPConfig) error {
-
-	esCtx, cancel := context.WithTimeout(ctx, h.contextTimeout)
-	defer cancel()
-
-	sqlConfig, err := h.configRepoSQL.Get(ctx)
-	if err != nil {
-		log.Errorf("Failed to retrive tfpconfig from sql: %s", err.Error())
-		return err
-	}
-	esConfig, err := h.configRepoElasticsearch.Get(esCtx)
-	if err != nil {
-		log.Errorf("Failed to retrive tfpconfig from elastic: %s", err.Error())
-	}
-
-	if sqlConfig == nil && esConfig == nil {
-		// No config found
-
-		err = h.Create(ctx, config)
-		if err != nil {
-			log.Errorf("Failed to create tfpconfig on SQL: %s", err.Error())
-			return err
-		}
-		log.Info("Create new tfpconfig on repositories")
-	} else if sqlConfig == nil && esConfig != nil {
-
-		// Config found only on Elastic
-		err = h.configRepoSQL.Create(ctx, esConfig)
-		if err != nil {
-			log.Errorf("Failed to create tfpconfig on SQL: %s", err.Error())
-			return err
-		}
-		log.Info("Create new tfpconfig on SQL from elastic config")
-	} else if sqlConfig != nil && esConfig == nil {
-
-		// Config found only on SQL
-		err = h.configRepoElasticsearch.Create(esCtx, sqlConfig)
-
-		if err != nil {
-			log.Errorf("Failed to create tfpconfig on Elastic: %s", err.Error())
-		} else {
-			log.Info("Create new tfpconfig on Elastic from SQL config")
-		}
-
-	} else if sqlConfig != nil && esConfig != nil {
-		if sqlConfig.UpdatedAt.Before(esConfig.UpdatedAt) {
-			// Config found and last version found on Elastic
-			err = h.configRepoSQL.Update(ctx, esConfig)
-			if err != nil {
-				log.Errorf("Failed to update tfpconfig on SQL: %s", err.Error())
-				return err
-			}
-			log.Info("Update tfpconfig on SQL from elastic config")
-		} else if sqlConfig.UpdatedAt.After(esConfig.UpdatedAt) {
-			// Config found and last version found on SQL
-			err = h.configRepoElasticsearch.Update(esCtx, sqlConfig)
-			if err != nil {
-				log.Errorf("Failed to update tfpconfig on SQL: %s", err.Error())
-				return err
-			}
-			log.Info("Update tfpconfig on Elastic from SQL config")
-		}
-	}
-
-	return nil
 }

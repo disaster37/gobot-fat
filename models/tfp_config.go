@@ -3,13 +3,11 @@ package models
 import (
 	"encoding/json"
 	"time"
-
-	"github.com/jinzhu/gorm"
 )
 
 // TFPConfig contain config data for Technical Filter Pond
 type TFPConfig struct {
-	gorm.Model
+	ModelGeneric
 
 	// UVC1BlisterMaxTime is the max usage in hour of UVC1 blister
 	UVC1BlisterMaxTime int64 `json:"uvc1_blister_max_time" gorm:"column:uvc1_blister_max_time" validate:"required"`
@@ -40,11 +38,9 @@ type TFPConfig struct {
 
 	// OzoneBlisterTime is the date when replace Ozone blister
 	OzoneBlisterTime time.Time `json:"ozone_blister_time" gorm:"column:ozone_blister_time" validate:"required"`
-
-	// Version of configuration
-	Version int64 `json:"version" gorm:"column:version;type:bigint" validate:"required"`
 }
 
+// String print the current object as json
 func (h *TFPConfig) String() string {
 	str, err := json.Marshal(h)
 	if err != nil {
@@ -53,6 +49,7 @@ func (h *TFPConfig) String() string {
 	return string(str)
 }
 
+// TableName permit to return the current table name
 func (h TFPConfig) TableName() string {
 	return "tfpconfig"
 }

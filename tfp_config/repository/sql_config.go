@@ -4,38 +4,29 @@ import (
 	"context"
 
 	"github.com/disaster37/gobot-fat/models"
+	"github.com/disaster37/gobot-fat/repository"
 	tfpconfig "github.com/disaster37/gobot-fat/tfp_config"
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 )
 
 const configIDSQL uint = 1
 
 type sqlTFPConfigRepository struct {
-	Conn  *gorm.DB
-	Table string
+	Repo repository.SQLRepository
 }
 
 // NewSQLTFPConfigRepository will create an object that implement TFPConfig.Repository interface
 func NewSQLTFPConfigRepository(conn *gorm.DB) tfpconfig.Repository {
 	return &sqlTFPConfigRepository{
-		Conn: conn,
+		Repo: repository.NewSQLRepository(conn),
 	}
 }
 
 func (h *sqlTFPConfigRepository) Get(ctx context.Context) (*models.TFPConfig, error) {
 
 	config := &models.TFPConfig{}
-	err := h.Conn.First(config, configIDSQL).Error
-	if err != nil {
-		if gorm.IsRecordNotFoundError(err) {
-			return nil, nil
-		}
-		return nil, err
-	}
-
-	return config, nil
+	return h.Repo.Get(ctx, configIDSQL, config)
 }
 
 func (h *sqlTFPConfigRepository) Update(ctx context.Context, config *models.TFPConfig) error {
@@ -43,16 +34,8 @@ func (h *sqlTFPConfigRepository) Update(ctx context.Context, config *models.TFPC
 	if config == nil {
 		return errors.New("Config can't be null")
 	}
-	log.Debugf("Config: %s", config)
-
 	config.ID = configIDSQL
-
-	err := h.Conn.Save(config).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return h.Repo.Update(ctx, config)
 }
 
 func (h *sqlTFPConfigRepository) Create(ctx context.Context, config *models.TFPConfig) error {
@@ -60,14 +43,7 @@ func (h *sqlTFPConfigRepository) Create(ctx context.Context, config *models.TFPC
 	if config == nil {
 		return errors.New("Config can't be null")
 	}
-	log.Debugf("Config: %s", config)
 
 	config.ID = configIDSQL
-
-	err := h.Conn.Create(config).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return h.Repo.Create(ctx, config)
 }
