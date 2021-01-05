@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 
+	"github.com/disaster37/gobot-fat/models"
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -14,18 +15,19 @@ type SQLRepositoryGen struct {
 }
 
 // NewSQLRepository create new SQM repository
-func NewSQLRepository(conn *gorm.DB) SQLRepository {
+func NewSQLRepository(conn *gorm.DB) Repository {
 	return &SQLRepositoryGen{
 		Conn: conn,
 	}
 }
 
 // Get return one item from SQL database with ID
-func (h *SQLRepositoryGen) Get(ctx context.Context, id string, data interface{}) error {
+func (h *SQLRepositoryGen) Get(ctx context.Context, id uint, data models.Model) error {
 
 	err := h.Conn.First(data, id).Error
 	if err != nil {
 		if gorm.IsRecordNotFoundError(err) {
+			data = nil
 			return nil
 		}
 		return err
@@ -49,7 +51,7 @@ func (h *SQLRepositoryGen) List(ctx context.Context, listData interface{}) error
 }
 
 // Update item on SQL database
-func (h *SQLRepositoryGen) Update(ctx context.Context, data interface{}) error {
+func (h *SQLRepositoryGen) Update(ctx context.Context, data models.Model) error {
 
 	if data == nil {
 		return errors.New("Data can't be null")
@@ -65,7 +67,7 @@ func (h *SQLRepositoryGen) Update(ctx context.Context, data interface{}) error {
 }
 
 // Create add new item on SQL database
-func (h *SQLRepositoryGen) Create(ctx context.Context, data interface{}) error {
+func (h *SQLRepositoryGen) Create(ctx context.Context, data models.Model) error {
 	if data == nil {
 		return errors.New("Data can't be null")
 	}

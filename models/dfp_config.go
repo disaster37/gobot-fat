@@ -2,13 +2,11 @@ package models
 
 import (
 	"encoding/json"
-
-	"github.com/jinzhu/gorm"
 )
 
 // DFPConfig contain config data for Drum Filter Pond
 type DFPConfig struct {
-	gorm.Model
+	ModelGeneric
 
 	// ForceWashingDuration is the maximum time in minutes to wait before force a washing since last washing
 	ForceWashingDuration int `json:"force_washing_duration" validate:"required" gorm:"column:force_washing_duration;type:bigint" validate:"required"`
@@ -27,9 +25,6 @@ type DFPConfig struct {
 
 	// StartWashingPumpBeforeWashing is the time in seconds witch we start washing pump before run washing cycle
 	StartWashingPumpBeforeWashing int `json:"start_washing_pump_before_washing" gorm:"column:start_washing_pump_before_washing;type:bigint" validate:"required"`
-
-	// Version of configuration
-	Version int64 `json:"version" gorm:"column:version;type:bigint" validate:"required"`
 }
 
 func (h *DFPConfig) String() string {

@@ -40,3 +40,8 @@ func NewJSONAPIData(data interface{}) *JSONAPI {
 		},
 	}
 }
+
+type ResponseError struct {
+	Message string `json:"error"`
+	Code    int    `json:"error_code"`
+}

@@ -4,11 +4,7 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-type Model interface {
-	IsMoreRecentThan(data *gorm.Model) bool
-}
-
-// ModelGeneric is generic type
+// Model is generic type
 type ModelGeneric struct {
 	gorm.Model
 
@@ -16,7 +12,23 @@ type ModelGeneric struct {
 	Version int64 `json:"version" gorm:"column:version;type:bigint" validate:"required"`
 }
 
-// IsMoreRecentThan return true if current object is more recent.
-func (h *ModelGeneric) IsMoreRecentThan(data *gorm.Model) bool {
-	return h.UpdatedAt.After(data.UpdatedAt)
+type Model interface {
+	SetVersion(version int64)
+	GetVersion() int64
+	GetModel() *ModelGeneric
+}
+
+// SetVersion permit to set version
+func (h *ModelGeneric) SetVersion(version int64) {
+	h.Version = version
+}
+
+// GetVersion permit to get current version
+func (h *ModelGeneric) GetVersion() int64 {
+	return h.Version
+}
+
+// GetModel return current model
+func (h *ModelGeneric) GetModel() *ModelGeneric {
+	return h
 }

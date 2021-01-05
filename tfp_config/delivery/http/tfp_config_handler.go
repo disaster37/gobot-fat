@@ -6,26 +6,20 @@ import (
 	"strconv"
 
 	"github.com/disaster37/gobot-fat/models"
-	tfpconfig "github.com/disaster37/gobot-fat/tfp_config"
+	"github.com/disaster37/gobot-fat/usecase"
 	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
 )
 
-// ResponseError represent the reseponse error struct
-type ResponseError struct {
-	Message string `json:"error"`
-	Code    int    `json:"error_code"`
-}
-
 // TFPConfigHandler  represent the httphandler for tfp_config
 type TFPConfigHandler struct {
-	dUsecase tfpconfig.Usecase
+	Usecase usecase.UsecaseCRUD
 }
 
 // NewTFPConfigHandler will initialize the TFP_config/ resources endpoint
-func NewTFPConfigHandler(e *echo.Group, us tfpconfig.Usecase) {
+func NewTFPConfigHandler(e *echo.Group, us usecase.UsecaseCRUD) {
 	handler := &TFPConfigHandler{
-		dUsecase: us,
+		Usecase: us,
 	}
 	e.GET("/tfp-configs", handler.Get)
 	e.POST("/tfp-configs", handler.Update)
@@ -39,7 +33,9 @@ func (h *TFPConfigHandler) Get(c echo.Context) error {
 		ctx = context.Background()
 	}
 
-	config, err := h.dUsecase.Get(ctx)
+	data := &models.TFPConfig{}
+
+	err := h.Usecase.Get(ctx, 1, data)
 
 	if err != nil {
 		log.Errorf("Error when get tfp_config: %s", err.Error())
@@ -58,8 +54,8 @@ func (h *TFPConfigHandler) Get(c echo.Context) error {
 	return c.JSON(http.StatusOK, models.JSONAPI{
 		Data: models.JSONAPIData{
 			Type:       "tfp-configs",
-			Id:         strconv.Itoa(int(config.ID)),
-			Attributes: config,
+			Id:         strconv.Itoa(int(data.ID)),
+			Attributes: data,
 		},
 	})
 }
@@ -79,20 +75,20 @@ func (h *TFPConfigHandler) Update(c echo.Context) error {
 		ctx = context.Background()
 	}
 
-	config := jsonData.Data.(*models.JSONAPIData).Attributes.(*models.TFPConfig)
+	data := jsonData.Data.(*models.JSONAPIData).Attributes.(*models.TFPConfig)
 
-	err = h.dUsecase.Update(ctx, config)
+	err = h.Usecase.Update(ctx, data)
 
 	if err != nil {
 		log.Errorf("Error when update tfp_config: %s", err.Error())
-		return c.JSON(500, ResponseError{Code: http.StatusInternalServerError, Message: err.Error()})
+		return c.JSON(500, models.ResponseError{Code: http.StatusInternalServerError, Message: err.Error()})
 	}
 
 	return c.JSON(http.StatusCreated, models.JSONAPI{
 		Data: models.JSONAPIData{
 			Type:       "tfp-configs",
-			Id:         strconv.Itoa(int(config.ID)),
-			Attributes: config,
+			Id:         strconv.Itoa(int(data.ID)),
+			Attributes: data,
 		},
 	})
 }

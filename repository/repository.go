@@ -2,20 +2,14 @@ package repository
 
 import (
 	"context"
+
+	"github.com/disaster37/gobot-fat/models"
 )
 
-// ElasticsearchRepository is a generic repository
-type ElasticsearchRepository interface {
-	Get(ctx context.Context, id string, data interface{}) error
+// Repository is a generic repository
+type Repository interface {
+	Get(ctx context.Context, id uint, data models.Model) error
 	List(ctx context.Context, listData interface{}) error
-	Update(ctx context.Context, id string, data interface{}) error
-	Create(ctx context.Context, id string, data interface{}) error
-}
-
-// SQLRepository is a generic repository
-type SQLRepository interface {
-	Get(ctx context.Context, id string, data interface{}) error
-	List(ctx context.Context, listData interface{}) error
-	Update(ctx context.Context, data interface{}) error
-	Create(ctx context.Context, data interface{}) error
+	Update(ctx context.Context, data models.Model) error
+	Create(ctx context.Context, data models.Model) error
 }

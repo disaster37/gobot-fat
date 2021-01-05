@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/disaster37/gobot-fat/helper"
+	"github.com/disaster37/gobot-fat/models"
 	elastic "github.com/elastic/go-elasticsearch/v7"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -18,7 +20,7 @@ type ElasticsearchRepositoryGen struct {
 }
 
 // NewElasticsearchRepository create new Elasticsearch repository
-func NewElasticsearchRepository(conn *elastic.Client, index string) ElasticsearchRepository {
+func NewElasticsearchRepository(conn *elastic.Client, index string) Repository {
 	return &ElasticsearchRepositoryGen{
 		Conn:  conn,
 		Index: index,
@@ -26,11 +28,11 @@ func NewElasticsearchRepository(conn *elastic.Client, index string) Elasticsearc
 }
 
 // Get return one document from Elasticsearch with ID
-func (h *ElasticsearchRepositoryGen) Get(ctx context.Context, id string, data interface{}) error {
+func (h *ElasticsearchRepositoryGen) Get(ctx context.Context, id uint, data models.Model) error {
 
 	res, err := h.Conn.Get(
 		h.Index,
-		id,
+		fmt.Sprintf("%d", id),
 		h.Conn.Get.WithContext(ctx),
 		h.Conn.Get.WithPretty(),
 	)
@@ -44,6 +46,10 @@ func (h *ElasticsearchRepositoryGen) Get(ctx context.Context, id string, data in
 	}
 
 	log.Debugf("Data: %+v", data)
+
+	if data.GetVersion() == 0 {
+		data = nil
+	}
 
 	return nil
 }
@@ -72,12 +78,14 @@ func (h *ElasticsearchRepositoryGen) List(ctx context.Context, listData interfac
 }
 
 // Update document on Elasticsearch
-func (h *ElasticsearchRepositoryGen) Update(ctx context.Context, id string, data interface{}) error {
+func (h *ElasticsearchRepositoryGen) Update(ctx context.Context, data models.Model) error {
 
 	if data == nil {
 		return errors.New("Data can't be null")
 	}
 	log.Debugf("Data: %s", data)
+
+	dataModel := data.GetModel()
 
 	sdata, err := json.Marshal(data)
 	if err != nil {
@@ -88,7 +96,7 @@ func (h *ElasticsearchRepositoryGen) Update(ctx context.Context, id string, data
 	res, err := h.Conn.Index(
 		h.Index,
 		b,
-		h.Conn.Index.WithDocumentID(id),
+		h.Conn.Index.WithDocumentID(fmt.Sprintf("%d", dataModel.ID)),
 		h.Conn.Index.WithContext(ctx),
 		h.Conn.Index.WithPretty(),
 	)
@@ -109,9 +117,9 @@ func (h *ElasticsearchRepositoryGen) Update(ctx context.Context, id string, data
 }
 
 // Create add new document on Elasticsearch
-func (h *ElasticsearchRepositoryGen) Create(ctx context.Context, id string, data interface{}) error {
+func (h *ElasticsearchRepositoryGen) Create(ctx context.Context, data models.Model) error {
 	if data == nil {
 		return errors.New("Data can't be null")
 	}
-	return h.Update(ctx, id, data)
+	return h.Update(ctx, data)
 }
