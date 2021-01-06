@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/jinzhu/gorm"
@@ -58,6 +59,8 @@ func (h *SQLRepositoryGen) Update(ctx context.Context, data models.Model) error 
 	}
 	log.Debugf("Data: %s", data)
 
+	data.SetUpdatedAt(time.Now())
+
 	err := h.Conn.Save(data).Error
 	if err != nil {
 		return err
@@ -72,6 +75,8 @@ func (h *SQLRepositoryGen) Create(ctx context.Context, data models.Model) error 
 		return errors.New("Data can't be null")
 	}
 	log.Debugf("Data: %s", data)
+
+	data.SetUpdatedAt(time.Now())
 
 	err := h.Conn.Create(data).Error
 	if err != nil {

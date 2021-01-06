@@ -1,0 +1,140 @@
+package repository
+
+import (
+	"context"
+	"testing"
+	"time"
+
+	sqlmock "github.com/DATA-DOG/go-sqlmock"
+	"github.com/disaster37/gobot-fat/models"
+	"github.com/jinzhu/gorm"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestGetSQL(t *testing.T) {
+	dbMock, mock, err := sqlmock.New()
+	if err != nil {
+		panic(err)
+	}
+	currentTime := time.Now()
+	configMock := sqlmock.NewRows([]string{"id", "force_washing_duration", "force_washing_duration_when_frozen", "temperature_threshold_when_frozen", "wait_time_between_washing", "washing_duration", "start_washing_pump_before_washing", "version", "updated_at"}).
+		AddRow(1, 180, 60, -5, 300, 10, 5, 1, currentTime)
+	mock.ExpectQuery("^SELECT (.+) FROM \"dfpconfig\" (.+)$").WillReturnRows(configMock)
+
+	db, _ := gorm.Open("sqlite3", dbMock)
+	repository := NewSQLRepository(db)
+
+	dfpConfig := &models.DFPConfig{}
+
+	err = repository.Get(context.Background(), 1, dfpConfig)
+	assert.NoError(t, err)
+	assert.NotNil(t, dfpConfig)
+	assert.Equal(t, uint(1), dfpConfig.ID)
+	assert.Equal(t, 180, dfpConfig.ForceWashingDuration)
+	assert.Equal(t, 60, dfpConfig.ForceWashingDurationWhenFrozen)
+	assert.Equal(t, -5, dfpConfig.TemperatureThresholdWhenFrozen)
+	assert.Equal(t, 300, dfpConfig.WaitTimeBetweenWashing)
+	assert.Equal(t, 10, dfpConfig.WashingDuration)
+	assert.Equal(t, 5, dfpConfig.StartWashingPumpBeforeWashing)
+	assert.Equal(t, int64(1), dfpConfig.Version)
+}
+
+func TestListSQL(t *testing.T) {
+	dbMock, mock, err := sqlmock.New()
+	if err != nil {
+		panic(err)
+	}
+	currentTime := time.Now()
+	configMock := sqlmock.NewRows([]string{"id", "force_washing_duration", "force_washing_duration_when_frozen", "temperature_threshold_when_frozen", "wait_time_between_washing", "washing_duration", "start_washing_pump_before_washing", "version", "updated_at"}).
+		AddRow(1, 180, 60, -5, 300, 10, 5, 1, currentTime)
+	mock.ExpectQuery("^SELECT (.+) FROM \"dfpconfig\" (.+)$").WillReturnRows(configMock)
+
+	db, _ := gorm.Open("sqlite3", dbMock)
+	repository := NewSQLRepository(db)
+
+	listDfpConfig := make([]*models.DFPConfig, 0, 0)
+
+	err = repository.List(context.Background(), &listDfpConfig)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, listDfpConfig)
+	if len(listDfpConfig) > 0 {
+		dfpConfig := listDfpConfig[0]
+		assert.NotNil(t, dfpConfig)
+		assert.Equal(t, uint(1), dfpConfig.ID)
+		assert.Equal(t, 180, dfpConfig.ForceWashingDuration)
+		assert.Equal(t, 60, dfpConfig.ForceWashingDurationWhenFrozen)
+		assert.Equal(t, -5, dfpConfig.TemperatureThresholdWhenFrozen)
+		assert.Equal(t, 300, dfpConfig.WaitTimeBetweenWashing)
+		assert.Equal(t, 10, dfpConfig.WashingDuration)
+		assert.Equal(t, 5, dfpConfig.StartWashingPumpBeforeWashing)
+		assert.Equal(t, int64(1), dfpConfig.Version)
+	}
+}
+
+func TestUpdateSQL(t *testing.T) {
+	dbMock, mock, err := sqlmock.New()
+	if err != nil {
+		panic(err)
+	}
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE \"dfpconfig\"").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+	db, _ := gorm.Open("sqlite3", dbMock)
+	repository := NewSQLRepository(db)
+
+	dfpConfig := &models.DFPConfig{
+		ForceWashingDuration:           180,
+		ForceWashingDurationWhenFrozen: 60,
+		TemperatureThresholdWhenFrozen: -5,
+		WaitTimeBetweenWashing:         300,
+		WashingDuration:                10,
+		StartWashingPumpBeforeWashing:  5,
+	}
+	dfpConfig.Version = 1
+	dfpConfig.ID = 1
+
+	err = repository.Update(context.Background(), dfpConfig)
+	assert.NoError(t, err)
+	assert.Equal(t, uint(1), dfpConfig.ID)
+	assert.Equal(t, 180, dfpConfig.ForceWashingDuration)
+	assert.Equal(t, 60, dfpConfig.ForceWashingDurationWhenFrozen)
+	assert.Equal(t, -5, dfpConfig.TemperatureThresholdWhenFrozen)
+	assert.Equal(t, 300, dfpConfig.WaitTimeBetweenWashing)
+	assert.Equal(t, 10, dfpConfig.WashingDuration)
+	assert.Equal(t, 5, dfpConfig.StartWashingPumpBeforeWashing)
+	assert.Equal(t, int64(1), dfpConfig.Version)
+}
+
+func TestCreateSQL(t *testing.T) {
+	dbMock, mock, err := sqlmock.New()
+	if err != nil {
+		panic(err)
+	}
+	mock.ExpectBegin()
+	mock.ExpectExec("INSERT INTO \"dfpconfig\"").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+	db, _ := gorm.Open("sqlite3", dbMock)
+	repository := NewSQLRepository(db)
+
+	dfpConfig := &models.DFPConfig{
+		ForceWashingDuration:           180,
+		ForceWashingDurationWhenFrozen: 60,
+		TemperatureThresholdWhenFrozen: -5,
+		WaitTimeBetweenWashing:         300,
+		WashingDuration:                10,
+		StartWashingPumpBeforeWashing:  5,
+	}
+	dfpConfig.Version = 1
+	dfpConfig.ID = 1
+
+	err = repository.Create(context.Background(), dfpConfig)
+	assert.NoError(t, err)
+	assert.Equal(t, uint(1), dfpConfig.ID)
+	assert.Equal(t, 180, dfpConfig.ForceWashingDuration)
+	assert.Equal(t, 60, dfpConfig.ForceWashingDurationWhenFrozen)
+	assert.Equal(t, -5, dfpConfig.TemperatureThresholdWhenFrozen)
+	assert.Equal(t, 300, dfpConfig.WaitTimeBetweenWashing)
+	assert.Equal(t, 10, dfpConfig.WashingDuration)
+	assert.Equal(t, 5, dfpConfig.StartWashingPumpBeforeWashing)
+	assert.Equal(t, int64(1), dfpConfig.Version)
+}

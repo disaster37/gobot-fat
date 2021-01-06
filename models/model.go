@@ -1,20 +1,25 @@
 package models
 
 import (
+	"time"
+
 	"github.com/jinzhu/gorm"
 )
 
-// Model is generic type
+// ModelGeneric is generic type
 type ModelGeneric struct {
 	gorm.Model
 
 	// Version of configuration
 	Version int64 `json:"version" gorm:"column:version;type:bigint" validate:"required"`
+
+	UpdatedAt time.Time `json:"updated_at" gorm:"column:updated_at;type:datetime" validate:"required"`
 }
 
 type Model interface {
 	SetVersion(version int64)
 	GetVersion() int64
+	SetUpdatedAt(date time.Time)
 	GetModel() *ModelGeneric
 }
 
@@ -26,6 +31,11 @@ func (h *ModelGeneric) SetVersion(version int64) {
 // GetVersion permit to get current version
 func (h *ModelGeneric) GetVersion() int64 {
 	return h.Version
+}
+
+// SetUpdatedAt permit to set updated date
+func (h *ModelGeneric) SetUpdatedAt(date time.Time) {
+	h.UpdatedAt = date
 }
 
 // GetModel return current model

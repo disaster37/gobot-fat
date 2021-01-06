@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/disaster37/gobot-fat/helper"
 	"github.com/disaster37/gobot-fat/models"
@@ -84,6 +85,8 @@ func (h *ElasticsearchRepositoryGen) Update(ctx context.Context, data models.Mod
 		return errors.New("Data can't be null")
 	}
 	log.Debugf("Data: %s", data)
+
+	data.SetUpdatedAt(time.Now())
 
 	dataModel := data.GetModel()
 
