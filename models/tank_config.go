@@ -2,16 +2,14 @@ package models
 
 import (
 	"encoding/json"
-
-	"github.com/jinzhu/gorm"
 )
 
 // TankConfig contain the tank config
 type TankConfig struct {
-	gorm.Model
+	ModelGeneric
 
 	// The board name
-	Name string `json:"name" gorm:"primaryKey,column:name"`
+	Name string `json:"name" gorm:"unique,column:name"`
 
 	// The tank depth in cm
 	Depth int64 `json:"depth" gorm:"column:depth" validate:"required"`

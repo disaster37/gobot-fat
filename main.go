@@ -10,13 +10,17 @@ import (
 
 	boardHttpDeliver "github.com/disaster37/gobot-fat/board/delivery/http"
 	boardUsecase "github.com/disaster37/gobot-fat/board/usecase"
-	dfpConfigHttpDeliver "github.com/disaster37/gobot-fat/dfp_config/delivery/http"
+	"github.com/disaster37/gobot-fat/dfpconfig"
+	dfpConfigHttpDeliver "github.com/disaster37/gobot-fat/dfpconfig/delivery/http"
 	loginHttpDeliver "github.com/disaster37/gobot-fat/login/delivery/http"
 	loginUsecase "github.com/disaster37/gobot-fat/login/usecase"
 	dfpMiddleware "github.com/disaster37/gobot-fat/middleware"
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/repository"
-	tfpConfigHttpDeliver "github.com/disaster37/gobot-fat/tfp_config/delivery/http"
+	"github.com/disaster37/gobot-fat/tankconfig"
+	tankConfigHttpDeliver "github.com/disaster37/gobot-fat/tankconfig/delivery/http"
+	"github.com/disaster37/gobot-fat/tfpconfig"
+	tfpConfigHttpDeliver "github.com/disaster37/gobot-fat/tfpconfig/delivery/http"
 	"github.com/disaster37/gobot-fat/usecase"
 
 	//tfpConfigRepo "github.com/disaster37/gobot-fat/tfp_config/repository"
@@ -138,13 +142,13 @@ func main() {
 		UVC1BlisterTime:     time.Now(),
 		UVC2BlisterTime:     time.Now(),
 	}
-	tfpConfig.ID = 1
+	tfpConfig.ID = tfpconfig.ID
 	err = tfpConfigUsecase.Init(ctx, tfpConfig)
 	if err != nil {
 		log.Errorf("Error appear when init TFP config: %s", err.Error())
 		panic("Failed to init tfpconfig on SQL")
 	}
-	err = tfpConfigUsecase.Get(ctx, 1, tfpConfig)
+	err = tfpConfigUsecase.Get(ctx, tfpconfig.ID, tfpConfig)
 	if err != nil {
 		log.Errorf("Failed to retrive tfpconfig from usecase")
 		panic("Failed to retrive tfpconfig from usecase")
@@ -200,32 +204,54 @@ func main() {
 	/***********************
 	 * Tank
 	 */
+
+	//Tank config
+	tankConfigRepoSQL := repository.NewSQLRepository(db)
+	tankConfigRepoES := repository.NewElasticsearchRepository(es, configHandler.GetString("elasticsearch.index.tank_config"))
+	tankConfigUsecase := usecase.NewUsecase(tankConfigRepoSQL, tankConfigRepoES, timeoutContext)
+
+	// Tank Pund
+	tankPundConfig := &models.TankConfig{
+		Name:         configHandler.GetString("tank1.name"),
+		Depth:        200,
+		SensorHeight: 20,
+		LiterPerCm:   50,
+	}
+	tankPundConfig.ID = tankconfig.IDPundTank
+	err = tankConfigUsecase.Init(ctx, tankPundConfig)
+	if err != nil {
+		log.Errorf("Error appear when init Tank Pund config: %s", err.Error())
+		panic("Failed to init tank pund config on SQL")
+	}
+	err = tankConfigUsecase.Get(ctx, tankconfig.IDPundTank, tankPundConfig)
+	if err != nil {
+		log.Errorf("Failed to retrive tankPundconfig from usecase")
+		panic("Failed to retrive tankPundconfig from usecase")
+	}
+	log.Info("Get tankPundconfig successfully")
+
+	// Tank Garden
+	tankGardenConfig := &models.TankConfig{
+		Name:         configHandler.GetString("tank2.name"),
+		Depth:        120,
+		SensorHeight: 50,
+		LiterPerCm:   30,
+	}
+	tankGardenConfig.ID = tankconfig.IDGardenTank
+	err = tankConfigUsecase.Init(ctx, tankGardenConfig)
+	if err != nil {
+		log.Errorf("Error appear when init Tank Garden config: %s", err.Error())
+		panic("Failed to init tank garden config on SQL")
+	}
+	err = tankConfigUsecase.Get(ctx, tankconfig.IDGardenTank, tankGardenConfig)
+	if err != nil {
+		log.Errorf("Failed to retrive tankGardenconfig from usecase")
+		panic("Failed to retrive tankGardenconfig from usecase")
+	}
+	log.Info("Get tankGardenconfig successfully")
+
+	tankConfigHttpDeliver.NewTankConfigHandler(api, tankConfigUsecase)
 	/*
-		//Tank config
-		tankConfigRepoSQL := tankConfigRepo.NewSQLTankConfigRepository(db)
-		tankConfigRepoES := tankConfigRepo.NewElasticsearchTankConfigRepository(es, configHandler.GetString("elasticsearch.index.tank_config"))
-		tankConfigU := tankConfigUsecase.NewConfigUsecase(tankConfigRepoES, tankConfigRepoSQL, timeoutContext)
-		tank1Config := &models.TankConfig{
-			Name:         configHandler.GetString("tank1.name"),
-			Depth:        200,
-			SensorHeight: 20,
-			LiterPerCm:   50,
-		}
-
-		err = tankConfigU.Init(ctx, tank1Config)
-
-		if err != nil {
-			log.Errorf("Error appear when init Tank 1 config: %s", err.Error())
-			panic("Failed to init tank 1 config on SQL")
-		}
-		tank1Config, err = tankConfigU.Get(ctx, configHandler.GetString("tank1.name"))
-		if err != nil {
-			log.Errorf("Failed to retrive tank1config from usecase")
-			panic("Failed to retrive tank1config from usecase")
-		}
-		log.Info("Get tank1config successfully")
-		tankConfigHttpDeliver.NewTankConfigHandler(api, tankConfigU)
-
 		// Tank1 board
 		if configHandler.GetBool("tank1.enable") {
 			tank1B := tankBoard.NewTank(configHandler.Sub("tank1"), tankConfigU, eventU)
@@ -251,13 +277,13 @@ func main() {
 		WashingDuration:                8,
 		StartWashingPumpBeforeWashing:  2,
 	}
-	dfpConfig.ID = 1
+	dfpConfig.ID = dfpconfig.ID
 	err = dfpConfigUsecase.Init(ctx, dfpConfig)
 	if err != nil {
 		log.Errorf("Error appear when init DFP config: %s", err.Error())
 		panic("Failed to retrive dfpconfig from sql")
 	}
-	err = dfpConfigUsecase.Get(ctx, 1, dfpConfig)
+	err = dfpConfigUsecase.Get(ctx, dfpconfig.ID, dfpConfig)
 	if err != nil {
 		log.Errorf("Failed to retrive dfpconfig from usecase")
 		panic("Failed to retrive dfpconfig from usecase")
