@@ -3,13 +3,11 @@ package models
 import (
 	"encoding/json"
 	"time"
-
-	"github.com/jinzhu/gorm"
 )
 
 // DFPState  describe the current state of drum filter pond
 type DFPState struct {
-	gorm.Model
+	ModelGeneric
 	Name               string    `json:"name"`
 	IsWashed           bool      `json:"is_washed" gorm:"column:is_washed" validate:"required"`
 	IsRunning          bool      `json:"is_running" gorm:"column:is_running" validate:"required"`

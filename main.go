@@ -12,6 +12,8 @@ import (
 	boardUsecase "github.com/disaster37/gobot-fat/board/usecase"
 	"github.com/disaster37/gobot-fat/dfpconfig"
 	dfpConfigHttpDeliver "github.com/disaster37/gobot-fat/dfpconfig/delivery/http"
+	"github.com/disaster37/gobot-fat/dfpstate"
+	dfpStateHttpDeliver "github.com/disaster37/gobot-fat/dfpstate/delivery/http"
 	loginHttpDeliver "github.com/disaster37/gobot-fat/login/delivery/http"
 	loginUsecase "github.com/disaster37/gobot-fat/login/usecase"
 	dfpMiddleware "github.com/disaster37/gobot-fat/middleware"
@@ -23,10 +25,6 @@ import (
 	tfpConfigHttpDeliver "github.com/disaster37/gobot-fat/tfpconfig/delivery/http"
 	tfpStateHttpDeliver "github.com/disaster37/gobot-fat/tfpstate/delivery/http"
 	"github.com/disaster37/gobot-fat/usecase"
-
-	//tfpConfigRepo "github.com/disaster37/gobot-fat/tfp_config/repository"
-	//tfpConfigUsecase "github.com/disaster37/gobot-fat/tfp_config/usecase"
-
 	elastic "github.com/elastic/go-elasticsearch/v7"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -290,34 +288,35 @@ func main() {
 	}
 	log.Info("Get dfpconfig successfully")
 	dfpConfigHttpDeliver.NewDFPConfigHandler(api, dfpConfigUsecase)
+
+	// DFP state
+	dfpStateRepoSQL := repository.NewSQLRepository(db)
+	dfpStateRepoES := repository.NewElasticsearchRepository(es, configHandler.GetString("elasticsearch.index.dfp_state"))
+	dfpStateUsecase := usecase.NewUsecase(dfpStateRepoSQL, dfpStateRepoES, timeoutContext)
+	dfpState := &models.DFPState{
+		Name:               configHandler.GetString("dfp.name"),
+		IsWashed:           false,
+		IsRunning:          true,
+		IsSecurity:         false,
+		IsEmergencyStopped: false,
+		IsDisableSecurity:  false,
+	}
+	dfpState.ID = dfpstate.ID
+	err = dfpStateUsecase.Init(ctx, dfpState)
+	if err != nil {
+		log.Errorf("Error appear when init DFP state: %s", err.Error())
+		panic("Failed to init dfpState on SQL")
+	}
+	err = dfpStateUsecase.Get(ctx, dfpState.ID, dfpState)
+	log.Debugf("DFP state after init it: %s", dfpState)
+	if err != nil {
+		log.Errorf("Failed to retrive dfpState from usecase")
+		panic("Failed to retrive dfpState from usecase")
+	}
+	log.Info("Get dfpState successfully")
+	dfpStateHttpDeliver.NewDFPStateHandler(api, dfpStateUsecase)
+
 	/*
-
-		// DFP state
-		dfpStateRepoSQL := dfpStateRepo.NewSQLDFPStateRepository(db)
-		dfpStateRepoES := dfpStateRepo.NewElasticsearchDFPStateRepository(es, configHandler.GetString("elasticsearch.index.dfp_state"))
-		dfpStateU := dfpStateUsecase.NewStateUsecase(dfpStateRepoES, dfpStateRepoSQL, timeoutContext)
-		dfpState := &models.DFPState{
-			Name:               configHandler.GetString("dfp.name"),
-			IsWashed:           false,
-			IsRunning:          true,
-			IsSecurity:         false,
-			IsEmergencyStopped: false,
-			IsDisableSecurity:  false,
-		}
-		err = dfpStateU.Init(ctx, dfpState)
-		if err != nil {
-			log.Errorf("Error appear when init DFP state: %s", err.Error())
-			panic("Failed to init dfpState on SQL")
-		}
-		dfpState, err = dfpStateU.Get(ctx)
-		log.Debugf("DFP state after init it: %s", dfpState)
-		if err != nil {
-			log.Errorf("Failed to retrive dfpState from usecase")
-			panic("Failed to retrive dfpState from usecase")
-		}
-		log.Info("Get dfpState successfully")
-		dfpStateHttpDeliver.NewDFPStateHandler(api, dfpStateU)
-
 		// DFP board
 		if configHandler.GetBool("dfp.enable") {
 			dfpB := dfpBoard.NewDFP(configHandler.Sub("dfp"), dfpConfigU, eventU, dfpStateU, dfpState)
