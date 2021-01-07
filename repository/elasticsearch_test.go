@@ -14,6 +14,7 @@ import (
 
 func TestGetElasticsearch(t *testing.T) {
 
+	// When record found
 	mocktrans := &helper.MockTransport{
 		Response: &http.Response{
 			StatusCode: http.StatusOK,
@@ -28,6 +29,7 @@ func TestGetElasticsearch(t *testing.T) {
 
 	err := repository.Get(context.Background(), 1, dfpConfig)
 	assert.NoError(t, err)
+	assert.False(t, IsRecordNotFoundError(err))
 	assert.NotNil(t, dfpConfig)
 	assert.Equal(t, 180, dfpConfig.ForceWashingDuration)
 	assert.Equal(t, 60, dfpConfig.ForceWashingDurationWhenFrozen)
@@ -38,6 +40,106 @@ func TestGetElasticsearch(t *testing.T) {
 	assert.Equal(t, int64(1), dfpConfig.Version)
 	assert.Equal(t, "2020-02-06T10:40:12Z", dfpConfig.UpdatedAt.Format(time.RFC3339Nano))
 
+	// When record not found
+	mocktrans = &helper.MockTransport{
+		Response: &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       helper.Fixture("get_not_found.json"),
+		},
+	}
+	mocktrans.RoundTripFn = func(req *http.Request) (*http.Response, error) { return mocktrans.Response, nil }
+	conn, _ = elastic.NewClient(elastic.Config{Transport: mocktrans})
+	repository = NewElasticsearchRepository(conn, "test")
+
+	dfpConfig = &models.DFPConfig{}
+
+	err = repository.Get(context.Background(), 1, dfpConfig)
+	assert.True(t, IsRecordNotFoundError(err))
+
+	// When data is nil
+	err = repository.Get(context.Background(), 1, nil)
+	assert.Error(t, err)
+
+}
+
+func TestListElasticsearch(t *testing.T) {
+
+	// When records found
+	mocktrans := &helper.MockTransport{
+		Response: &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       helper.Fixture("search_config.json"),
+		},
+	}
+	mocktrans.RoundTripFn = func(req *http.Request) (*http.Response, error) { return mocktrans.Response, nil }
+	conn, _ := elastic.NewClient(elastic.Config{Transport: mocktrans})
+	repository := NewElasticsearchRepository(conn, "test")
+
+	// When use slice of pointer
+	listDfpConfig := make([]*models.DFPConfig, 0, 0)
+	err := repository.List(context.Background(), &listDfpConfig)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, listDfpConfig)
+
+	if len(listDfpConfig) > 0 {
+		dfpConfig := listDfpConfig[0]
+		assert.Equal(t, 180, dfpConfig.ForceWashingDuration)
+		assert.Equal(t, 60, dfpConfig.ForceWashingDurationWhenFrozen)
+		assert.Equal(t, -5, dfpConfig.TemperatureThresholdWhenFrozen)
+		assert.Equal(t, 15, dfpConfig.WaitTimeBetweenWashing)
+		assert.Equal(t, 10, dfpConfig.WashingDuration)
+		assert.Equal(t, 5, dfpConfig.StartWashingPumpBeforeWashing)
+		assert.Equal(t, int64(1), dfpConfig.Version)
+		assert.Equal(t, "2020-02-06T10:40:12Z", dfpConfig.UpdatedAt.Format(time.RFC3339Nano))
+	}
+
+	// When use slice of struct
+	mocktrans = &helper.MockTransport{
+		Response: &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       helper.Fixture("search_config.json"),
+		},
+	}
+	mocktrans.RoundTripFn = func(req *http.Request) (*http.Response, error) { return mocktrans.Response, nil }
+	conn, _ = elastic.NewClient(elastic.Config{Transport: mocktrans})
+	repository = NewElasticsearchRepository(conn, "test")
+	listDfpConfig2 := make([]models.DFPConfig, 0, 0)
+	err = repository.List(context.Background(), &listDfpConfig2)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, listDfpConfig2)
+
+	if len(listDfpConfig2) > 0 {
+		dfpConfig := listDfpConfig2[0]
+		assert.Equal(t, 180, dfpConfig.ForceWashingDuration)
+		assert.Equal(t, 60, dfpConfig.ForceWashingDurationWhenFrozen)
+		assert.Equal(t, -5, dfpConfig.TemperatureThresholdWhenFrozen)
+		assert.Equal(t, 15, dfpConfig.WaitTimeBetweenWashing)
+		assert.Equal(t, 10, dfpConfig.WashingDuration)
+		assert.Equal(t, 5, dfpConfig.StartWashingPumpBeforeWashing)
+		assert.Equal(t, int64(1), dfpConfig.Version)
+		assert.Equal(t, "2020-02-06T10:40:12Z", dfpConfig.UpdatedAt.Format(time.RFC3339Nano))
+	}
+
+	// When no record found
+	mocktrans = &helper.MockTransport{
+		Response: &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       helper.Fixture("search_not_found.json"),
+		},
+	}
+	mocktrans.RoundTripFn = func(req *http.Request) (*http.Response, error) { return mocktrans.Response, nil }
+	conn, _ = elastic.NewClient(elastic.Config{Transport: mocktrans})
+	repository = NewElasticsearchRepository(conn, "test")
+
+	// When use slice of pointer
+	listDfpConfig = make([]*models.DFPConfig, 0, 0)
+	err = repository.List(context.Background(), &listDfpConfig)
+	assert.NoError(t, err)
+	assert.Empty(t, listDfpConfig)
+
+	// When data is nil
+	err = repository.List(context.Background(), nil)
+	assert.Error(t, err)
 }
 
 func TestUpdateElasticsearch(t *testing.T) {
@@ -73,6 +175,10 @@ func TestUpdateElasticsearch(t *testing.T) {
 	assert.Equal(t, 5, dfpConfig.StartWashingPumpBeforeWashing)
 	assert.Equal(t, int64(1), dfpConfig.Version)
 
+	// When record is nil
+	err = repository.Update(context.Background(), nil)
+	assert.Error(t, err)
+
 }
 
 func TestCreateElasticsearch(t *testing.T) {
@@ -107,5 +213,9 @@ func TestCreateElasticsearch(t *testing.T) {
 	assert.Equal(t, 10, dfpConfig.WashingDuration)
 	assert.Equal(t, 5, dfpConfig.StartWashingPumpBeforeWashing)
 	assert.Equal(t, int64(1), dfpConfig.Version)
+
+	// When record is nil
+	err = repository.Create(context.Background(), nil)
+	assert.Error(t, err)
 
 }

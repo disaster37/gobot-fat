@@ -12,8 +12,6 @@ type ModelGeneric struct {
 
 	// Version of configuration
 	Version int64 `json:"version" gorm:"column:version;type:bigint" validate:"required"`
-
-	UpdatedAt time.Time `json:"updated_at" gorm:"column:updated_at;type:datetime" validate:"required"`
 }
 
 type Model interface {

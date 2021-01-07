@@ -12,6 +12,8 @@ import (
 )
 
 func TestGetSQL(t *testing.T) {
+
+	// When record found
 	dbMock, mock, err := sqlmock.New()
 	if err != nil {
 		panic(err)
@@ -37,9 +39,31 @@ func TestGetSQL(t *testing.T) {
 	assert.Equal(t, 10, dfpConfig.WashingDuration)
 	assert.Equal(t, 5, dfpConfig.StartWashingPumpBeforeWashing)
 	assert.Equal(t, int64(1), dfpConfig.Version)
+
+	// When record not found
+	dbMock, mock, err = sqlmock.New()
+	if err != nil {
+		panic(err)
+	}
+	configMock = sqlmock.NewRows([]string{"id", "force_washing_duration", "force_washing_duration_when_frozen", "temperature_threshold_when_frozen", "wait_time_between_washing", "washing_duration", "start_washing_pump_before_washing", "version", "updated_at"})
+	mock.ExpectQuery("^SELECT (.+) FROM \"dfpconfig\" (.+)$").WillReturnRows(configMock)
+
+	db, _ = gorm.Open("sqlite3", dbMock)
+	repository = NewSQLRepository(db)
+
+	dfpConfig = &models.DFPConfig{}
+
+	err = repository.Get(context.Background(), 1, dfpConfig)
+	assert.True(t, IsRecordNotFoundError(err))
+
+	// When data is nil
+	err = repository.Get(context.Background(), 1, nil)
+	assert.Error(t, err)
 }
 
 func TestListSQL(t *testing.T) {
+
+	// When record found
 	dbMock, mock, err := sqlmock.New()
 	if err != nil {
 		panic(err)
@@ -69,9 +93,32 @@ func TestListSQL(t *testing.T) {
 		assert.Equal(t, 5, dfpConfig.StartWashingPumpBeforeWashing)
 		assert.Equal(t, int64(1), dfpConfig.Version)
 	}
+
+	// When no records found
+	dbMock, mock, err = sqlmock.New()
+	if err != nil {
+		panic(err)
+	}
+	configMock = sqlmock.NewRows([]string{"id", "force_washing_duration", "force_washing_duration_when_frozen", "temperature_threshold_when_frozen", "wait_time_between_washing", "washing_duration", "start_washing_pump_before_washing", "version", "updated_at"})
+	mock.ExpectQuery("^SELECT (.+) FROM \"dfpconfig\" (.+)$").WillReturnRows(configMock)
+
+	db, _ = gorm.Open("sqlite3", dbMock)
+	repository = NewSQLRepository(db)
+
+	listDfpConfig = make([]*models.DFPConfig, 0, 0)
+
+	err = repository.List(context.Background(), &listDfpConfig)
+	assert.NoError(t, err)
+	assert.Empty(t, listDfpConfig)
+
+	// When data is nil
+	err = repository.List(context.Background(), nil)
+	assert.Error(t, err)
 }
 
 func TestUpdateSQL(t *testing.T) {
+
+	// When record to update is not nil
 	dbMock, mock, err := sqlmock.New()
 	if err != nil {
 		panic(err)
@@ -103,6 +150,10 @@ func TestUpdateSQL(t *testing.T) {
 	assert.Equal(t, 10, dfpConfig.WashingDuration)
 	assert.Equal(t, 5, dfpConfig.StartWashingPumpBeforeWashing)
 	assert.Equal(t, int64(1), dfpConfig.Version)
+
+	// When record is nil
+	err = repository.Update(context.Background(), nil)
+	assert.Error(t, err)
 }
 
 func TestCreateSQL(t *testing.T) {
@@ -137,4 +188,8 @@ func TestCreateSQL(t *testing.T) {
 	assert.Equal(t, 10, dfpConfig.WashingDuration)
 	assert.Equal(t, 5, dfpConfig.StartWashingPumpBeforeWashing)
 	assert.Equal(t, int64(1), dfpConfig.Version)
+
+	// When record is nil
+	err = repository.Create(context.Background(), nil)
+	assert.Error(t, err)
 }

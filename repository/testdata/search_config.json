@@ -1,0 +1,42 @@
+{
+    "took" : 19,
+    "timed_out" : false,
+    "num_reduce_phases" : 3,
+    "_shards" : {
+      "total" : 3,
+      "successful" : 3,
+      "skipped" : 0,
+      "failed" : 0
+    },
+    "hits" : {
+      "total" : {
+        "value" : 10000,
+        "relation" : "gte"
+      },
+      "max_score" : 1.0,
+      "hits" : [
+        {
+            "_index": "test",
+            "_type": "_doc",
+            "_id": "1",
+            "_version": 1,
+            "_seq_no": 2,
+            "_primary_term": 1,
+            "found": true,
+            "_source": {
+                "force_washing_duration": 180,
+                "force_washing_duration_when_frozen": 60,
+                "temperature_threshold_when_frozen": -5,
+                "wait_time_between_washing": 15,
+                "washing_duration": 10,
+                "start_washing_pump_before_washing": 5,
+                "auto": true,
+                "stopped": true,
+                "security_disabled": false,
+                "version": 1,
+                "UpdatedAt": "2020-02-06T10:40:12.000Z"
+            }
+        }
+      ]
+    }
+}

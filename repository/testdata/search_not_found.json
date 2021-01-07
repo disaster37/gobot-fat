@@ -1,0 +1,20 @@
+{
+    "took" : 19,
+    "timed_out" : false,
+    "num_reduce_phases" : 3,
+    "_shards" : {
+      "total" : 3,
+      "successful" : 3,
+      "skipped" : 0,
+      "failed" : 0
+    },
+    "hits" : {
+      "total" : {
+        "value" : 10000,
+        "relation" : "gte"
+      },
+      "max_score" : 1.0,
+      "hits" : [
+      ]
+    }
+}

@@ -13,10 +13,11 @@ import (
 
 // UsecaseCRUD represent usecase CRUD interface
 type UsecaseCRUD interface {
-	Get(ctx context.Context, id uint, data models.Model) error
-	Update(ctx context.Context, data models.Model) error
-	Create(ctx context.Context, data models.Model) error
-	Init(ctx context.Context, data models.Model) error
+	Get(ctx context.Context, id uint, data interface{}) error
+	List(ctx context.Context, listData interface{}) error
+	Update(ctx context.Context, data interface{}) error
+	Create(ctx context.Context, data interface{}) error
+	Init(ctx context.Context, data interface{}) error
 }
 
 // UsecaseCRUDGeneric is a egenric implementation of UsecaseCRUD
@@ -36,22 +37,30 @@ func NewUsecase(sqlRepo repository.Repository, elasticRepo repository.Repository
 }
 
 // Get permit to get object on repository with ID
-func (h *UsecaseCRUDGeneric) Get(ctx context.Context, id uint, data models.Model) error {
+func (h *UsecaseCRUDGeneric) Get(ctx context.Context, id uint, data interface{}) error {
 	ctx, cancel := context.WithTimeout(ctx, h.contextTimeout)
 	defer cancel()
 
 	return h.SQLRepo.Get(ctx, id, data)
 }
 
+// List permit to get all records on repository
+func (h *UsecaseCRUDGeneric) List(ctx context.Context, listData interface{}) error {
+	ctx, cancel := context.WithTimeout(ctx, h.contextTimeout)
+	defer cancel()
+
+	return h.SQLRepo.List(ctx, listData)
+}
+
 // Create permit to create object on all repository
-func (h *UsecaseCRUDGeneric) Create(ctx context.Context, data models.Model) error {
+func (h *UsecaseCRUDGeneric) Create(ctx context.Context, data interface{}) error {
 
 	if data == nil {
 		return errors.New("Data can't be null")
 	}
 
 	// Init version
-	data.SetVersion(0)
+	data.(models.Model).SetVersion(0)
 
 	ctx, cancel := context.WithTimeout(ctx, h.contextTimeout)
 	defer cancel()
@@ -73,7 +82,7 @@ func (h *UsecaseCRUDGeneric) Create(ctx context.Context, data models.Model) erro
 }
 
 // Update permit to update object on all repository
-func (h *UsecaseCRUDGeneric) Update(ctx context.Context, data models.Model) error {
+func (h *UsecaseCRUDGeneric) Update(ctx context.Context, data interface{}) error {
 
 	if data == nil {
 		return errors.New("Data can't be null")
@@ -83,7 +92,7 @@ func (h *UsecaseCRUDGeneric) Update(ctx context.Context, data models.Model) erro
 	defer cancel()
 
 	// Manage version
-	data.SetVersion(data.GetVersion() + 1)
+	data.(models.Model).SetVersion(data.(models.Model).GetVersion() + 1)
 
 	err := h.SQLRepo.Update(ctx, data)
 	if err != nil {
@@ -102,24 +111,37 @@ func (h *UsecaseCRUDGeneric) Update(ctx context.Context, data models.Model) erro
 }
 
 // Init permit to init data or refresh data from repostory
-func (h *UsecaseCRUDGeneric) Init(ctx context.Context, data models.Model) error {
+func (h *UsecaseCRUDGeneric) Init(ctx context.Context, data interface{}) error {
+
+	if data == nil {
+		return errors.New("Data can't be null")
+	}
 
 	ctx, cancel := context.WithTimeout(ctx, h.contextTimeout)
 	defer cancel()
 
-	dataModel := data.GetModel()
+	dataModel := data.(models.Model).GetModel()
 	sqlData := reflect.New(reflect.TypeOf(data).Elem()).Interface().(models.Model)
 	esData := reflect.New(reflect.TypeOf(data).Elem()).Interface().(models.Model)
 
 	err := h.SQLRepo.Get(ctx, dataModel.ID, sqlData)
 	if err != nil {
-		log.Errorf("Failed to retrive data from sql: %s", err.Error())
-		return err
+		if repository.IsRecordNotFoundError(err) {
+			sqlData = nil
+		} else {
+			log.Errorf("Failed to retrive data from sql: %s", err.Error())
+			return err
+		}
+
 	}
 	err = h.ElasticRepo.Get(ctx, dataModel.ID, esData)
 	if err != nil {
-		esData = nil
-		log.Errorf("Failed to retrive data from elastic: %s", err.Error())
+
+		if repository.IsRecordNotFoundError(err) {
+			esData = nil
+		} else {
+			log.Errorf("Failed to retrive data from elastic: %s", err.Error())
+		}
 	}
 
 	if sqlData == nil && esData == nil {
@@ -159,6 +181,7 @@ func (h *UsecaseCRUDGeneric) Init(ctx context.Context, data models.Model) error 
 			err = h.SQLRepo.Update(ctx, esData)
 			if err != nil {
 				log.Errorf("Failed to update data on SQL: %s", err.Error())
+
 				return err
 			}
 			log.Info("Update data on SQL from elastic data")
@@ -167,7 +190,7 @@ func (h *UsecaseCRUDGeneric) Init(ctx context.Context, data models.Model) error 
 			err = h.ElasticRepo.Update(ctx, sqlData)
 			if err != nil {
 				log.Errorf("Failed to update data on elastic: %s", err.Error())
-				return err
+				return nil
 			}
 			log.Info("Update data on elastic from SQL data")
 		}

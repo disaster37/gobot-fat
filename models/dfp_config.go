@@ -6,7 +6,7 @@ import (
 
 // DFPConfig contain config data for Drum Filter Pond
 type DFPConfig struct {
-	ModelGeneric `json:",squash"`
+	ModelGeneric
 
 	// ForceWashingDuration is the maximum time in minutes to wait before force a washing since last washing
 	ForceWashingDuration int `json:"force_washing_duration" validate:"required" gorm:"column:force_washing_duration;type:bigint" validate:"required"`
