@@ -3,13 +3,11 @@ package models
 import (
 	"encoding/json"
 	"time"
-
-	"github.com/jinzhu/gorm"
 )
 
 // TFPState  describe the current state of drum filter pond
 type TFPState struct {
-	gorm.Model
+	ModelGeneric
 
 	Name string `json:"name"`
 

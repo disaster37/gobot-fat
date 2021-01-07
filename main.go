@@ -21,6 +21,7 @@ import (
 	tankConfigHttpDeliver "github.com/disaster37/gobot-fat/tankconfig/delivery/http"
 	"github.com/disaster37/gobot-fat/tfpconfig"
 	tfpConfigHttpDeliver "github.com/disaster37/gobot-fat/tfpconfig/delivery/http"
+	tfpStateHttpDeliver "github.com/disaster37/gobot-fat/tfpstate/delivery/http"
 	"github.com/disaster37/gobot-fat/usecase"
 
 	//tfpConfigRepo "github.com/disaster37/gobot-fat/tfp_config/repository"
@@ -156,40 +157,39 @@ func main() {
 	log.Info("Get tfpconfig successfully")
 	tfpConfigHttpDeliver.NewTFPConfigHandler(api, tfpConfigUsecase)
 
-	/*
-		// TFP state
-		tfpStateRepoSQL := tfpStateRepo.NewSQLTFPStateRepository(db)
-		tfpStateRepoES := tfpStateRepo.NewElasticsearchTFPStateRepository(es, configHandler.GetString("elasticsearch.index.tfp_state"))
-		tfpStateU := tfpStateUsecase.NewStateUsecase(tfpStateRepoES, tfpStateRepoSQL, timeoutContext)
-		tfpState := &models.TFPState{
-			PondPumpRunning:         true,
-			UVC1Running:             true,
-			UVC2Running:             true,
-			PondBubbleRunning:       true,
-			FilterBubbleRunning:     true,
-			WaterfallPumpRunning:    false,
-			IsDisableSecurity:       false,
-			IsSecurity:              false,
-			IsEmergencyStopped:      false,
-			OzoneBlisterNbHour:      0,
-			UVC1BlisterNbHour:       0,
-			UVC2BlisterNbHour:       0,
-			AcknoledgeWaterfallAuto: false,
-			Name:                    configHandler.GetString("tfp.name"),
-		}
-		err = tfpStateU.Init(ctx, tfpState)
-		if err != nil {
-			log.Errorf("Error appear when init TFP state: %s", err.Error())
-			panic("Failed to init tfpState on SQL")
-		}
-		tfpState, err = tfpStateU.Get(ctx)
-		if err != nil {
-			log.Errorf("Failed to retrive tfpState from usecase")
-			panic("Failed to retrive tfpState from usecase")
-		}
-		log.Info("Get tfpState successfully")
-		tfpStateHttpDeliver.NewTFPStateHandler(api, tfpStateU)
-	*/
+	// TFP state
+	tfpStateRepoSQL := repository.NewSQLRepository(db)
+	tfpStateRepoES := repository.NewElasticsearchRepository(es, configHandler.GetString("elasticsearch.index.tfp_state"))
+	tfpStateUsecase := usecase.NewUsecase(tfpStateRepoSQL, tfpStateRepoES, timeoutContext)
+	tfpState := &models.TFPState{
+		PondPumpRunning:         true,
+		UVC1Running:             true,
+		UVC2Running:             true,
+		PondBubbleRunning:       true,
+		FilterBubbleRunning:     true,
+		WaterfallPumpRunning:    false,
+		IsDisableSecurity:       false,
+		IsSecurity:              false,
+		IsEmergencyStopped:      false,
+		OzoneBlisterNbHour:      0,
+		UVC1BlisterNbHour:       0,
+		UVC2BlisterNbHour:       0,
+		AcknoledgeWaterfallAuto: false,
+		Name:                    configHandler.GetString("tfp.name"),
+	}
+	tfpState.ID = tfpState.ID
+	err = tfpStateUsecase.Init(ctx, tfpState)
+	if err != nil {
+		log.Errorf("Error appear when init TFP state: %s", err.Error())
+		panic("Failed to init tfpState on SQL")
+	}
+	err = tfpStateUsecase.Get(ctx, tfpState.ID, tfpState)
+	if err != nil {
+		log.Errorf("Failed to retrive tfpState from usecase")
+		panic("Failed to retrive tfpState from usecase")
+	}
+	log.Info("Get tfpState successfully")
+	tfpStateHttpDeliver.NewTFPStateHandler(api, tfpStateUsecase)
 
 	// TFP board
 	/*
