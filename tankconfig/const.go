@@ -1,4 +1,7 @@
 package tankconfig
 
-const IDPundTank = 1
-const IDGardenTank = 2
+const (
+	IDPondTank    = 1
+	IDGardenTank  = 2
+	NewTankConfig = "new-tank-config"
+)

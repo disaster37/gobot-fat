@@ -9,14 +9,17 @@ import (
 	"github.com/disaster37/gobot-fat/repository"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	"gobot.io/x/gobot"
 )
 
 func TestGet(t *testing.T) {
 
 	sqlMock := repository.NewMock()
 	elasticMock := repository.NewMock()
+	eventer := gobot.NewEventer()
+	eventer.AddEvent("test")
 
-	us := NewUsecase(sqlMock, elasticMock, time.Duration(10*time.Second))
+	us := NewUsecase(sqlMock, elasticMock, time.Duration(10*time.Second), eventer, "test")
 	dfpConfig := &models.DFPConfig{}
 
 	// When no data in ES and in SQL
@@ -66,7 +69,10 @@ func TestList(t *testing.T) {
 	sqlMock := repository.NewMock()
 	elasticMock := repository.NewMock()
 
-	us := NewUsecase(sqlMock, elasticMock, time.Duration(10*time.Second))
+	eventer := gobot.NewEventer()
+	eventer.AddEvent("test")
+
+	us := NewUsecase(sqlMock, elasticMock, time.Duration(10*time.Second), eventer, "test")
 	listDFPc := make([]*models.DFPConfig, 0, 0)
 
 	// When no data in ES and in SQL
@@ -125,7 +131,10 @@ func TestUpdate(t *testing.T) {
 	sqlMock := repository.NewMock()
 	elasticMock := repository.NewMock()
 
-	us := NewUsecase(sqlMock, elasticMock, time.Duration(10*time.Second))
+	eventer := gobot.NewEventer()
+	eventer.AddEvent("test")
+
+	us := NewUsecase(sqlMock, elasticMock, time.Duration(10*time.Second), eventer, "test")
 
 	// When no data
 	err := us.Update(context.Background(), nil)
@@ -172,7 +181,10 @@ func TestCreate(t *testing.T) {
 	sqlMock := repository.NewMock()
 	elasticMock := repository.NewMock()
 
-	us := NewUsecase(sqlMock, elasticMock, time.Duration(10*time.Second))
+	eventer := gobot.NewEventer()
+	eventer.AddEvent("test")
+
+	us := NewUsecase(sqlMock, elasticMock, time.Duration(10*time.Second), eventer, "test")
 
 	// When no data
 	err := us.Create(context.Background(), nil)
@@ -219,7 +231,10 @@ func TestInit(t *testing.T) {
 	sqlMock := repository.NewMock()
 	elasticMock := repository.NewMock()
 
-	us := NewUsecase(sqlMock, elasticMock, time.Duration(10*time.Second))
+	eventer := gobot.NewEventer()
+	eventer.AddEvent("test")
+
+	us := NewUsecase(sqlMock, elasticMock, time.Duration(10*time.Second), eventer, "test")
 
 	initDFPc := &models.DFPConfig{
 		ForceWashingDuration:           180,
@@ -362,6 +377,6 @@ func TestInit(t *testing.T) {
 	assert.NoError(t, err)
 	assert.False(t, sqlMock.IsUpdate)
 	assert.False(t, sqlMock.IsCreate)
-	assert.True(t, elasticMock.IsUpdate)
-	assert.False(t, elasticMock.IsCreate)
+	assert.False(t, elasticMock.IsUpdate)
+	assert.True(t, elasticMock.IsCreate)
 }

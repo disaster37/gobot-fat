@@ -8,8 +8,11 @@ import (
 type DFPConfig struct {
 	ModelGeneric
 
+	// Enable is set to true if board is enabled
+	Enable bool `json:"enable" gorm:"column:enable" validate:"required"`
+
 	// ForceWashingDuration is the maximum time in minutes to wait before force a washing since last washing
-	ForceWashingDuration int `json:"force_washing_duration" validate:"required" gorm:"column:force_washing_duration;type:bigint" validate:"required"`
+	ForceWashingDuration int `json:"force_washing_duration"  gorm:"column:force_washing_duration;type:bigint" validate:"required"`
 
 	// ForceWashingDurationWhenFrozen is the maximum time in minutes to wait before force a washing since last washing when tempeture frozen
 	ForceWashingDurationWhenFrozen int `json:"force_washing_duration_when_frozen" gorm:"column:force_washing_duration_when_frozen;type:bigint" validate:"required"`

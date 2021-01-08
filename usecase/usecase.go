@@ -9,6 +9,7 @@ import (
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/repository"
 	"github.com/labstack/gommon/log"
+	"gobot.io/x/gobot"
 )
 
 // UsecaseCRUD represent usecase CRUD interface
@@ -25,15 +26,21 @@ type UsecaseCRUDGeneric struct {
 	ElasticRepo    repository.Repository
 	SQLRepo        repository.Repository
 	contextTimeout time.Duration
+	eventName      string
+	gobot.Eventer
 }
 
 // NewUsecase permit to create new usecase
-func NewUsecase(sqlRepo repository.Repository, elasticRepo repository.Repository, timeout time.Duration) UsecaseCRUD {
-	return &UsecaseCRUDGeneric{
+func NewUsecase(sqlRepo repository.Repository, elasticRepo repository.Repository, timeout time.Duration, eventer gobot.Eventer, eventName string) UsecaseCRUD {
+	us := &UsecaseCRUDGeneric{
 		ElasticRepo:    elasticRepo,
 		SQLRepo:        sqlRepo,
 		contextTimeout: timeout,
+		eventName:      eventName,
 	}
+	us.Eventer = eventer
+
+	return us
 }
 
 // Get permit to get object on repository with ID
@@ -78,6 +85,8 @@ func (h *UsecaseCRUDGeneric) Create(ctx context.Context, data interface{}) error
 		log.Infof("Create data on Elasticsearch backend successfully")
 	}
 
+	h.Publish(h.eventName, data)
+
 	return nil
 }
 
@@ -106,6 +115,8 @@ func (h *UsecaseCRUDGeneric) Update(ctx context.Context, data interface{}) error
 	} else {
 		log.Infof("Update data on Elasticsearch backend successfully")
 	}
+
+	h.Publish(h.eventName, data)
 
 	return nil
 }
@@ -137,11 +148,12 @@ func (h *UsecaseCRUDGeneric) Init(ctx context.Context, data interface{}) error {
 	err = h.ElasticRepo.Get(ctx, dataModel.ID, esData)
 	if err != nil {
 
-		if repository.IsRecordNotFoundError(err) {
-			esData = nil
-		} else {
+		if !repository.IsRecordNotFoundError(err) {
 			log.Errorf("Failed to retrive data from elastic: %s", err.Error())
+
 		}
+
+		esData = nil
 	}
 
 	if sqlData == nil && esData == nil {

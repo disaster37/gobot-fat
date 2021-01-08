@@ -8,6 +8,9 @@ import (
 type TankConfig struct {
 	ModelGeneric
 
+	// Enable is set to true if board is enabled
+	Enable bool `json:"enable" gorm:"column:enable" validate:"required"`
+
 	// The board name
 	Name string `json:"name" gorm:"unique,column:name"`
 
@@ -19,9 +22,6 @@ type TankConfig struct {
 
 	// The liter per cm
 	LiterPerCm int64 `json:"liter_per_cm" gorm:"column:liter_per_cm" validate:"required"`
-
-	// Version of configuration
-	Version int64 `json:"version" gorm:"column:version;type:bigint" validate:"required"`
 }
 
 func (h TankConfig) TableName() string {

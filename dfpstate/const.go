@@ -1,3 +1,6 @@
 package dfpstate
 
-const ID = 1
+const (
+	ID          = 1
+	NewDFPState = "new-dfp-state"
+)

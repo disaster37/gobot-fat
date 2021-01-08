@@ -1,3 +1,6 @@
 package dfpconfig
 
-const ID = 1
+const (
+	ID           = 1
+	NewDFPConfig = "new-dfp-config"
+)
