@@ -16,11 +16,14 @@ func (h *TankBoard) work() {
 	ctx := context.Background()
 
 	// Handle config
-	h.On(tankconfig.NewTankConfig, func(s interface{}) {
+	h.globalEventer.On(tankconfig.NewTankConfig, func(s interface{}) {
 		tankConfig := s.(*models.TankConfig)
 		if tankConfig.ID == h.config.ID {
 			log.Debugf("New config received for board %s, we update it", h.name)
 			h.config = tankConfig
+
+			// Publish internal event
+			h.Publish(NewConfig, tankConfig)
 		}
 	})
 
@@ -33,16 +36,23 @@ func (h *TankBoard) work() {
 			// Board rebooted
 			log.Infof("Detect board %s is rebooted", h.name)
 
+			// Force reconnect to init pin and set output as expected
+			if err := h.board.Reconnect(); err != nil {
+				log.Errorf("Error when reconnect on board %s: %s", h.name, err.Error())
+			}
+
 			// Nothink todo, juste acknoledge and send event
-			err := h.functionRebooted.Call()
-			if err != nil {
+			if err := h.functionRebooted.Call(); err != nil {
 				log.Errorf("Error when acknoledge reboot on board %s: %s", h.name, err.Error())
 			}
 
-			// Publish rebooted event
+			// Send rebooted event
 			h.sendEvent(ctx, fmt.Sprintf("reboot_%s", h.name), "board", 0)
 
 			h.isOnline = true
+
+			// Publish internal event
+			h.Publish(NewReboot, nil)
 		}
 	})
 
@@ -53,8 +63,11 @@ func (h *TankBoard) work() {
 		err := s.(error)
 		log.Errorf("Board %s is offline: %s", h.name, err.Error())
 
-		// Publish offline event
+		// Send offline event
 		h.sendEvent(ctx, fmt.Sprintf("offline_%s", h.name), "board", 0)
+
+		// Publish internal event
+		h.Publish(NewOffline, nil)
 
 	})
 
@@ -71,6 +84,9 @@ func (h *TankBoard) work() {
 
 		// Send event
 		h.sendEvent(ctx, "read_distance", "sensor", h.data.Level)
+
+		// Publish internal event
+		h.Publish(NewDistance, distance)
 	})
 
 	// Handle error when read distance
@@ -78,6 +94,8 @@ func (h *TankBoard) work() {
 		err := s.(error)
 		log.Errorf("Error when read value distance on board %s: %s", h.name, err.Error())
 	})
+
+	h.isInitialized = true
 }
 
 func (h *TankBoard) sendEvent(ctx context.Context, eventType string, eventKind string, distance int) {

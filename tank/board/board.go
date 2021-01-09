@@ -13,21 +13,38 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"gobot.io/x/gobot"
+	"gobot.io/x/gobot/drivers/gpio"
 )
+
+const (
+	NewDistance = "new-distance"
+	NewConfig   = "new-config"
+	NewReboot   = "new-reboot"
+	NewOffline  = "new-offline"
+)
+
+type TankAdaptor interface {
+	gobot.Adaptor
+	gpio.DigitalReader
+	extra.ExtraReader
+	Reconnect() error
+}
 
 // TankBoard manage all i/o on Tank
 type TankBoard struct {
 	gobot            *gobot.Robot
-	board            *arest.Adaptor
+	board            TankAdaptor
 	eventUsecase     event.Usecase
 	configHandler    *viper.Viper
 	config           *models.TankConfig
 	data             *models.Tank
 	name             string
 	isOnline         bool
+	isInitialized    bool
 	valueRebooted    *extra.ValueDriver
 	valueDistance    *extra.ValueDriver
 	functionRebooted *extra.FunctionDriver
+	globalEventer    gobot.Eventer
 	gobot.Eventer
 }
 
@@ -37,22 +54,28 @@ func NewTank(configHandler *viper.Viper, config *models.TankConfig, eventUsecase
 	//Create client
 	c := arest.NewHTTPAdaptor(configHandler.GetString("url"))
 
+	return newTank(c, configHandler, config, eventUsecase, eventer, 10*time.Second)
+
+}
+
+func newTank(board TankAdaptor, configHandler *viper.Viper, config *models.TankConfig, eventUsecase event.Usecase, eventer gobot.Eventer, wait time.Duration) (tankHandler tank.Board) {
+
 	// Create struct
 	tankBoard := &TankBoard{
-		board:            c,
+		board:            board,
 		eventUsecase:     eventUsecase,
 		configHandler:    configHandler,
 		name:             configHandler.GetString("name"),
 		config:           config,
 		data:             &models.Tank{},
 		isOnline:         false,
-		valueRebooted:    extra.NewValueDriver(c, "isRebooted", 10*time.Second),
-		valueDistance:    extra.NewValueDriver(c, "distance", 10*time.Second),
-		functionRebooted: extra.NewFunctionDriver(c, "acknoledgeRebooted", ""),
+		isInitialized:    false,
+		globalEventer:    eventer,
+		valueRebooted:    extra.NewValueDriver(board, "isRebooted", wait),
+		valueDistance:    extra.NewValueDriver(board, "distance", wait),
+		functionRebooted: extra.NewFunctionDriver(board, "acknoledgeRebooted", ""),
+		Eventer:          gobot.NewEventer(),
 	}
-	tankBoard.Eventer = eventer
-
-	// Create drivers
 
 	tankBoard.gobot = gobot.NewRobot(
 		tankBoard.Name(),
@@ -64,6 +87,11 @@ func NewTank(configHandler *viper.Viper, config *models.TankConfig, eventUsecase
 		},
 		tankBoard.work,
 	)
+
+	tankBoard.AddEvent(NewDistance)
+	tankBoard.AddEvent(NewDistance)
+	tankBoard.AddEvent(NewReboot)
+	tankBoard.AddEvent(NewOffline)
 
 	log.Infof("Board %s initialized successfully", tankBoard.Name())
 
@@ -107,6 +135,7 @@ func (h *TankBoard) Start(ctx context.Context) (err error) {
 	if err != nil {
 		return err
 	}
+	h.isOnline = true
 
 	h.sendEvent(ctx, fmt.Sprintf("start_%s", h.name), "board", 0)
 
@@ -120,6 +149,9 @@ func (h *TankBoard) Stop(ctx context.Context) (err error) {
 	if err != nil {
 		return err
 	}
+
+	h.isOnline = false
+	h.isInitialized = false
 
 	h.sendEvent(ctx, fmt.Sprintf("stop_%s", h.name), "board", 0)
 
