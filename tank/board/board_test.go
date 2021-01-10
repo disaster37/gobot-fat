@@ -50,6 +50,12 @@ func TestStartStopIsOnline(t *testing.T) {
 	assert.False(t, board.IsOnline())
 }
 
+func TestGetBoard(t *testing.T) {
+	board, _ := initTestBoard()
+	assert.Equal(t, "test", board.Board().Name)
+	assert.False(t, board.Board().IsOnline)
+}
+
 func TestName(t *testing.T) {
 	board, _ := initTestBoard()
 	assert.Equal(t, "test", board.Name())
