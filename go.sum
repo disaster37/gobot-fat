@@ -86,6 +86,8 @@ github.com/disaster37/gobot-arest v1.0.7 h1:SJZMY84b7QthT/RYBIMgvYhgTWDuKty+W0sA
 github.com/disaster37/gobot-arest v1.0.7/go.mod h1:s63dyfYxMiM19bw+ZaEP+IjJUNYQ4wlQGUrXhdAOBWU=
 github.com/disaster37/gobot-arest v1.0.8 h1:zr3HHgRkvHkfZOysXrk4WcJHkPx0db74dU6DVZuJHBk=
 github.com/disaster37/gobot-arest v1.0.8/go.mod h1:s63dyfYxMiM19bw+ZaEP+IjJUNYQ4wlQGUrXhdAOBWU=
+github.com/disaster37/gobot-arest v1.0.9 h1:u1RIW5a2xSt7L4pXYd499TKWRt49ml+qu9n/14lbiEA=
+github.com/disaster37/gobot-arest v1.0.9/go.mod h1:s63dyfYxMiM19bw+ZaEP+IjJUNYQ4wlQGUrXhdAOBWU=
 github.com/donovanhide/eventsource v0.0.0-20171031113327-3ed64d21fb0b/go.mod h1:56wL82FO0bfMU5RvfXoIwSOP2ggqqxT+tAfNEIyxuHw=
 github.com/eapache/go-resiliency v1.1.0/go.mod h1:kFI+JgMyC7bLPUVY133qvEBtVayf5mFgVsvEsIPBvNs=
 github.com/eapache/go-xerial-snappy v0.0.0-20180814174437-776d5712da21/go.mod h1:+020luEh2TKB4/GOp8oxxtq0Daoen/Cii55CzbTV6DU=

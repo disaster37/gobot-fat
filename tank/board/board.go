@@ -89,7 +89,7 @@ func newTank(board TankAdaptor, configHandler *viper.Viper, config *models.TankC
 	)
 
 	tankBoard.AddEvent(NewDistance)
-	tankBoard.AddEvent(NewDistance)
+	tankBoard.AddEvent(NewConfig)
 	tankBoard.AddEvent(NewReboot)
 	tankBoard.AddEvent(NewOffline)
 

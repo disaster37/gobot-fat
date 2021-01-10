@@ -6,20 +6,28 @@ import (
 
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/tfp"
-	tfpconfig "github.com/disaster37/gobot-fat/tfpconfig"
-	tfpstate "github.com/disaster37/gobot-fat/tfpstate"
+	"github.com/disaster37/gobot-fat/tfpconfig"
+	"github.com/disaster37/gobot-fat/tfpstate"
+	"github.com/disaster37/gobot-fat/usecase"
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+)
+
+const (
+	blisterUVC1  = "UVC1"
+	blisterUVC2  = "UVC2"
+	blisterOzone = "Ozone"
 )
 
 type tfpUsecase struct {
 	tfp            tfp.Board
-	config         tfpconfig.Usecase
-	state          tfpstate.Usecase
+	config         usecase.UsecaseCRUD
+	state          usecase.UsecaseCRUD
 	contextTimeout time.Duration
 }
 
 // NewTFPUsecase will create new tfpUsecase object of tfp.Usecase interface
-func NewTFPUsecase(handler tfp.Board, config tfpconfig.Usecase, state tfpstate.Usecase, timeout time.Duration) tfp.Usecase {
+func NewTFPUsecase(handler tfp.Board, config usecase.UsecaseCRUD, state usecase.UsecaseCRUD, timeout time.Duration) tfp.Usecase {
 	return &tfpUsecase{
 		tfp:            handler,
 		config:         config,
@@ -172,77 +180,54 @@ func (h *tfpUsecase) GetState(c context.Context) (models.TFPState, error) {
 }
 
 // UVC1BlisterNew update the date when blister changed
-func (h *tfpUsecase) UVC1BlisterNew(c context.Context) error {
-	state, err := h.state.Get(c)
-	if err != nil {
-		return err
-	}
-	config, err := h.config.Get(c)
-	if err != nil {
-		return err
-	}
-
-	config.UVC1BlisterTime = time.Now()
-	state.UVC1BlisterNbHour = 0
-
-	err = h.state.Update(c, state)
-	if err != nil {
-		return err
-	}
-	err = h.config.Update(c, config)
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (h *tfpUsecase) UVC1BlisterNew(ctx context.Context) error {
+	return h.blisterNew(ctx, blisterUVC1)
 }
 
 // UVC2BlisterNew update the date when blister changed
 func (h *tfpUsecase) UVC2BlisterNew(ctx context.Context) error {
-	state, err := h.state.Get(ctx)
-	if err != nil {
-		return err
-	}
-	config, err := h.config.Get(ctx)
-	if err != nil {
-		return err
-	}
-
-	config.UVC2BlisterTime = time.Now()
-	state.UVC2BlisterNbHour = 0
-
-	err = h.state.Update(ctx, state)
-	if err != nil {
-		return err
-	}
-	err = h.config.Update(ctx, config)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return h.blisterNew(ctx, blisterUVC2)
 }
 
 // UVC2BlisterNew update the date when blister changed
 func (h *tfpUsecase) OzoneBlisterNew(ctx context.Context) error {
-	state, err := h.state.Get(ctx)
-	if err != nil {
-		return err
-	}
-	config, err := h.config.Get(ctx)
-	if err != nil {
+	return h.blisterNew(ctx, blisterOzone)
+}
+
+func (h *tfpUsecase) blisterNew(ctx context.Context, blisterName string) error {
+	state := &models.TFPState{}
+	if err := h.state.Get(ctx, tfpstate.ID, state); err != nil {
 		return err
 	}
 
-	config.OzoneBlisterTime = time.Now()
-	state.OzoneBlisterNbHour = 0
-
-	err = h.state.Update(ctx, state)
-	if err != nil {
+	config := &models.TFPConfig{}
+	if err := h.config.Get(ctx, tfpconfig.ID, config); err != nil {
 		return err
 	}
-	err = h.config.Update(ctx, config)
-	if err != nil {
+
+	switch blisterName {
+	case blisterUVC1:
+		config.UVC1BlisterTime = time.Now()
+		state.UVC1BlisterNbHour = 0
+		break
+	case blisterUVC2:
+		config.UVC2BlisterTime = time.Now()
+		state.UVC2BlisterNbHour = 0
+		break
+	case blisterOzone:
+		config.OzoneBlisterTime = time.Now()
+		state.OzoneBlisterNbHour = 0
+		break
+	default:
+		return errors.Errorf("Blister %s not found", blisterName)
+
+	}
+
+	if err := h.state.Update(ctx, state); err != nil {
+		return err
+	}
+
+	if err := h.config.Update(ctx, config); err != nil {
 		return err
 	}
 
