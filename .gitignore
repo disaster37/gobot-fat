@@ -2,3 +2,5 @@
 *.exe
 config.yml
 config/
+
+coverage.txt

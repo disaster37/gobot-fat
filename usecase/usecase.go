@@ -134,6 +134,7 @@ func (h *UsecaseCRUDGeneric) Init(ctx context.Context, data interface{}) error {
 	dataModel := data.(models.Model).GetModel()
 	sqlData := reflect.New(reflect.TypeOf(data).Elem()).Interface().(models.Model)
 	esData := reflect.New(reflect.TypeOf(data).Elem()).Interface().(models.Model)
+	isElasticError := false
 
 	err := h.SQLRepo.Get(ctx, dataModel.ID, sqlData)
 	if err != nil {
@@ -150,6 +151,7 @@ func (h *UsecaseCRUDGeneric) Init(ctx context.Context, data interface{}) error {
 
 		if !repository.IsRecordNotFoundError(err) {
 			log.Errorf("Failed to retrive data from elastic: %s", err.Error())
+			isElasticError = true
 
 		}
 
@@ -164,6 +166,11 @@ func (h *UsecaseCRUDGeneric) Init(ctx context.Context, data interface{}) error {
 			return err
 		}
 		log.Info("Create new data on repositories")
+		return nil
+	}
+
+	// Skip
+	if isElasticError {
 		return nil
 	}
 
