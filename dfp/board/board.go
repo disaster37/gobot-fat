@@ -3,8 +3,8 @@ package dfpboard
 import (
 	"context"
 
-	dfpconfig "github.com/disaster37/gobot-fat/dfp_config"
-	dfpstate "github.com/disaster37/gobot-fat/dfp_state"
+	dfpconfig "github.com/disaster37/gobot-fat/dfpconfig"
+	dfpstate "github.com/disaster37/gobot-fat/dfpstate"
 	"github.com/disaster37/gobot-fat/event"
 	"github.com/disaster37/gobot-fat/models"
 	log "github.com/sirupsen/logrus"

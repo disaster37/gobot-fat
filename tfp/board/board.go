@@ -11,8 +11,8 @@ import (
 	"github.com/disaster37/gobot-fat/event"
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/tfp"
-	tfpconfig "github.com/disaster37/gobot-fat/tfp_config"
-	tfpstate "github.com/disaster37/gobot-fat/tfp_state"
+	tfpconfig "github.com/disaster37/gobot-fat/tfpconfig"
+	tfpstate "github.com/disaster37/gobot-fat/tfpstate"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
