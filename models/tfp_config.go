@@ -9,6 +9,9 @@ import (
 type TFPConfig struct {
 	ModelGeneric
 
+	// Enable is set to true if board is enabled
+	Enable bool `json:"enable" gorm:"column:enable" validate:"required"`
+
 	// UVC1BlisterMaxTime is the max usage in hour of UVC1 blister
 	UVC1BlisterMaxTime int64 `json:"uvc1_blister_max_time" gorm:"column:uvc1_blister_max_time" validate:"required"`
 

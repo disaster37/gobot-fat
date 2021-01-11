@@ -3,41 +3,25 @@ package tfpboard
 import (
 	"context"
 	"errors"
-	"time"
 
-	"github.com/disaster37/gobot-fat/models"
 	log "github.com/sirupsen/logrus"
 )
 
 var ErrRelayCanNotStart = errors.New("Relay can't start because of current state")
 
-func (h *TFPHandler) canStartRelay() bool {
+func (h *TFPBoard) canStartRelay() bool {
 	if !h.state.IsEmergencyStopped && (!h.state.IsSecurity || h.state.IsDisableSecurity) {
 		return true
 	}
 	return false
 }
 
-func (h *TFPHandler) sendEvent(ctx context.Context, eventType string, eventKind string) {
-	event := &models.Event{
-		SourceID:   h.state.Name,
-		SourceName: h.state.Name,
-		Timestamp:  time.Now(),
-		EventType:  eventType,
-		EventKind:  eventKind,
-	}
-	err := h.eventUsecase.Store(ctx, event)
-	if err != nil {
-		log.Errorf("Error when store new event: %s", err.Error())
-	}
-}
-
 // StartPondPump permit to run pond pump
 // The pump start only if no emergency and no security
-func (h *TFPHandler) StartPondPump(ctx context.Context) error {
+func (h *TFPBoard) StartPondPump(ctx context.Context) error {
 	if h.canStartRelay() {
 		log.Debug("Start pond pump")
-		err := h.relayPompPond.On(ctx)
+		err := h.relayPompPond.On()
 		if err != nil {
 			return err
 		}
@@ -64,11 +48,11 @@ func (h *TFPHandler) StartPondPump(ctx context.Context) error {
 
 // StartUVC1 permit to run UVC1
 // The UVC start only if no emergency and no security
-func (h *TFPHandler) StartUVC1(ctx context.Context) error {
+func (h *TFPBoard) StartUVC1(ctx context.Context) error {
 
 	if h.canStartRelay() && h.state.PondPumpRunning {
 		log.Debug("Start UVC1")
-		err := h.relayUVC1.On(ctx)
+		err := h.relayUVC1.On()
 		if err != nil {
 			return err
 		}
@@ -95,10 +79,10 @@ func (h *TFPHandler) StartUVC1(ctx context.Context) error {
 
 // StartUVC2 permit to run UVC2
 // The UVC start only if no emergency and no security
-func (h *TFPHandler) StartUVC2(ctx context.Context) error {
+func (h *TFPBoard) StartUVC2(ctx context.Context) error {
 	if h.canStartRelay() && h.state.PondPumpRunning {
 		log.Debug("Start UVC2")
-		err := h.relayUVC2.On(ctx)
+		err := h.relayUVC2.On()
 		if err != nil {
 			return err
 		}
@@ -125,7 +109,7 @@ func (h *TFPHandler) StartUVC2(ctx context.Context) error {
 
 // StartPondPumpWithUVC permit to start pond pump with UVC
 // The pump start only if no emergency and no security
-func (h *TFPHandler) StartPondPumpWithUVC(ctx context.Context) error {
+func (h *TFPBoard) StartPondPumpWithUVC(ctx context.Context) error {
 	if h.canStartRelay() {
 		log.Debug("Start pond pump with UVC")
 
@@ -152,10 +136,10 @@ func (h *TFPHandler) StartPondPumpWithUVC(ctx context.Context) error {
 }
 
 // StopUVC1 permit to stop UVC1
-func (h *TFPHandler) StopUVC1(ctx context.Context) error {
+func (h *TFPBoard) StopUVC1(ctx context.Context) error {
 	log.Debug("Stop UVC1")
 
-	err := h.relayUVC1.Off(ctx)
+	err := h.relayUVC1.Off()
 	if err != nil {
 		return err
 	}
@@ -179,10 +163,10 @@ func (h *TFPHandler) StopUVC1(ctx context.Context) error {
 
 // StopUVC2 permit to stop UVC2
 // It will try while not stopped
-func (h *TFPHandler) StopUVC2(ctx context.Context) error {
+func (h *TFPBoard) StopUVC2(ctx context.Context) error {
 	log.Debug("Stop UVC2")
 
-	err := h.relayUVC2.Off(ctx)
+	err := h.relayUVC2.Off()
 	if err != nil {
 		return err
 	}
@@ -206,7 +190,7 @@ func (h *TFPHandler) StopUVC2(ctx context.Context) error {
 // StopPondPump permit to stop pond pump
 // It will try while not stopped
 // It will stop all UVC
-func (h *TFPHandler) StopPondPump(ctx context.Context) error {
+func (h *TFPBoard) StopPondPump(ctx context.Context) error {
 
 	err := h.StopUVC1(ctx)
 	if err != nil {
@@ -218,7 +202,7 @@ func (h *TFPHandler) StopPondPump(ctx context.Context) error {
 		return err
 	}
 
-	err = h.relayPompPond.Off(ctx)
+	err = h.relayPompPond.Off()
 	if err != nil {
 		return err
 	}
@@ -241,10 +225,10 @@ func (h *TFPHandler) StopPondPump(ctx context.Context) error {
 
 // StartWaterfallPump permit to start waterfall pump
 // The motor start only if not emmergency and no security
-func (h *TFPHandler) StartWaterfallPump(ctx context.Context) error {
+func (h *TFPBoard) StartWaterfallPump(ctx context.Context) error {
 	if h.canStartRelay() {
 		log.Debug("Start waterfall pump")
-		err := h.relayPompWaterfall.On(ctx)
+		err := h.relayPompWaterfall.On()
 		if err != nil {
 			return err
 		}
@@ -272,10 +256,10 @@ func (h *TFPHandler) StartWaterfallPump(ctx context.Context) error {
 
 // StopWaterfallPump permit to stop waterfall pump
 // It will try while is not stopped
-func (h *TFPHandler) StopWaterfallPump(ctx context.Context) error {
+func (h *TFPBoard) StopWaterfallPump(ctx context.Context) error {
 	log.Debug("Stop waterfall pump")
 
-	err := h.relayPompWaterfall.Off(ctx)
+	err := h.relayPompWaterfall.Off()
 	if err != nil {
 		return err
 	}
@@ -298,10 +282,10 @@ func (h *TFPHandler) StopWaterfallPump(ctx context.Context) error {
 
 // StartPondBubble permit to start pond bubble
 // The motor start only if not emmergency and no security
-func (h *TFPHandler) StartPondBubble(ctx context.Context) error {
+func (h *TFPBoard) StartPondBubble(ctx context.Context) error {
 	if h.canStartRelay() {
 		log.Debug("Start pond bubble")
-		err := h.relayBubblePond.On(ctx)
+		err := h.relayBubblePond.On()
 		if err != nil {
 			return err
 		}
@@ -329,10 +313,10 @@ func (h *TFPHandler) StartPondBubble(ctx context.Context) error {
 
 // StopPondBubble permit to stop pond bubble
 // It will try while is not stopped
-func (h *TFPHandler) StopPondBubble(ctx context.Context) error {
+func (h *TFPBoard) StopPondBubble(ctx context.Context) error {
 	log.Debug("Stop pond bubble")
 
-	err := h.relayBubblePond.Off(ctx)
+	err := h.relayBubblePond.Off()
 	if err != nil {
 		return err
 	}
@@ -355,10 +339,10 @@ func (h *TFPHandler) StopPondBubble(ctx context.Context) error {
 
 // StartFilterBubble permit to start filter bubble
 // The motor start only if not emmergency and no security
-func (h *TFPHandler) StartFilterBubble(ctx context.Context) error {
+func (h *TFPBoard) StartFilterBubble(ctx context.Context) error {
 	if h.canStartRelay() {
 		log.Debug("Start filter bubble")
-		err := h.relayBubbleFilter.On(ctx)
+		err := h.relayBubbleFilter.On()
 		if err != nil {
 			return err
 		}
@@ -386,10 +370,10 @@ func (h *TFPHandler) StartFilterBubble(ctx context.Context) error {
 
 // StopFilterBubble permit to stop filter bubble
 // It will try while is not stopped
-func (h *TFPHandler) StopFilterBubble(ctx context.Context) error {
+func (h *TFPBoard) StopFilterBubble(ctx context.Context) error {
 	log.Debug("Stop filter bubble")
 
-	err := h.relayBubbleFilter.Off(ctx)
+	err := h.relayBubbleFilter.Off()
 	if err != nil {
 		return err
 	}
@@ -411,7 +395,7 @@ func (h *TFPHandler) StopFilterBubble(ctx context.Context) error {
 }
 
 // StopRelais stop all relais
-func (h *TFPHandler) StopRelais(ctx context.Context) error {
+func (h *TFPBoard) StopRelais(ctx context.Context) error {
 	log.Info("Stop all relais")
 	err := h.StopPondPump(ctx)
 	if err != nil {

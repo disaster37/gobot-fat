@@ -2,26 +2,37 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/repository"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	"gobot.io/x/gobot"
 )
 
 func TestGet(t *testing.T) {
 
 	sqlMock := repository.NewMock()
 	elasticMock := repository.NewMock()
+	eventer := gobot.NewEventer()
+	eventer.AddEvent("test")
+	ctx := context.Background()
 
-	us := NewUsecase(sqlMock, elasticMock, time.Duration(10*time.Second))
+	us := NewUsecase(sqlMock, elasticMock, time.Duration(10*time.Second), eventer, "test")
 	dfpConfig := &models.DFPConfig{}
 
 	// When no data in ES and in SQL
-	err := us.Get(context.Background(), 1, dfpConfig)
+	sqlMock.SetData(nil)
+	elasticMock.SetData(nil)
+	err := us.Get(ctx, 1, dfpConfig)
 	assert.Error(t, err, repository.ErrRecordNotFoundError)
+	isCalled, reason := sqlMock.ExpectCall("Get", uint(1))
+	assert.True(t, isCalled)
+	if reason != "" {
+		t.Error(reason)
+	}
 
 	// When data on SQL
 	result := &models.DFPConfig{
@@ -32,32 +43,41 @@ func TestGet(t *testing.T) {
 		WashingDuration:                10,
 		StartWashingPumpBeforeWashing:  5,
 	}
-	sqlMock.Result = result
+	sqlMock.SetData(result)
+	elasticMock.SetData(nil)
 
-	err = us.Get(context.Background(), 1, dfpConfig)
+	err = us.Get(ctx, 1, dfpConfig)
 	assert.NoError(t, err)
-	assert.True(t, sqlMock.IsGet)
-	assert.False(t, elasticMock.IsGet)
+	isCalled, reason = sqlMock.ExpectCall("Get", uint(1))
+	assert.True(t, isCalled)
+	if reason != "" {
+		t.Error(reason)
+	}
 	assert.Equal(t, result, dfpConfig)
 
 	// When data on SQL and on ES
-	sqlMock.Reset()
-	elasticMock.Reset()
-	sqlMock.Result = result
-	elasticMock.Result = result
+	sqlMock.SetData(result)
+	elasticMock.SetData(result)
 
-	err = us.Get(context.Background(), 1, dfpConfig)
-	assert.NoError(t, err)
+	err = us.Get(ctx, 1, dfpConfig)
+	isCalled, reason = sqlMock.ExpectCall("Get", uint(1))
+	assert.True(t, isCalled)
+	if reason != "" {
+		t.Error(reason)
+	}
 	assert.Equal(t, result, dfpConfig)
 
 	// When data only on Elastic
-	sqlMock.Reset()
-	elasticMock.Reset()
-	sqlMock.Result = nil
-	elasticMock.Result = result
+	sqlMock.SetData(nil)
+	elasticMock.SetData(result)
 
 	err = us.Get(context.Background(), 1, dfpConfig)
 	assert.Error(t, err, repository.ErrRecordNotFoundError)
+	isCalled, reason = sqlMock.ExpectCall("Get", uint(1))
+	assert.True(t, isCalled)
+	if reason != "" {
+		t.Error(reason)
+	}
 
 }
 
@@ -66,12 +86,22 @@ func TestList(t *testing.T) {
 	sqlMock := repository.NewMock()
 	elasticMock := repository.NewMock()
 
-	us := NewUsecase(sqlMock, elasticMock, time.Duration(10*time.Second))
+	eventer := gobot.NewEventer()
+	eventer.AddEvent("test")
+
+	us := NewUsecase(sqlMock, elasticMock, time.Duration(10*time.Second), eventer, "test")
 	listDFPc := make([]*models.DFPConfig, 0, 0)
 
 	// When no data in ES and in SQL
+	sqlMock.SetData(nil)
+	elasticMock.SetData(nil)
 	err := us.List(context.Background(), &listDFPc)
 	assert.NoError(t, err)
+	isCalled, reason := sqlMock.ExpectCall("List")
+	assert.True(t, isCalled)
+	if reason != "" {
+		t.Error(reason)
+	}
 	assert.Empty(t, listDFPc)
 
 	// When data on SQL
@@ -85,38 +115,48 @@ func TestList(t *testing.T) {
 	}
 	listResult := make([]*models.DFPConfig, 0, 0)
 	listResult = append(listResult, result)
-	sqlMock.Result = listResult
+	sqlMock.SetData(listResult)
+	elasticMock.SetData(nil)
 
 	err = us.List(context.Background(), &listDFPc)
 	assert.NoError(t, err)
+	isCalled, reason = sqlMock.ExpectCall("List")
+	assert.True(t, isCalled)
+	if reason != "" {
+		t.Error(reason)
+	}
 	assert.NotEmpty(t, listDFPc)
-	assert.True(t, sqlMock.IsList)
-	assert.False(t, elasticMock.IsList)
 	if len(listDFPc) > 0 {
 		assert.Equal(t, result, listDFPc[0])
 	}
 
 	// When data on SQL and on ES
-	sqlMock.Reset()
-	elasticMock.Reset()
-	sqlMock.Result = listResult
-	elasticMock.Result = listResult
+	sqlMock.SetData(listResult)
+	elasticMock.SetData(listResult)
 	listDFPc = make([]*models.DFPConfig, 0, 0)
 	err = us.List(context.Background(), &listDFPc)
 	assert.NoError(t, err)
+	isCalled, reason = sqlMock.ExpectCall("List")
+	assert.True(t, isCalled)
+	if reason != "" {
+		t.Error(reason)
+	}
 	assert.NotEmpty(t, listDFPc)
 	if len(listDFPc) > 0 {
 		assert.Equal(t, result, listDFPc[0])
 	}
 
 	// When data only on Elastic
-	sqlMock.Reset()
-	elasticMock.Reset()
-	sqlMock.Result = nil
-	elasticMock.Result = listResult
+	sqlMock.SetData(nil)
+	elasticMock.SetData(listResult)
 	listDFPc = make([]*models.DFPConfig, 0, 0)
 	err = us.List(context.Background(), &listDFPc)
 	assert.NoError(t, err)
+	isCalled, reason = sqlMock.ExpectCall("List")
+	assert.True(t, isCalled)
+	if reason != "" {
+		t.Error(reason)
+	}
 	assert.Empty(t, listDFPc)
 
 }
@@ -125,11 +165,18 @@ func TestUpdate(t *testing.T) {
 	sqlMock := repository.NewMock()
 	elasticMock := repository.NewMock()
 
-	us := NewUsecase(sqlMock, elasticMock, time.Duration(10*time.Second))
+	eventer := gobot.NewEventer()
+	eventer.AddEvent("test")
+
+	us := NewUsecase(sqlMock, elasticMock, time.Duration(10*time.Second), eventer, "test")
 
 	// When no data
+	sqlMock.SetData(nil)
+	elasticMock.SetData(nil)
 	err := us.Update(context.Background(), nil)
 	assert.Error(t, err)
+	isCalled, reason := sqlMock.ExpectCall("Update")
+	assert.False(t, isCalled)
 
 	// When data
 	result := &models.DFPConfig{
@@ -144,39 +191,61 @@ func TestUpdate(t *testing.T) {
 
 	err = us.Update(context.Background(), result)
 	assert.NoError(t, err)
-	assert.Equal(t, result, sqlMock.Result)
-	assert.Equal(t, result, elasticMock.Result)
-	assert.True(t, sqlMock.IsUpdate)
-	assert.True(t, elasticMock.IsUpdate)
+	isCalled, reason = sqlMock.ExpectCall("Update")
+	assert.True(t, isCalled)
+	if reason != "" {
+		t.Error(reason)
+	}
+	isCalled, reason = elasticMock.ExpectCall("Update")
+	assert.True(t, isCalled)
+	if reason != "" {
+		t.Error(reason)
+	}
+	assert.Equal(t, result, sqlMock.ExpectResult())
+	assert.Equal(t, result, elasticMock.ExpectResult())
 
 	// When sqlRepo return error
-	sqlMock.Reset()
-	elasticMock.Reset()
-	sqlMock.Err = errors.New("Test")
-	sqlMock.ShouldError = true
+	sqlMock.SetError(errors.New("Test"))
 	err = us.Update(context.Background(), result)
 	assert.Error(t, err)
+	isCalled, reason = sqlMock.ExpectCall("Update")
+	assert.True(t, isCalled)
+	if reason != "" {
+		t.Error(reason)
+	}
 
 	// When Elastic repo return error
-	sqlMock.Reset()
-	elasticMock.Reset()
-	sqlMock.ShouldError = false
-	elasticMock.Err = errors.New("Test")
-	elasticMock.ShouldError = true
+	sqlMock.SetError(nil)
+	elasticMock.SetError(errors.New("Test"))
 	err = us.Update(context.Background(), result)
 	assert.NoError(t, err)
-	assert.Equal(t, result, sqlMock.Result)
+	isCalled, reason = sqlMock.ExpectCall("Update")
+	assert.True(t, isCalled)
+	if reason != "" {
+		t.Error(reason)
+	}
+	isCalled, reason = elasticMock.ExpectCall("Update")
+	assert.True(t, isCalled)
+	if reason != "" {
+		t.Error(reason)
+	}
+	assert.Equal(t, result, sqlMock.ExpectResult())
 }
 
 func TestCreate(t *testing.T) {
 	sqlMock := repository.NewMock()
 	elasticMock := repository.NewMock()
 
-	us := NewUsecase(sqlMock, elasticMock, time.Duration(10*time.Second))
+	eventer := gobot.NewEventer()
+	eventer.AddEvent("test")
+
+	us := NewUsecase(sqlMock, elasticMock, time.Duration(10*time.Second), eventer, "test")
 
 	// When no data
 	err := us.Create(context.Background(), nil)
 	assert.Error(t, err)
+	isCalled, reason := sqlMock.ExpectCall("Create")
+	assert.False(t, isCalled)
 
 	// When data
 	result := &models.DFPConfig{
@@ -191,35 +260,56 @@ func TestCreate(t *testing.T) {
 
 	err = us.Create(context.Background(), result)
 	assert.NoError(t, err)
-	assert.Equal(t, result, sqlMock.Result)
-	assert.Equal(t, result, elasticMock.Result)
-	assert.True(t, sqlMock.IsCreate)
-	assert.True(t, elasticMock.IsCreate)
+	isCalled, reason = sqlMock.ExpectCall("Create")
+	assert.True(t, isCalled)
+	if reason != "" {
+		t.Error(reason)
+	}
+	isCalled, reason = elasticMock.ExpectCall("Create")
+	assert.True(t, isCalled)
+	if reason != "" {
+		t.Error(reason)
+	}
+	assert.Equal(t, result, sqlMock.ExpectResult())
+	assert.Equal(t, result, elasticMock.ExpectResult())
 
 	// When sqlRepo return error
-	sqlMock.Reset()
-	elasticMock.Reset()
-	sqlMock.Err = errors.New("Test")
-	sqlMock.ShouldError = true
+	sqlMock.SetError(errors.New("Test"))
+	elasticMock.SetError(nil)
 	err = us.Create(context.Background(), result)
 	assert.Error(t, err)
+	isCalled, reason = sqlMock.ExpectCall("Create")
+	assert.True(t, isCalled)
+	if reason != "" {
+		t.Error(reason)
+	}
 
-	// When Elastic repo return error
-	sqlMock.Reset()
-	elasticMock.Reset()
-	sqlMock.ShouldError = false
-	elasticMock.Err = errors.New("Test")
-	elasticMock.ShouldError = true
+	// When Elastic repo return error)
+	sqlMock.SetError(nil)
+	elasticMock.SetError(errors.New("Test"))
 	err = us.Create(context.Background(), result)
 	assert.NoError(t, err)
-	assert.Equal(t, result, sqlMock.Result)
+	isCalled, reason = sqlMock.ExpectCall("Create")
+	assert.True(t, isCalled)
+	if reason != "" {
+		t.Error(reason)
+	}
+	isCalled, reason = elasticMock.ExpectCall("Create")
+	assert.True(t, isCalled)
+	if reason != "" {
+		t.Error(reason)
+	}
+	assert.Equal(t, result, sqlMock.ExpectResult())
 }
 
 func TestInit(t *testing.T) {
 	sqlMock := repository.NewMock()
 	elasticMock := repository.NewMock()
 
-	us := NewUsecase(sqlMock, elasticMock, time.Duration(10*time.Second))
+	eventer := gobot.NewEventer()
+	eventer.AddEvent("test")
+
+	us := NewUsecase(sqlMock, elasticMock, time.Duration(10*time.Second), eventer, "test")
 
 	initDFPc := &models.DFPConfig{
 		ForceWashingDuration:           180,
@@ -254,114 +344,144 @@ func TestInit(t *testing.T) {
 	elasticDFPc.Version = 1
 
 	// When no data
+	sqlMock.SetData(nil)
+	elasticMock.SetData(nil)
 	err := us.Init(context.Background(), nil)
 	assert.Error(t, err)
 
 	// When no data from SQL and from Elastic
+	sqlMock.SetData(nil)
+	elasticMock.SetData(nil)
 	err = us.Init(context.Background(), initDFPc)
 	assert.NoError(t, err)
-	assert.Equal(t, initDFPc, sqlMock.Result)
-	assert.Equal(t, initDFPc, elasticMock.Result)
-	assert.True(t, sqlMock.IsCreate)
-	assert.True(t, elasticMock.IsCreate)
+	isCalled, reason := sqlMock.ExpectCall("Create")
+	assert.True(t, isCalled)
+	if reason != "" {
+		t.Error(reason)
+	}
+	isCalled, reason = elasticMock.ExpectCall("Create")
+	assert.True(t, isCalled)
+	if reason != "" {
+		t.Error(reason)
+	}
+	assert.Equal(t, initDFPc, sqlMock.ExpectResult())
+	assert.Equal(t, initDFPc, elasticMock.ExpectResult())
 
 	// When same data on SQL and Elastic
-	sqlMock.Reset()
-	sqlMock.Result = sqlDFPc
-	elasticMock.Reset()
-	elasticMock.Result = elasticDFPc
+	sqlMock.SetData(sqlDFPc)
+	elasticMock.SetData(elasticDFPc)
 	err = us.Init(context.Background(), initDFPc)
 	assert.NoError(t, err)
-	assert.False(t, sqlMock.IsUpdate)
-	assert.False(t, sqlMock.IsCreate)
-	assert.False(t, elasticMock.IsUpdate)
-	assert.False(t, elasticMock.IsCreate)
+	isCalled, reason = sqlMock.ExpectCall("Create")
+	assert.False(t, isCalled)
+	isCalled, reason = elasticMock.ExpectCall("Create")
+	assert.False(t, isCalled)
+	isCalled, reason = sqlMock.ExpectCall("Update")
+	assert.False(t, isCalled)
+	isCalled, reason = elasticMock.ExpectCall("Update")
+	assert.False(t, isCalled)
 
 	// When data only exist on SQL repo
-	sqlMock.Reset()
-	elasticMock.Reset()
 	sqlDFPc.Version = 2
-	sqlMock.Result = sqlDFPc
+	sqlMock.SetData(sqlDFPc)
+	elasticMock.SetData(nil)
 
 	err = us.Init(context.Background(), initDFPc)
 	assert.NoError(t, err)
-	assert.False(t, sqlMock.IsUpdate)
-	assert.False(t, sqlMock.IsCreate)
-	assert.False(t, elasticMock.IsUpdate)
-	assert.True(t, elasticMock.IsCreate)
+	isCalled, reason = elasticMock.ExpectCall("Create")
+	assert.True(t, isCalled)
+	if reason != "" {
+		t.Error(reason)
+	}
+	isCalled, reason = sqlMock.ExpectCall("Update")
+	assert.False(t, isCalled)
+	isCalled, reason = sqlMock.ExpectCall("Create")
+	assert.False(t, isCalled)
 
 	// When data is more up to date on SQL repo
-	sqlMock.Reset()
-	elasticMock.Reset()
 	sqlDFPc.Version = 2
-	sqlMock.Result = sqlDFPc
-	elasticMock.Result = elasticDFPc
+	sqlMock.SetData(sqlDFPc)
+	elasticMock.SetData(elasticDFPc)
 
 	err = us.Init(context.Background(), initDFPc)
 	assert.NoError(t, err)
-	assert.False(t, sqlMock.IsUpdate)
-	assert.False(t, sqlMock.IsCreate)
-	assert.True(t, elasticMock.IsUpdate)
-	assert.False(t, elasticMock.IsCreate)
+	isCalled, reason = elasticMock.ExpectCall("Update")
+	assert.True(t, isCalled)
+	if reason != "" {
+		t.Error(reason)
+	}
+	isCalled, reason = sqlMock.ExpectCall("Update")
+	assert.False(t, isCalled)
+	isCalled, reason = sqlMock.ExpectCall("Create")
+	assert.False(t, isCalled)
 
 	// When data only exist on elastic repo
-	sqlMock.Reset()
-	elasticMock.Reset()
 	sqlDFPc.Version = 1
 	elasticDFPc.Version = 2
-	elasticMock.Result = elasticDFPc
+	elasticMock.SetData(elasticDFPc)
+	sqlMock.SetData(nil)
 
 	err = us.Init(context.Background(), initDFPc)
 	assert.NoError(t, err)
-	assert.False(t, sqlMock.IsUpdate)
-	assert.True(t, sqlMock.IsCreate)
-	assert.False(t, elasticMock.IsUpdate)
-	assert.False(t, elasticMock.IsCreate)
+	isCalled, reason = sqlMock.ExpectCall("Create")
+	assert.True(t, isCalled)
+	if reason != "" {
+		t.Error(reason)
+	}
+	isCalled, reason = elasticMock.ExpectCall("Update")
+	assert.False(t, isCalled)
+	isCalled, reason = elasticMock.ExpectCall("Create")
+	assert.False(t, isCalled)
 
 	// When data is more up to date on elastic repo
-	sqlMock.Reset()
-	elasticMock.Reset()
 	sqlDFPc.Version = 1
 	elasticDFPc.Version = 2
-	elasticMock.Result = elasticDFPc
-	sqlMock.Result = sqlDFPc
+	elasticMock.SetData(elasticDFPc)
+	sqlMock.SetData(sqlDFPc)
 
 	err = us.Init(context.Background(), initDFPc)
 	assert.NoError(t, err)
-	assert.True(t, sqlMock.IsUpdate)
-	assert.False(t, sqlMock.IsCreate)
-	assert.False(t, elasticMock.IsUpdate)
-	assert.False(t, elasticMock.IsCreate)
+	isCalled, reason = sqlMock.ExpectCall("Update")
+	assert.True(t, isCalled)
+	if reason != "" {
+		t.Error(reason)
+	}
+	isCalled, reason = elasticMock.ExpectCall("Update")
+	assert.False(t, isCalled)
+	isCalled, reason = elasticMock.ExpectCall("Create")
+	assert.False(t, isCalled)
 
 	// When data only exist on sql with error on elastic repo
-	sqlMock.Reset()
-	elasticMock.Reset()
 	sqlDFPc.Version = 3
-	sqlMock.Result = sqlDFPc
-	elasticMock.ShouldError = true
-	elasticMock.Err = errors.New("test")
+	sqlMock.SetData(sqlDFPc)
+	elasticMock.SetError(errors.New("test"))
 
 	err = us.Init(context.Background(), initDFPc)
 	assert.NoError(t, err)
-	assert.False(t, sqlMock.IsUpdate)
-	assert.False(t, sqlMock.IsCreate)
-	assert.False(t, elasticMock.IsUpdate)
-	assert.True(t, elasticMock.IsCreate)
+	isCalled, reason = sqlMock.ExpectCall("Update")
+	assert.False(t, isCalled)
+	isCalled, reason = sqlMock.ExpectCall("Create")
+	assert.False(t, isCalled)
+	isCalled, reason = elasticMock.ExpectCall("Update")
+	assert.False(t, isCalled)
+	isCalled, reason = elasticMock.ExpectCall("Create")
+	assert.False(t, isCalled)
 
 	// When data is more up to date on SQL repo with error on elastic repo
-	sqlMock.Reset()
-	elasticMock.Reset()
 	sqlDFPc.Version = 5
 	elasticDFPc.Version = 1
-	sqlMock.Result = sqlDFPc
-	elasticMock.Result = elasticDFPc
-	elasticMock.ShouldError = true
-	elasticMock.Err = errors.New("test")
+	sqlMock.SetData(sqlDFPc)
+	elasticMock.SetData(elasticDFPc)
+	elasticMock.SetError(errors.New("test"))
 
 	err = us.Init(context.Background(), initDFPc)
 	assert.NoError(t, err)
-	assert.False(t, sqlMock.IsUpdate)
-	assert.False(t, sqlMock.IsCreate)
-	assert.True(t, elasticMock.IsUpdate)
-	assert.False(t, elasticMock.IsCreate)
+	isCalled, reason = sqlMock.ExpectCall("Update")
+	assert.False(t, isCalled)
+	isCalled, reason = sqlMock.ExpectCall("Create")
+	assert.False(t, isCalled)
+	isCalled, reason = elasticMock.ExpectCall("Update")
+	assert.False(t, isCalled)
+	isCalled, reason = elasticMock.ExpectCall("Create")
+	assert.False(t, isCalled)
 }

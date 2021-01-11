@@ -11,20 +11,16 @@ import (
 	boardHttpDeliver "github.com/disaster37/gobot-fat/board/delivery/http"
 	boardUsecase "github.com/disaster37/gobot-fat/board/usecase"
 	"github.com/disaster37/gobot-fat/dfpconfig"
-	dfpConfigHttpDeliver "github.com/disaster37/gobot-fat/dfpconfig/delivery/http"
 	"github.com/disaster37/gobot-fat/dfpstate"
-	dfpStateHttpDeliver "github.com/disaster37/gobot-fat/dfpstate/delivery/http"
+	eventRepository "github.com/disaster37/gobot-fat/event/repository"
+	eventUsecase "github.com/disaster37/gobot-fat/event/usecase"
 	loginHttpDeliver "github.com/disaster37/gobot-fat/login/delivery/http"
 	loginUsecase "github.com/disaster37/gobot-fat/login/usecase"
 	dfpMiddleware "github.com/disaster37/gobot-fat/middleware"
 	"github.com/disaster37/gobot-fat/models"
-	"github.com/disaster37/gobot-fat/repository"
 	"github.com/disaster37/gobot-fat/tankconfig"
-	tankConfigHttpDeliver "github.com/disaster37/gobot-fat/tankconfig/delivery/http"
 	"github.com/disaster37/gobot-fat/tfpconfig"
-	tfpConfigHttpDeliver "github.com/disaster37/gobot-fat/tfpconfig/delivery/http"
-	tfpStateHttpDeliver "github.com/disaster37/gobot-fat/tfpstate/delivery/http"
-	"github.com/disaster37/gobot-fat/usecase"
+	"github.com/disaster37/gobot-fat/tfpstate"
 	elastic "github.com/elastic/go-elasticsearch/v7"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -33,6 +29,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
+	"gobot.io/x/gobot"
 )
 
 func main() {
@@ -109,12 +106,20 @@ func main() {
 	api.Use(middL.IsAdmin)
 
 	// Init global resources
-	//eventRepoES := eventRepo.NewElasticsearchEventRepository(es, "dfp-event-alias")
+	eventRepoES := eventRepository.NewElasticsearchEventRepository(es, "dfp-event-alias")
 	timeoutContext := time.Duration(configHandler.GetInt("context.timeout")) * time.Second
-	//eventU := eventUsecase.NewEventUsecase(eventRepoES, timeoutContext)
+	eventU := eventUsecase.NewEventUsecase(eventRepoES, timeoutContext)
 	loginU := loginUsecase.NewLoginUsecase(configHandler)
 	ctx := context.Background()
+	eventer := gobot.NewEventer()
 	loginHttpDeliver.NewLoginHandler(e, loginU)
+
+	// Init global events
+	eventer.AddEvent(dfpconfig.NewDFPConfig)
+	eventer.AddEvent(dfpstate.NewDFPState)
+	eventer.AddEvent(tfpconfig.NewTFPConfig)
+	eventer.AddEvent(tfpstate.NewTFPState)
+	eventer.AddEvent(tankconfig.NewTankConfig)
 
 	/***********************
 	 * Board
@@ -125,210 +130,27 @@ func main() {
 	/***********************
 	 * INIT TFP
 	 */
-	//TFP config
-	tfpConfigRepoSQL := repository.NewSQLRepository(db)
-	tfpConfigRepoES := repository.NewElasticsearchRepository(es, configHandler.GetString("elasticsearch.index.tfp_config"))
-	tfpConfigUsecase := usecase.NewUsecase(tfpConfigRepoSQL, tfpConfigRepoES, timeoutContext)
-	tfpConfig := &models.TFPConfig{
-		UVC1BlisterMaxTime:  6000,
-		UVC2BlisterMaxTime:  6000,
-		OzoneBlisterMaxTime: 16000,
-		IsWaterfallAuto:     false,
-		StartTimeWaterfall:  "10:00",
-		StopTimeWaterfall:   "20:00",
-		Mode:                "none",
-		OzoneBlisterTime:    time.Now(),
-		UVC1BlisterTime:     time.Now(),
-		UVC2BlisterTime:     time.Now(),
+	if err := initTFP(ctx, eventer, api, configHandler, es, db, eventU, boardU); err != nil {
+		panic(err)
 	}
-	tfpConfig.ID = tfpconfig.ID
-	err = tfpConfigUsecase.Init(ctx, tfpConfig)
-	if err != nil {
-		log.Errorf("Error appear when init TFP config: %s", err.Error())
-		panic("Failed to init tfpconfig on SQL")
-	}
-	err = tfpConfigUsecase.Get(ctx, tfpconfig.ID, tfpConfig)
-	if err != nil {
-		log.Errorf("Failed to retrive tfpconfig from usecase")
-		panic("Failed to retrive tfpconfig from usecase")
-	}
-	log.Info("Get tfpconfig successfully")
-	tfpConfigHttpDeliver.NewTFPConfigHandler(api, tfpConfigUsecase)
-
-	// TFP state
-	tfpStateRepoSQL := repository.NewSQLRepository(db)
-	tfpStateRepoES := repository.NewElasticsearchRepository(es, configHandler.GetString("elasticsearch.index.tfp_state"))
-	tfpStateUsecase := usecase.NewUsecase(tfpStateRepoSQL, tfpStateRepoES, timeoutContext)
-	tfpState := &models.TFPState{
-		PondPumpRunning:         true,
-		UVC1Running:             true,
-		UVC2Running:             true,
-		PondBubbleRunning:       true,
-		FilterBubbleRunning:     true,
-		WaterfallPumpRunning:    false,
-		IsDisableSecurity:       false,
-		IsSecurity:              false,
-		IsEmergencyStopped:      false,
-		OzoneBlisterNbHour:      0,
-		UVC1BlisterNbHour:       0,
-		UVC2BlisterNbHour:       0,
-		AcknoledgeWaterfallAuto: false,
-		Name:                    configHandler.GetString("tfp.name"),
-	}
-	tfpState.ID = tfpState.ID
-	err = tfpStateUsecase.Init(ctx, tfpState)
-	if err != nil {
-		log.Errorf("Error appear when init TFP state: %s", err.Error())
-		panic("Failed to init tfpState on SQL")
-	}
-	err = tfpStateUsecase.Get(ctx, tfpState.ID, tfpState)
-	if err != nil {
-		log.Errorf("Failed to retrive tfpState from usecase")
-		panic("Failed to retrive tfpState from usecase")
-	}
-	log.Info("Get tfpState successfully")
-	tfpStateHttpDeliver.NewTFPStateHandler(api, tfpStateUsecase)
-
-	// TFP board
-	/*
-		if configHandler.GetBool("tfp.enable") {
-			tfpB := tfpBoard.NewTFP(configHandler.Sub("tfp"), tfpConfigU, eventU, tfpStateU, tfpState)
-			boardU.AddBoard(tfpB)
-			tfpU := tfpUsecase.NewTFPUsecase(tfpB, tfpConfigU, tfpStateU, timeoutContext)
-			tfpHttpDeliver.NewTFPHandler(api, tfpU)
-		}
-	*/
 
 	/***********************
 	 * Tank
 	 */
-
-	//Tank config
-	tankConfigRepoSQL := repository.NewSQLRepository(db)
-	tankConfigRepoES := repository.NewElasticsearchRepository(es, configHandler.GetString("elasticsearch.index.tank_config"))
-	tankConfigUsecase := usecase.NewUsecase(tankConfigRepoSQL, tankConfigRepoES, timeoutContext)
-
-	// Tank Pund
-	tankPundConfig := &models.TankConfig{
-		Name:         configHandler.GetString("tank1.name"),
-		Depth:        200,
-		SensorHeight: 20,
-		LiterPerCm:   50,
+	if err := initTank(ctx, eventer, api, configHandler, es, db, eventU, boardU); err != nil {
+		panic(err)
 	}
-	tankPundConfig.ID = tankconfig.IDPundTank
-	err = tankConfigUsecase.Init(ctx, tankPundConfig)
-	if err != nil {
-		log.Errorf("Error appear when init Tank Pund config: %s", err.Error())
-		panic("Failed to init tank pund config on SQL")
-	}
-	err = tankConfigUsecase.Get(ctx, tankconfig.IDPundTank, tankPundConfig)
-	if err != nil {
-		log.Errorf("Failed to retrive tankPundconfig from usecase")
-		panic("Failed to retrive tankPundconfig from usecase")
-	}
-	log.Info("Get tankPundconfig successfully")
-
-	// Tank Garden
-	tankGardenConfig := &models.TankConfig{
-		Name:         configHandler.GetString("tank2.name"),
-		Depth:        120,
-		SensorHeight: 50,
-		LiterPerCm:   30,
-	}
-	tankGardenConfig.ID = tankconfig.IDGardenTank
-	err = tankConfigUsecase.Init(ctx, tankGardenConfig)
-	if err != nil {
-		log.Errorf("Error appear when init Tank Garden config: %s", err.Error())
-		panic("Failed to init tank garden config on SQL")
-	}
-	err = tankConfigUsecase.Get(ctx, tankconfig.IDGardenTank, tankGardenConfig)
-	if err != nil {
-		log.Errorf("Failed to retrive tankGardenconfig from usecase")
-		panic("Failed to retrive tankGardenconfig from usecase")
-	}
-	log.Info("Get tankGardenconfig successfully")
-
-	tankConfigHttpDeliver.NewTankConfigHandler(api, tankConfigUsecase)
-	/*
-		// Tank1 board
-		if configHandler.GetBool("tank1.enable") {
-			tank1B := tankBoard.NewTank(configHandler.Sub("tank1"), tankConfigU, eventU)
-			boardU.AddBoard(tank1B)
-			tankU := tankUsecase.NewTankUsecase([]tank.Board{tank1B}, timeoutContext)
-			tankHttpDeliver.NewTankHandler(api, tankU)
-		}
-	*/
 
 	/*****************************
 	 * INIT DFP
 	 */
+	if err := initDFP(ctx, eventer, api, configHandler, es, db, eventU, boardU); err != nil {
+		panic(err)
+	}
 
-	// DFP config
-	dfpConfigRepoSQL := repository.NewSQLRepository(db)
-	dfpConfigRepoES := repository.NewElasticsearchRepository(es, configHandler.GetString("elasticsearch.index.dfp_config"))
-	dfpConfigUsecase := usecase.NewUsecase(dfpConfigRepoSQL, dfpConfigRepoES, timeoutContext)
-	dfpConfig := &models.DFPConfig{
-		ForceWashingDuration:           180,
-		ForceWashingDurationWhenFrozen: 120,
-		TemperatureThresholdWhenFrozen: -5,
-		WaitTimeBetweenWashing:         30,
-		WashingDuration:                8,
-		StartWashingPumpBeforeWashing:  2,
-	}
-	dfpConfig.ID = dfpconfig.ID
-	err = dfpConfigUsecase.Init(ctx, dfpConfig)
-	if err != nil {
-		log.Errorf("Error appear when init DFP config: %s", err.Error())
-		panic("Failed to retrive dfpconfig from sql")
-	}
-	err = dfpConfigUsecase.Get(ctx, dfpconfig.ID, dfpConfig)
-	if err != nil {
-		log.Errorf("Failed to retrive dfpconfig from usecase")
-		panic("Failed to retrive dfpconfig from usecase")
-	}
-	log.Info("Get dfpconfig successfully")
-	dfpConfigHttpDeliver.NewDFPConfigHandler(api, dfpConfigUsecase)
-
-	// DFP state
-	dfpStateRepoSQL := repository.NewSQLRepository(db)
-	dfpStateRepoES := repository.NewElasticsearchRepository(es, configHandler.GetString("elasticsearch.index.dfp_state"))
-	dfpStateUsecase := usecase.NewUsecase(dfpStateRepoSQL, dfpStateRepoES, timeoutContext)
-	dfpState := &models.DFPState{
-		Name:               configHandler.GetString("dfp.name"),
-		IsWashed:           false,
-		IsRunning:          true,
-		IsSecurity:         false,
-		IsEmergencyStopped: false,
-		IsDisableSecurity:  false,
-	}
-	dfpState.ID = dfpstate.ID
-	err = dfpStateUsecase.Init(ctx, dfpState)
-	if err != nil {
-		log.Errorf("Error appear when init DFP state: %s", err.Error())
-		panic("Failed to init dfpState on SQL")
-	}
-	err = dfpStateUsecase.Get(ctx, dfpState.ID, dfpState)
-	log.Debugf("DFP state after init it: %s", dfpState)
-	if err != nil {
-		log.Errorf("Failed to retrive dfpState from usecase")
-		panic("Failed to retrive dfpState from usecase")
-	}
-	log.Info("Get dfpState successfully")
-	dfpStateHttpDeliver.NewDFPStateHandler(api, dfpStateUsecase)
-
-	/*
-		// DFP board
-		if configHandler.GetBool("dfp.enable") {
-			dfpB := dfpBoard.NewDFP(configHandler.Sub("dfp"), dfpConfigU, eventU, dfpStateU, dfpState)
-			boardU.AddBoard(dfpB)
-			dfpU := dfpUsecase.NewDFPUsecase(dfpB, timeoutContext)
-			dfpHttpDeliver.NewDFPHandler(api, dfpU)
-		}
-
-		// Starts boards
-		defer boardU.Stops(ctx)
-		boardU.Starts(ctx)
-	*/
+	// Starts boards
+	defer boardU.Stops(ctx)
+	boardU.Starts(ctx)
 
 	// Run web server
 	e.Start(configHandler.GetString("server.address"))
