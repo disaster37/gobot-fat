@@ -108,7 +108,7 @@ func newDFP(board DFPAdaptor, configHandler *viper.Viper, config *models.DFPConf
 		captorWaterUpper:    gpio.NewButtonDriver(board, configHandler.GetString("pin.captor.water_upper")),
 		captorWaterUnder:    gpio.NewButtonDriver(board, configHandler.GetString("pin.captor.water_under")),
 		chStop:              make(chan bool),
-		timeBetweenWash:     time.NewTicker(time.Duration(0)),
+		timeBetweenWash:     time.NewTicker(time.Duration(1 * time.Nanosecond)),
 		Eventer:             gobot.NewEventer(),
 	}
 
