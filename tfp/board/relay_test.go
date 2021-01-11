@@ -51,6 +51,14 @@ func TestStartStopPondPump(t *testing.T) {
 	assert.Error(t, err)
 	adaptor.SetError(nil)
 
+	// Stop UVC1 and UVC2 when stop pond pump
+	board.state.UVC1Running = true
+	board.state.UVC2Running = true
+	err = board.StopPondPump(context.Background())
+	assert.NoError(t, err)
+	assert.Equal(t, 1, adaptor.DigitalPinState["2"])
+	assert.Equal(t, 1, adaptor.DigitalPinState["3"])
+
 	// Can't start pond pomp when emergency stop
 	board.state.IsEmergencyStopped = true
 	adaptor.DigitalPinState["1"] = 1
@@ -116,7 +124,7 @@ func TestStartStopUVC1(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 1, adaptor.DigitalPinState["2"])
 
-	// Stop UVC1when error
+	// Stop UVC1 when error
 	adaptor.SetError(errors.New("test"))
 	err = board.StopUVC1(context.Background())
 	assert.Error(t, err)
@@ -243,6 +251,31 @@ func TestStartStopUVC2(t *testing.T) {
 	adaptor.DigitalPinState["3"] = 1
 	err = board.StartUVC2(context.Background())
 	assert.NoError(t, err)
+	assert.Equal(t, 0, adaptor.DigitalPinState["3"])
+}
+
+func TestStartPondPumpWithUVC(t *testing.T) {
+	board, adaptor := initTestBoard()
+	err := board.Start(context.Background())
+	if err != nil {
+		panic(err)
+	}
+
+	// When already started
+	err = board.StartPondPumpWithUVC(context.Background())
+	assert.NoError(t, err)
+	assert.Equal(t, 0, adaptor.DigitalPinState["1"])
+	assert.Equal(t, 0, adaptor.DigitalPinState["2"])
+	assert.Equal(t, 0, adaptor.DigitalPinState["3"])
+
+	// When all stopped
+	adaptor.DigitalPinState["1"] = 1
+	adaptor.DigitalPinState["2"] = 1
+	adaptor.DigitalPinState["3"] = 1
+	err = board.StartPondPumpWithUVC(context.Background())
+	assert.NoError(t, err)
+	assert.Equal(t, 0, adaptor.DigitalPinState["1"])
+	assert.Equal(t, 0, adaptor.DigitalPinState["2"])
 	assert.Equal(t, 0, adaptor.DigitalPinState["3"])
 }
 
