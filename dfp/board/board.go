@@ -2,11 +2,14 @@ package dfpboard
 
 import (
 	"context"
+	"fmt"
+	"strconv"
+	"time"
 
-	dfpconfig "github.com/disaster37/gobot-fat/dfpconfig"
-	dfpstate "github.com/disaster37/gobot-fat/dfpstate"
+	"github.com/disaster37/gobot-fat/dfp"
 	"github.com/disaster37/gobot-fat/event"
 	"github.com/disaster37/gobot-fat/models"
+	"github.com/disaster37/gobot-fat/usecase"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/stianeikeland/go-rpio/v4"
@@ -15,16 +18,34 @@ import (
 	"gobot.io/x/gobot/platforms/raspi"
 )
 
+const (
+	NewConfig   = "new-config"
+	NewReboot   = "new-reboot"
+	NewOffline  = "new-offline"
+	NewWash     = "new-wash"
+	NewSecurity = "new-security"
+	NewState    = "new-state"
+	Stop        = "stop"
+)
+
+// DFPAdaptor is DFP board interface
+type DFPAdaptor interface {
+	gobot.Adaptor
+	gpio.DigitalReader
+	gpio.DigitalWriter
+}
+
 // DFPBoard is the DFP board
 type DFPBoard struct {
 	state               *models.DFPState
-	board               *raspi.Adaptor
+	config              *models.DFPConfig
+	board               DFPAdaptor
 	gobot               *gobot.Robot
-	configUsecase       dfpconfig.Usecase
 	eventUsecase        event.Usecase
-	stateUsecase        dfpstate.Usecase
+	stateUsecase        usecase.UsecaseCRUD
 	configHandler       *viper.Viper
 	isOnline            bool
+	isInitialized       bool
 	relayDrum           *gpio.RelayDriver
 	relayPump           *gpio.RelayDriver
 	ledGreen            *gpio.LedDriver
@@ -35,82 +56,92 @@ type DFPBoard struct {
 	buttonForceDrum     *gpio.ButtonDriver
 	buttonForcePump     *gpio.ButtonDriver
 	buttonWash          *gpio.ButtonDriver
-	buttonSet           *gpio.ButtonDriver
+	buttonEmergencyStop *gpio.ButtonDriver
 	captorWaterUpper    *gpio.ButtonDriver
 	captorWaterUnder    *gpio.ButtonDriver
 	captorSecurityUpper *gpio.ButtonDriver
 	captorSecurityUnder *gpio.ButtonDriver
-	config              *models.DFPConfig
+	globalEventer       gobot.Eventer
 	isRunning           bool
+	name                string
+	chStop              chan bool
+	timeBetweenWash     *time.Ticker
 	gobot.Eventer
 }
 
-//NewDFPBoard return the DFP board with all IO created but not started
-func NewDFP(configHandler *viper.Viper, configUsecase dfpconfig.Usecase, eventUsecase event.Usecase, stateUsecase dfpstate.Usecase, state *models.DFPState) (dfpBoard *DFPBoard) {
+// NewDFP create board to manage DFP
+func NewDFP(configHandler *viper.Viper, config *models.DFPConfig, state *models.DFPState, eventUsecase event.Usecase, dfpUsecase usecase.UsecaseCRUD, eventer gobot.Eventer) (dfpBoard dfp.Board) {
 
-	dfpBoard = &DFPBoard{
-		configHandler: configHandler,
-		configUsecase: configUsecase,
-		eventUsecase:  eventUsecase,
-		stateUsecase:  stateUsecase,
-		state:         state,
-		board:         raspi.NewAdaptor(),
-		Eventer:       gobot.NewEventer(),
+	//Create client
+	c := raspi.NewAdaptor()
+
+	return newDFP(c, configHandler, config, state, eventUsecase, dfpUsecase, eventer)
+
+}
+
+func newDFP(board DFPAdaptor, configHandler *viper.Viper, config *models.DFPConfig, state *models.DFPState, eventUsecase event.Usecase, tfpUsecase usecase.UsecaseCRUD, eventer gobot.Eventer) dfp.Board {
+
+	// Create struct
+	dfpBoard := &DFPBoard{
+		board:               board,
+		eventUsecase:        eventUsecase,
+		stateUsecase:        tfpUsecase,
+		configHandler:       configHandler,
+		name:                configHandler.GetString("name"),
+		config:              config,
+		state:               state,
+		isOnline:            false,
+		isInitialized:       false,
+		globalEventer:       eventer,
+		relayDrum:           gpio.NewRelayDriver(board, configHandler.GetString("pin.relay.drum")),
+		relayPump:           gpio.NewRelayDriver(board, configHandler.GetString("pin.relay.pomp")),
+		ledGreen:            gpio.NewLedDriver(board, configHandler.GetString("pin.led.green")),
+		ledRed:              gpio.NewLedDriver(board, configHandler.GetString("pin.led.red")),
+		buttonEmergencyStop: gpio.NewButtonDriver(board, configHandler.GetString("pin.button.emergency_stop")),
+		buttonStart:         gpio.NewButtonDriver(board, configHandler.GetString("pin.button.start")),
+		buttonStop:          gpio.NewButtonDriver(board, configHandler.GetString("pin.button.stop")),
+		buttonWash:          gpio.NewButtonDriver(board, configHandler.GetString("pin.button.wash")),
+		buttonForceDrum:     gpio.NewButtonDriver(board, configHandler.GetString("pin.button.force_drum")),
+		buttonForcePump:     gpio.NewButtonDriver(board, configHandler.GetString("pin.button.force_pump")),
+		captorSecurityUpper: gpio.NewButtonDriver(board, configHandler.GetString("pin.captor.security_upper")),
+		captorSecurityUnder: gpio.NewButtonDriver(board, configHandler.GetString("pin.captor.security_under")),
+		captorWaterUpper:    gpio.NewButtonDriver(board, configHandler.GetString("pin.captor.water_upper")),
+		captorWaterUnder:    gpio.NewButtonDriver(board, configHandler.GetString("pin.captor.water_under")),
+		chStop:              make(chan bool),
+		timeBetweenWash:     time.NewTicker(time.Duration(0)),
+		Eventer:             gobot.NewEventer(),
 	}
 
-	// Create relay
-	dfpBoard.relayDrum = gpio.NewRelayDriver(dfpBoard.board, configHandler.GetString("pin.relay.drum"))
-	dfpBoard.relayPump = gpio.NewRelayDriver(dfpBoard.board, configHandler.GetString("pin.relay.pump"))
-
-	// Create LED
-	dfpBoard.ledGreen = gpio.NewLedDriver(dfpBoard.board, configHandler.GetString("pin.led.green"))
-	dfpBoard.ledRed = gpio.NewLedDriver(dfpBoard.board, configHandler.GetString("pin.led.red"))
-
-	// Create button
-	dfpBoard.buttonSet = gpio.NewButtonDriver(dfpBoard.board, configHandler.GetString("pin.button.set"))
-	dfpBoard.buttonSet.DefaultState = 1
-	dfpBoard.buttonStart = gpio.NewButtonDriver(dfpBoard.board, configHandler.GetString("pin.button.start"))
-	dfpBoard.buttonStart.DefaultState = 1
-	dfpBoard.buttonStop = gpio.NewButtonDriver(dfpBoard.board, configHandler.GetString("pin.button.stop"))
-	dfpBoard.buttonStop.DefaultState = 1
-	dfpBoard.buttonWash = gpio.NewButtonDriver(dfpBoard.board, configHandler.GetString("pin.button.wash"))
-	dfpBoard.buttonWash.DefaultState = 1
-	dfpBoard.buttonForceDrum = gpio.NewButtonDriver(dfpBoard.board, configHandler.GetString("pin.button.force_drum"))
-	dfpBoard.buttonForceDrum.DefaultState = 1
-	dfpBoard.buttonForcePump = gpio.NewButtonDriver(dfpBoard.board, configHandler.GetString("pin.button.force_pump"))
-	dfpBoard.buttonForcePump.DefaultState = 1
-
-	// Create water captors
-	dfpBoard.captorSecurityUpper = gpio.NewButtonDriver(dfpBoard.board, configHandler.GetString("pin.captor.security_upper"))
-	dfpBoard.captorSecurityUnder = gpio.NewButtonDriver(dfpBoard.board, configHandler.GetString("pin.captor.security_under"))
-	dfpBoard.captorSecurityUnder.DefaultState = 1
-	dfpBoard.captorWaterUpper = gpio.NewButtonDriver(dfpBoard.board, configHandler.GetString("pin.captor.water_upper"))
-	dfpBoard.captorWaterUnder = gpio.NewButtonDriver(dfpBoard.board, configHandler.GetString("pin.captor.water_under"))
-	dfpBoard.captorWaterUnder.DefaultState = 1
-
 	dfpBoard.gobot = gobot.NewRobot(
-		configHandler.GetString("name"),
+		dfpBoard.Name(),
 		[]gobot.Connection{dfpBoard.board},
 		[]gobot.Device{
 			dfpBoard.relayDrum,
 			dfpBoard.relayPump,
 			dfpBoard.ledGreen,
 			dfpBoard.ledRed,
-			dfpBoard.buttonSet,
+			dfpBoard.buttonEmergencyStop,
+			dfpBoard.buttonForceDrum,
+			dfpBoard.buttonForcePump,
 			dfpBoard.buttonStart,
 			dfpBoard.buttonStop,
 			dfpBoard.buttonWash,
-			dfpBoard.buttonForceDrum,
-			dfpBoard.buttonForcePump,
-			dfpBoard.captorSecurityUpper,
 			dfpBoard.captorSecurityUnder,
-			dfpBoard.captorWaterUpper,
+			dfpBoard.captorSecurityUpper,
 			dfpBoard.captorWaterUnder,
+			dfpBoard.captorWaterUpper,
 		},
 		dfpBoard.work,
 	)
 
-	dfpBoard.AddEvent("state")
+	dfpBoard.AddEvent(NewConfig)
+	dfpBoard.AddEvent(NewReboot)
+	dfpBoard.AddEvent(NewOffline)
+	dfpBoard.AddEvent(NewWash)
+	dfpBoard.AddEvent(NewSecurity)
+	dfpBoard.AddEvent(NewState)
+
+	log.Infof("Board %s initialized successfully", dfpBoard.Name())
 
 	return dfpBoard
 
@@ -119,49 +150,66 @@ func NewDFP(configHandler *viper.Viper, configUsecase dfpconfig.Usecase, eventUs
 // Start will init some item, like INPUT_PULLUP button, then start gobot
 func (h *DFPBoard) Start(ctx context.Context) (err error) {
 
-	// Load config
-	config, err := h.configUsecase.Get(context.TODO())
-	if err != nil {
-		return err
-	}
-	h.config = config
-
-	if log.IsLevelEnabled(log.DebugLevel) {
-		log.Debugf("Current config: %+v", h.config)
-		log.Debugf("Current state %+v", h.state)
-	}
-
-	// Start connection on board and set INPUT_PULLUP on some pins
-	err = h.board.Connect()
-	if err != nil {
+	// Start connexion to set some initial state on I/O
+	if err := h.board.Connect(); err != nil {
 		return err
 	}
 
-	listPins := []int{
-		h.configHandler.GetInt("pin.button.set"),
-		h.configHandler.GetInt("pin.button.start"),
-		h.configHandler.GetInt("pin.button.stop"),
-		h.configHandler.GetInt("pin.button.wash"),
-		h.configHandler.GetInt("pin.button.force_drum"),
-		h.configHandler.GetInt("pin.button.force_pump"),
-		h.configHandler.GetInt("pin.captor.water_upper"),
-		h.configHandler.GetInt("pin.captor.water_under"),
-		h.configHandler.GetInt("pin.captor.security_upper"),
-		h.configHandler.GetInt("pin.captor.security_under"),
+	// Set all input as INPUT_PULLUP and set default state as 1
+	listPins := []*gpio.ButtonDriver{
+		h.buttonEmergencyStop,
+		h.buttonForceDrum,
+		h.buttonForcePump,
+		h.buttonStart,
+		h.buttonStop,
+		h.buttonWash,
+		h.captorSecurityUnder,
+		h.captorSecurityUpper,
+		h.captorWaterUnder,
+		h.captorWaterUpper,
 	}
-
-	err = rpio.Open()
-	if err != nil {
+	if err := rpio.Open(); err != nil {
 		return err
 	}
-	for _, pin := range listPins {
-		pin := rpio.Pin(pin)
+	for _, button := range listPins {
+		pinNumber, err := strconv.ParseInt(button.Pin(), 10, 32)
+		if err != nil {
+			return err
+		}
+		pin := rpio.Pin(pinNumber)
 		pin.Input()
 		pin.PullUp()
+		button.DefaultState = 1
 	}
 	rpio.Close()
+	h.captorSecurityUpper.DefaultState = 0
+	h.captorWaterUpper.DefaultState = 0
 
-	return h.gobot.Start(false)
+	// Init state
+	if h.state.IsRunning && !h.state.IsSecurity && !h.state.IsEmergencyStopped {
+		h.turnOnGreenLed()
+		h.turnOffRedLed()
+	} else {
+		// It stopped or security
+		h.forceStopRelais()
+		h.turnOffGreenLed()
+		h.turnOnRedLed()
+	}
+
+	// If on current wash
+	if h.state.IsWashed {
+		h.wash()
+	}
+
+	if err := h.gobot.Start(false); err != nil {
+		return err
+	}
+
+	h.isOnline = true
+
+	h.sendEvent(ctx, fmt.Sprintf("start_%s", h.name), "board")
+
+	return nil
 
 }
 
@@ -174,14 +222,22 @@ func (h *DFPBoard) Stop(ctx context.Context) (err error) {
 		return err
 	}
 
-	h.Publish("stop", true)
+	// Stop internal routine
+	h.chStop <- true
+
+	h.isOnline = false
+	h.isInitialized = false
+
+	h.sendEvent(ctx, fmt.Sprintf("stop_%s", h.name), "board")
+
+	h.Publish(Stop, true)
 
 	return nil
 }
 
 // Name return the current board name
 func (h *DFPBoard) Name() string {
-	return h.gobot.Name
+	return h.name
 }
 
 // Board return public board data
@@ -195,120 +251,6 @@ func (h *DFPBoard) Board() *models.Board {
 // IsOnline return is board is online
 func (h *DFPBoard) IsOnline() bool {
 	return h.isOnline
-}
-
-// StartDFP put dfp on auto
-func (h *DFPBoard) StartDFP(ctx context.Context) (err error) {
-
-	if !h.state.IsRunning {
-		h.state.IsRunning = true
-		err = h.ledGreen.On()
-		if err != nil {
-			return
-		}
-		h.Publish("state", h.state)
-		h.sendEvent(ctx, "board", "dfp_start")
-	}
-
-	return
-}
-
-// StopDFP stop dfp and disable auto
-func (h *DFPBoard) StopDFP(ctx context.Context) (err error) {
-
-	if h.state.IsRunning {
-		h.state.IsRunning = false
-		err = h.ledGreen.Off()
-		if err != nil {
-			return
-		}
-		h.Publish("state", h.state)
-		h.sendEvent(ctx, "board", "dfp_stop")
-	}
-
-	return
-}
-
-// ForceWashing start a washing cycle
-func (h *DFPBoard) ForceWashing(ctx context.Context) (err error) {
-	if !h.state.IsWashed && !h.state.IsEmergencyStopped {
-		log.Debug("Run force wash")
-		h.wash()
-	}
-
-	return
-}
-
-// StartManualDrum force start drum motor
-// Only if not already wash and is not on emergency stopped
-func (h *DFPBoard) StartManualDrum(ctx context.Context) (err error) {
-
-	if !h.state.IsWashed && !h.state.IsEmergencyStopped {
-		if log.IsLevelEnabled(log.DebugLevel) {
-			log.Debug("Run force drum")
-		}
-
-		err = h.relayDrum.On()
-		if err != nil {
-			return
-		}
-
-	}
-	return
-}
-
-// StopManualDrum force stop drum motor
-// Only if not current washing
-func (h *DFPBoard) StopManualDrum(ctx context.Context) (err error) {
-
-	if !h.state.IsWashed {
-		if log.IsLevelEnabled(log.DebugLevel) {
-			log.Debug("Stop force drum")
-		}
-
-		err = h.relayDrum.Off()
-		if err != nil {
-			return
-		}
-	}
-	return
-}
-
-// StartManualPump force start pump
-// Only if not already wash and is not on emergency stopped
-func (h *DFPBoard) StartManualPump(ctx context.Context) (err error) {
-
-	if !h.state.IsWashed && !h.state.IsEmergencyStopped {
-		if log.IsLevelEnabled(log.DebugLevel) {
-			log.Debug("Run force pump")
-		}
-
-		err = h.relayPump.On()
-		if err != nil {
-			return
-		}
-	}
-
-	return
-}
-
-// StopManualPump force stop pump
-// Only if not already wash
-func (h *DFPBoard) StopManualPump(ctx context.Context) (err error) {
-
-	// Stop force pump
-	if !h.state.IsWashed {
-		if log.IsLevelEnabled(log.DebugLevel) {
-			log.Debug("Stop force pump")
-		}
-
-		err = h.relayPump.Off()
-		if err != nil {
-			return
-		}
-	}
-
-	return
 }
 
 // State return copy of current state

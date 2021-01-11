@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/disaster37/gobot-fat/dfpconfig"
 	"github.com/disaster37/gobot-fat/models"
 	log "github.com/sirupsen/logrus"
 	"gobot.io/x/gobot/drivers/gpio"
@@ -13,7 +14,7 @@ import (
 func (h *DFPBoard) wash() {
 
 	h.state.IsWashed = true
-	h.Publish("state", h.state)
+	h.Publish(NewState, h.state)
 	chFinished := make(chan bool)
 
 	// Blink green led
@@ -88,7 +89,7 @@ func (h *DFPBoard) wash() {
 		chFinished <- true
 
 		h.state.IsWashed = false
-		h.Publish("state", h.state)
+		h.Publish(NewState, h.state)
 		return
 	}()
 
@@ -112,149 +113,52 @@ func (h *DFPBoard) work() {
 
 	ctx := context.TODO()
 
-	/****************
-	 * Init state
-	 */
-
-	// If run normally
-	if h.state.IsRunning && !h.state.IsSecurity && !h.state.IsEmergencyStopped {
-		if log.IsLevelEnabled(log.DebugLevel) {
-			log.Debug("DFP run...")
-		}
-		h.turnOnGreenLed()
-		h.turnOffRedLed()
-	} else {
-		// It stopped or security
-		if log.IsLevelEnabled(log.DebugLevel) {
-			log.Debug("DFP stopped or in security")
-		}
-		h.forceStopRelais()
-		h.turnOffGreenLed()
-		h.turnOnRedLed()
-	}
-
-	// If on current wash
-	if h.state.IsWashed {
-		h.wash()
-	}
-
 	/*******
-	 * Routines on backgroup
+	 * Process external events
 	 */
-	// Update state
-	go func() {
-		out := h.Subscribe()
-		for {
-			select {
-			case evt := <-out:
-				switch evt.Name {
-				case "state":
-					err := h.stateUsecase.Update(ctx, evt.Data.(*models.DFPState))
-					if err != nil {
-						log.Errorf("Error when update DFP state: %s", err.Error())
-					}
-				case "stop":
-					return
-				}
-			}
+	// Handle config
+	h.globalEventer.On(dfpconfig.NewDFPConfig, func(s interface{}) {
+		dfpConfig := s.(*models.DFPConfig)
+		log.Debugf("New config received for board %s, we update it", h.name)
+
+		h.config = dfpConfig
+
+		// Publish internal event
+		h.Publish(NewConfig, dfpConfig)
+	})
+
+	/******
+	 * Process internal events
+	 */
+	// Handle state change
+	h.On(NewState, func(s interface{}) {
+		err := h.stateUsecase.Update(ctx, s.(*models.DFPState))
+		if err != nil {
+			log.Errorf("Error when update DFP state: %s", err.Error())
 		}
-	}()
+	})
 
-	// Load config
-	go func() {
-		out := h.Subscribe()
-		duration := 1 * time.Minute
-		timer := time.NewTicker(duration)
-		for {
-			select {
-			case evt := <-out:
-				switch evt.Name {
-				case "stop":
-					return
-				}
-			case <-timer.C:
-				timer = time.NewTicker(duration)
-				config, err := h.configUsecase.Get(ctx)
-				if err != nil {
-					log.Errorf("Error when load DFP config: %s", err.Error())
-					continue
-				}
-
-				h.config = config
-			}
-		}
-	}()
-
-	// Handle security captor
-	go func() {
-		out := h.Subscribe()
-		for {
-			select {
-			case evt := <-out:
-				switch evt.Name {
-				case "stop":
-					return
-				}
-			default:
-				if h.captorSecurityUpper.Active || h.captorSecurityUnder.Active {
-					// Set security mode
-					if !h.state.IsSecurity {
-						log.Info("Set security mode")
-						h.state.IsSecurity = true
-						h.turnOnRedLed()
-						h.forceStopRelais()
-						h.Publish("security", true)
-						h.Publish("state", h.state)
-					}
-				} else {
-					// Unset security mode
-					if h.state.IsSecurity {
-						log.Info("Unset security mode")
-						h.state.IsSecurity = false
-						h.turnOffRedLed()
-						h.Publish("security", false)
-						h.Publish("state", h.state)
-					}
-				}
+	// Handle wash
+	h.On(NewWash, func(s interface{}) {
+		select {
+		case <-h.timeBetweenWash.C:
+			// Timer finished
+			if h.state.ShouldWash() {
+				h.wash()
 			}
 
-			time.Sleep(1 * time.Millisecond)
-		}
-	}()
-
-	// Auto wash events
-	go func() {
-		timer := time.NewTicker(time.Duration(h.config.WaitTimeBetweenWashing) * time.Second)
-		out := h.Subscribe()
-		for {
-			select {
-			case evt := <-out:
-				switch evt.Name {
-				case "stop":
-					return
-				case "wash":
-					select {
-					case <-timer.C:
-						// Timer finished
-						if h.state.ShouldWash() {
-							h.wash()
-						}
-
-						timer = time.NewTicker(time.Duration(h.config.WaitTimeBetweenWashing) * time.Second)
-					default:
-						if log.IsLevelEnabled(log.DebugLevel) {
-							log.Debug("Wash not lauched because of need to wait some time before run again")
-						}
-					}
-				}
+			h.timeBetweenWash = time.NewTicker(time.Duration(h.config.WaitTimeBetweenWashing) * time.Second)
+		default:
+			if log.IsLevelEnabled(log.DebugLevel) {
+				log.Debug("Wash not lauched because of need to wait some time before run again")
 			}
 		}
-	}()
+
+	})
 
 	/*******
 	 * Process on button events
 	 */
-
 	// When button start
 	h.buttonStart.On(gpio.ButtonPush, func(s interface{}) {
 		if log.IsLevelEnabled(log.DebugLevel) {
@@ -288,7 +192,6 @@ func (h *DFPBoard) work() {
 		}
 
 		// Run force wash if not already wash, or is not on emergency stopped
-
 		if log.IsLevelEnabled(log.DebugLevel) {
 
 			err := h.ForceWashing(ctx)
@@ -352,11 +255,17 @@ func (h *DFPBoard) work() {
 	})
 
 	// When button set
-	h.buttonSet.On(gpio.ButtonPush, func(s interface{}) {
+	h.buttonEmergencyStop.On(gpio.ButtonPush, func(s interface{}) {
 		if log.IsLevelEnabled(log.DebugLevel) {
-			log.Debug("Button set pushed")
+			log.Debug("Button emergency stop pushed")
 		}
+
+		//@TODO Emergency func
 	})
+
+	/*******
+	 * Process on Captor event
+	 */
 
 	// When water captor ask wash
 	wash := func(s interface{}) {
@@ -371,5 +280,35 @@ func (h *DFPBoard) work() {
 	}
 	h.captorWaterUpper.On(gpio.ButtonPush, wash)
 	h.captorWaterUnder.On(gpio.ButtonPush, wash)
+
+	// When water captor ask security
+	security := func(s interface{}) {
+		if h.captorSecurityUpper.Active || h.captorSecurityUnder.Active {
+			// Set security mode
+			if !h.state.IsSecurity {
+				log.Info("Set security mode")
+				h.state.IsSecurity = true
+				h.turnOnRedLed()
+				h.forceStopRelais()
+				h.Publish(NewSecurity, true)
+				h.Publish(NewState, h.state)
+			}
+		} else {
+			// Unset security mode
+			if h.state.IsSecurity {
+				log.Info("Unset security mode")
+				h.state.IsSecurity = false
+				h.turnOffRedLed()
+				h.Publish(NewSecurity, false)
+				h.Publish(NewState, h.state)
+			}
+		}
+	}
+	h.captorSecurityUpper.On(gpio.ButtonPush, security)
+	h.captorSecurityUpper.On(gpio.ButtonRelease, security)
+	h.captorSecurityUnder.On(gpio.ButtonPush, security)
+	h.captorSecurityUnder.On(gpio.ButtonRelease, security)
+
+	h.isInitialized = true
 
 }

@@ -59,12 +59,12 @@ type TFPBoard struct {
 }
 
 // NewTFP create board to manage TFP
-func NewTFP(configHandler *viper.Viper, config *models.TFPConfig, state *models.TFPState, eventUsecase event.Usecase, tfpUsecase usecase.UsecaseCRUD, eventer gobot.Eventer) (tankHandler tfp.Board) {
+func NewTFP(configHandler *viper.Viper, config *models.TFPConfig, state *models.TFPState, eventUsecase event.Usecase, tfpUsecase usecase.UsecaseCRUD, eventer gobot.Eventer) (tfpBoard tfp.Board) {
 
 	//Create client
 	c := arest.NewHTTPAdaptor(configHandler.GetString("url"))
 
-	return newTFP(c, configHandler, config, state, eventUsecase, tfpUsecase, eventer, 10*time.Second)
+	return newTFP(c, configHandler, config, state, eventUsecase, tfpUsecase, eventer, 1*time.Second)
 
 }
 
@@ -111,6 +111,7 @@ func newTFP(board TFPAdaptor, configHandler *viper.Viper, config *models.TFPConf
 	)
 
 	tfpBoard.AddEvent(NewConfig)
+	tfpBoard.AddEvent(NewState)
 	tfpBoard.AddEvent(NewReboot)
 	tfpBoard.AddEvent(NewOffline)
 
