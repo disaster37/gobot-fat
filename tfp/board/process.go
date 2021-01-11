@@ -89,7 +89,7 @@ func (h *TFPBoard) work() {
 	// Handle blister time
 	board.NewHandler(ctx, 1*time.Hour, h.chStop, h.handleBlisterTime)
 
-	// Handle watrefall auto
+	// Handle waterfall auto
 	board.NewHandler(ctx, 1*time.Minute, h.chStop, h.handleWaterfallAuto)
 
 	h.isInitialized = true

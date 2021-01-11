@@ -19,6 +19,7 @@ type MockPlateform struct {
 	DigitalPinState         map[string]int
 	ValueReadState          map[string]interface{}
 	CallFunctionState       map[string]int
+	expectedError           error
 }
 
 // Adaptor interface
@@ -130,20 +131,41 @@ func (t *MockPlateform) FunctionCall(name string, parameters string) (val int, e
 	return t.testAdaptorFunctionCall(name, parameters)
 }
 
+func (t *MockPlateform) SetError(err error) {
+	t.expectedError = err
+}
+
 func (t *MockPlateform) init() {
 	t.testAdaptorDigitalRead = func(pin string) (val int, err error) {
+		if t.expectedError != nil {
+			return 0, t.expectedError
+		}
 		return t.DigitalPinState[pin], nil
 	}
 
 	t.testAdaptorValueRead = func(name string) (val interface{}, err error) {
+		if t.expectedError != nil {
+			return 0, t.expectedError
+		}
 		if t.ValueReadState[name] != nil {
 			return t.ValueReadState[name], nil
 		}
-		return 0, nil
+		return nil, nil
 	}
 
 	t.testAdaptorFunctionCall = func(name string, parameters string) (val int, err error) {
+		if t.expectedError != nil {
+			return 0, t.expectedError
+		}
 		return t.CallFunctionState[name], nil
+	}
+
+	t.testAdaptorDigitalWrite = func(pin string, val byte) (err error) {
+		if t.expectedError != nil {
+			return t.expectedError
+		}
+		t.DigitalPinState[pin] = int(val)
+		return nil
 	}
 
 }
@@ -154,9 +176,6 @@ func NewMockPlateform() *MockPlateform {
 		ValueReadState:    make(map[string]interface{}),
 		CallFunctionState: make(map[string]int),
 
-		testAdaptorDigitalWrite: func(pin string, val byte) (err error) {
-			return nil
-		},
 		testAdaptorServoWrite: func(pin string, val byte) (err error) {
 			return nil
 		},

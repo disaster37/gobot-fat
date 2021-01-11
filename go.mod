@@ -21,7 +21,7 @@ require (
 	github.com/stianeikeland/go-rpio/v4 v4.4.0
 	github.com/stretchr/testify v1.6.1
 	github.com/x-cray/logrus-prefixed-formatter v0.5.2
-	gobot.io/x/gobot v1.14.0
+	gobot.io/x/gobot v1.15.0
 	github.com/olivere/elastic/v7 v7.0.22
 
 )
