@@ -8,6 +8,9 @@ import (
 	"github.com/disaster37/gobot-fat/event"
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/repository"
+	tfpboard "github.com/disaster37/gobot-fat/tfp/board"
+	tfpHttpDeliver "github.com/disaster37/gobot-fat/tfp/delivery/http"
+	tfpusecase "github.com/disaster37/gobot-fat/tfp/usecase"
 	"github.com/disaster37/gobot-fat/tfpconfig"
 	tfpConfigHttpDeliver "github.com/disaster37/gobot-fat/tfpconfig/delivery/http"
 	"github.com/disaster37/gobot-fat/tfpstate"
@@ -92,13 +95,12 @@ func initTFP(ctx context.Context, eventer gobot.Eventer, api *echo.Group, config
 	tfpStateHttpDeliver.NewTFPStateHandler(api, tfpStateUsecase)
 
 	// TFP board
-	/*
-		if configHandler.GetBool("tfp.enable") {
-			tfpB := tfpBoard.NewTFP(configHandler.Sub("tfp"), tfpConfigU, eventU, tfpStateU, tfpState)
-			boardU.AddBoard(tfpB)
-			tfpU := tfpUsecase.NewTFPUsecase(tfpB, tfpConfigU, tfpStateU, timeoutContext)
-			tfpHttpDeliver.NewTFPHandler(api, tfpU)
-		}
-	*/
+	if configHandler.GetBool("tfp.enable") {
+		tfpBoard := tfpboard.NewTFP(configHandler.Sub("tfp"), tfpConfig, tfpState, eventUsecase, tfpStateUsecase, eventer)
+		boardUsecase.AddBoard(tfpBoard)
+		tfpUsecase := tfpusecase.NewTFPUsecase(tfpBoard, tfpConfigUsecase, tfpStateUsecase, timeout)
+		tfpHttpDeliver.NewTFPHandler(api, tfpUsecase)
+	}
+
 	return nil
 }
