@@ -77,6 +77,7 @@ github.com/disaster37/gobot-arest v1.0.4 h1:QLPx5PV2Pu1Vd/LxDLiQzQ8CyDrYezZ2kfI5
 github.com/disaster37/gobot-arest v1.0.4/go.mod h1:EQ2pT2n2fl/P7XNp0pN3cvUBJYLHfJ5YXOFBw079pus=
 github.com/disaster37/gobot-arest v1.0.5-0.20201011165441-f7f04e61c7e7 h1:Lm6LkORJj7QH0F/c0FHMlO2DYE7TGpJ26SHUgOFBURc=
 github.com/disaster37/gobot-arest v1.0.5-0.20201011165441-f7f04e61c7e7/go.mod h1:EQ2pT2n2fl/P7XNp0pN3cvUBJYLHfJ5YXOFBw079pus=
+github.com/disaster37/gobot-arest v1.0.5/go.mod h1:WPu3tQftfT6q4hT4Tjunzn3qiyxgnppM8WBi+TdPI/o=
 github.com/donovanhide/eventsource v0.0.0-20171031113327-3ed64d21fb0b/go.mod h1:56wL82FO0bfMU5RvfXoIwSOP2ggqqxT+tAfNEIyxuHw=
 github.com/eapache/go-resiliency v1.1.0/go.mod h1:kFI+JgMyC7bLPUVY133qvEBtVayf5mFgVsvEsIPBvNs=
 github.com/eapache/go-xerial-snappy v0.0.0-20180814174437-776d5712da21/go.mod h1:+020luEh2TKB4/GOp8oxxtq0Daoen/Cii55CzbTV6DU=
@@ -190,6 +191,7 @@ github.com/hybridgroup/go-ardrone v0.0.0-20140402002621-b9750d8d7b78/go.mod h1:Y
 github.com/hybridgroup/mjpeg v0.0.0-20140228234708-4680f319790e/go.mod h1:eagM805MRKrioHYuU7iKLUyFPVKqVV6um5DAvCkUtXs=
 github.com/jarcoal/httpmock v1.0.5 h1:cHtVEcTxRSX4J0je7mWPfc9BpDpqzXSJ5HbymZmyHck=
 github.com/jarcoal/httpmock v1.0.5/go.mod h1:ATjnClrvW/3tijVmpL/va5Z3aAyGvqU3gCT8nX0Txik=
+github.com/jarcoal/httpmock v1.0.7/go.mod h1:ATjnClrvW/3tijVmpL/va5Z3aAyGvqU3gCT8nX0Txik=
 github.com/jinzhu/gorm v1.9.11 h1:gaHGvE+UnWGlbWG4Y3FUwY1EcZ5n6S9WtqBA/uySMLE=
 github.com/jinzhu/gorm v1.9.11/go.mod h1:bu/pK8szGZ2puuErfU0RwyeNdsf3e6nCX/noXaVxkfw=
 github.com/jinzhu/gorm v1.9.16 h1:+IyIjPEABKRpsu/F8OvDPy9fyQlgsg2luMV2ZIH5i5o=
