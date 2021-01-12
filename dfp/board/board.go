@@ -70,22 +70,22 @@ type DFPBoard struct {
 }
 
 // NewDFP create board to manage DFP
-func NewDFP(configHandler *viper.Viper, config *models.DFPConfig, state *models.DFPState, eventUsecase event.Usecase, dfpUsecase usecase.UsecaseCRUD, eventer gobot.Eventer) (dfpBoard dfp.Board) {
+func NewDFP(configHandler *viper.Viper, config *models.DFPConfig, state *models.DFPState, eventUsecase event.Usecase, dfpStateUsecase usecase.UsecaseCRUD, eventer gobot.Eventer) (dfpBoard dfp.Board) {
 
 	//Create client
 	c := raspi.NewAdaptor()
 
-	return newDFP(c, configHandler, config, state, eventUsecase, dfpUsecase, eventer)
+	return newDFP(c, configHandler, config, state, eventUsecase, dfpStateUsecase, eventer)
 
 }
 
-func newDFP(board DFPAdaptor, configHandler *viper.Viper, config *models.DFPConfig, state *models.DFPState, eventUsecase event.Usecase, tfpUsecase usecase.UsecaseCRUD, eventer gobot.Eventer) dfp.Board {
+func newDFP(board DFPAdaptor, configHandler *viper.Viper, config *models.DFPConfig, state *models.DFPState, eventUsecase event.Usecase, dfpStateUsecase usecase.UsecaseCRUD, eventer gobot.Eventer) dfp.Board {
 
 	// Create struct
 	dfpBoard := &DFPBoard{
 		board:               board,
 		eventUsecase:        eventUsecase,
-		stateUsecase:        tfpUsecase,
+		stateUsecase:        dfpStateUsecase,
 		configHandler:       configHandler,
 		name:                configHandler.GetString("name"),
 		config:              config,
@@ -108,7 +108,7 @@ func newDFP(board DFPAdaptor, configHandler *viper.Viper, config *models.DFPConf
 		captorWaterUpper:    gpio.NewButtonDriver(board, configHandler.GetString("pin.captor.water_upper")),
 		captorWaterUnder:    gpio.NewButtonDriver(board, configHandler.GetString("pin.captor.water_under")),
 		chStop:              make(chan bool),
-		timeBetweenWash:     time.NewTicker(time.Duration(0)),
+		timeBetweenWash:     time.NewTicker(time.Duration(1 * time.Nanosecond)),
 		Eventer:             gobot.NewEventer(),
 	}
 

@@ -5,6 +5,9 @@ import (
 	"time"
 
 	"github.com/disaster37/gobot-fat/board"
+	dfpboard "github.com/disaster37/gobot-fat/dfp/board"
+	dfpHttpDeliver "github.com/disaster37/gobot-fat/dfp/delivery/http"
+	dfpusecase "github.com/disaster37/gobot-fat/dfp/usecase"
 	"github.com/disaster37/gobot-fat/dfpconfig"
 	dfpConfigHttpDeliver "github.com/disaster37/gobot-fat/dfpconfig/delivery/http"
 	"github.com/disaster37/gobot-fat/dfpstate"
@@ -80,17 +83,13 @@ func initDFP(ctx context.Context, eventer gobot.Eventer, api *echo.Group, config
 	log.Info("Get dfpState successfully")
 	dfpStateHttpDeliver.NewDFPStateHandler(api, dfpStateUsecase)
 
-	/*
-		// DFP board
-		if configHandler.GetBool("dfp.enable") {
-			dfpB := dfpBoard.NewDFP(configHandler.Sub("dfp"), dfpConfigU, eventU, dfpStateU, dfpState)
-			boardU.AddBoard(dfpB)
-			dfpU := dfpUsecase.NewDFPUsecase(dfpB, timeoutContext)
-			dfpHttpDeliver.NewDFPHandler(api, dfpU)
-		}
-
-
-	*/
+	// DFP board
+	if configHandler.GetBool("dfp.enable") {
+		dfpBoard := dfpboard.NewDFP(configHandler.Sub("dfp"), dfpConfig, dfpState, eventUsecase, dfpStateUsecase, eventer)
+		boardUsecase.AddBoard(dfpBoard)
+		dfpUsecase := dfpusecase.NewDFPUsecase(dfpBoard, timeout)
+		dfpHttpDeliver.NewDFPHandler(api, dfpUsecase)
+	}
 
 	return nil
 }

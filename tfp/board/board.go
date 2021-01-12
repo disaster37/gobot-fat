@@ -59,22 +59,22 @@ type TFPBoard struct {
 }
 
 // NewTFP create board to manage TFP
-func NewTFP(configHandler *viper.Viper, config *models.TFPConfig, state *models.TFPState, eventUsecase event.Usecase, tfpUsecase usecase.UsecaseCRUD, eventer gobot.Eventer) (tfpBoard tfp.Board) {
+func NewTFP(configHandler *viper.Viper, config *models.TFPConfig, state *models.TFPState, eventUsecase event.Usecase, tfpStateUsecase usecase.UsecaseCRUD, eventer gobot.Eventer) (tfpBoard tfp.Board) {
 
 	//Create client
 	c := arest.NewHTTPAdaptor(configHandler.GetString("url"))
 
-	return newTFP(c, configHandler, config, state, eventUsecase, tfpUsecase, eventer, 1*time.Second)
+	return newTFP(c, configHandler, config, state, eventUsecase, tfpStateUsecase, eventer, 1*time.Second)
 
 }
 
-func newTFP(board TFPAdaptor, configHandler *viper.Viper, config *models.TFPConfig, state *models.TFPState, eventUsecase event.Usecase, tfpUsecase usecase.UsecaseCRUD, eventer gobot.Eventer, wait time.Duration) (tfpHandler tfp.Board) {
+func newTFP(board TFPAdaptor, configHandler *viper.Viper, config *models.TFPConfig, state *models.TFPState, eventUsecase event.Usecase, tfpStateUsecase usecase.UsecaseCRUD, eventer gobot.Eventer, wait time.Duration) (tfpHandler tfp.Board) {
 
 	// Create struct
 	tfpBoard := &TFPBoard{
 		board:              board,
 		eventUsecase:       eventUsecase,
-		stateUsecase:       tfpUsecase,
+		stateUsecase:       tfpStateUsecase,
 		configHandler:      configHandler,
 		name:               configHandler.GetString("name"),
 		config:             config,
