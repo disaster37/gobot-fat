@@ -311,4 +311,8 @@ func (h *DFPBoard) work() {
 
 	h.isInitialized = true
 
+	if err := h.ledGreen.On(); err != nil {
+		log.Errorf("Green led error: %s", err.Error())
+	}
+
 }
