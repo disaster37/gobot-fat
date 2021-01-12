@@ -80,6 +80,7 @@ func NewDFP(configHandler *viper.Viper, config *models.DFPConfig, state *models.
 
 func newDFP(board DFPAdaptor, configHandler *viper.Viper, config *models.DFPConfig, state *models.DFPState, eventUsecase event.Usecase, dfpStateUsecase usecase.UsecaseCRUD, eventer gobot.Eventer) dfp.Board {
 
+	buttonPollingDuration := 500 * time.Millisecond
 	// Create struct
 	dfpBoard := &DFPBoard{
 		board:               board,
@@ -96,16 +97,16 @@ func newDFP(board DFPAdaptor, configHandler *viper.Viper, config *models.DFPConf
 		relayPump:           gpio.NewRelayDriver(board, configHandler.GetString("pin.relay.pomp")),
 		ledGreen:            gpio.NewLedDriver(board, configHandler.GetString("pin.led.green")),
 		ledRed:              gpio.NewLedDriver(board, configHandler.GetString("pin.led.red")),
-		buttonEmergencyStop: gpio.NewButtonDriver(board, configHandler.GetString("pin.button.emergency_stop")),
-		buttonStart:         gpio.NewButtonDriver(board, configHandler.GetString("pin.button.start")),
-		buttonStop:          gpio.NewButtonDriver(board, configHandler.GetString("pin.button.stop")),
-		buttonWash:          gpio.NewButtonDriver(board, configHandler.GetString("pin.button.wash")),
-		buttonForceDrum:     gpio.NewButtonDriver(board, configHandler.GetString("pin.button.force_drum")),
-		buttonForcePump:     gpio.NewButtonDriver(board, configHandler.GetString("pin.button.force_pump")),
-		captorSecurityUpper: gpio.NewButtonDriver(board, configHandler.GetString("pin.captor.security_upper")),
-		captorSecurityUnder: gpio.NewButtonDriver(board, configHandler.GetString("pin.captor.security_under")),
-		captorWaterUpper:    gpio.NewButtonDriver(board, configHandler.GetString("pin.captor.water_upper")),
-		captorWaterUnder:    gpio.NewButtonDriver(board, configHandler.GetString("pin.captor.water_under")),
+		buttonEmergencyStop: gpio.NewButtonDriver(board, configHandler.GetString("pin.button.emergency_stop"), buttonPollingDuration),
+		buttonStart:         gpio.NewButtonDriver(board, configHandler.GetString("pin.button.start"), buttonPollingDuration),
+		buttonStop:          gpio.NewButtonDriver(board, configHandler.GetString("pin.button.stop"), buttonPollingDuration),
+		buttonWash:          gpio.NewButtonDriver(board, configHandler.GetString("pin.button.wash"), buttonPollingDuration),
+		buttonForceDrum:     gpio.NewButtonDriver(board, configHandler.GetString("pin.button.force_drum"), buttonPollingDuration),
+		buttonForcePump:     gpio.NewButtonDriver(board, configHandler.GetString("pin.button.force_pump"), buttonPollingDuration),
+		captorSecurityUpper: gpio.NewButtonDriver(board, configHandler.GetString("pin.captor.security_upper"), buttonPollingDuration),
+		captorSecurityUnder: gpio.NewButtonDriver(board, configHandler.GetString("pin.captor.security_under"), buttonPollingDuration),
+		captorWaterUpper:    gpio.NewButtonDriver(board, configHandler.GetString("pin.captor.water_upper"), buttonPollingDuration),
+		captorWaterUnder:    gpio.NewButtonDriver(board, configHandler.GetString("pin.captor.water_under"), buttonPollingDuration),
 		chStop:              make(chan bool),
 		timeBetweenWash:     time.NewTicker(time.Duration(1 * time.Nanosecond)),
 		Eventer:             gobot.NewEventer(),
