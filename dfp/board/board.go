@@ -80,7 +80,7 @@ func NewDFP(configHandler *viper.Viper, config *models.DFPConfig, state *models.
 
 func newDFP(board DFPAdaptor, configHandler *viper.Viper, config *models.DFPConfig, state *models.DFPState, eventUsecase event.Usecase, dfpStateUsecase usecase.UsecaseCRUD, eventer gobot.Eventer) dfp.Board {
 
-	buttonPollingDuration := 500 * time.Millisecond
+	buttonPollingDuration := configHandler.GetDuration("button_polling") * time.Millisecond
 	// Create struct
 	dfpBoard := &DFPBoard{
 		board:               board,
