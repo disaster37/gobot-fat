@@ -173,6 +173,7 @@ func (h *DFPBoard) Start(ctx context.Context) (err error) {
 		log.Errorf("Error when open rpio: %s", err.Error())
 		return err
 	}
+	defer rpio.Close()
 
 	for _, button := range listPins {
 
@@ -186,7 +187,6 @@ func (h *DFPBoard) Start(ctx context.Context) (err error) {
 
 		button.DefaultState = 1
 	}
-	rpio.Close()
 
 	log.Infof("RPIO initialized")
 	h.captorSecurityUpper.DefaultState = 0
