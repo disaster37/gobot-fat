@@ -3,7 +3,6 @@ package dfpboard
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/disaster37/gobot-fat/dfp"
@@ -177,11 +176,12 @@ func (h *DFPBoard) Start(ctx context.Context) (err error) {
 
 	for _, button := range listPins {
 
-		pinNumber, err := strconv.ParseInt(button.Pin(), 10, 32)
+		// Need to translate pin
+		translatedPin, err := translatePin(button.Pin(), "3")
 		if err != nil {
 			return err
 		}
-		pin := rpio.Pin(pinNumber)
+		pin := rpio.Pin(translatedPin)
 		pin.Input()
 		pin.PullUp()
 
