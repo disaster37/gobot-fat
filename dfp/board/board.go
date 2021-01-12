@@ -168,10 +168,12 @@ func (h *DFPBoard) Start(ctx context.Context) (err error) {
 		h.captorWaterUnder,
 		h.captorWaterUpper,
 	}
-	if err := rpio.Open(); err != nil {
-		log.Errorf("Error when open rpio: %s", err.Error())
-		return err
-	}
+	/*
+		if err := rpio.Open(); err != nil {
+			log.Errorf("Error when open rpio: %s", err.Error())
+			return err
+		}
+	*/
 	for _, button := range listPins {
 		pinNumber, err := strconv.ParseInt(button.Pin(), 10, 32)
 		if err != nil {
