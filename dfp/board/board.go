@@ -182,6 +182,8 @@ func (h *DFPBoard) Start(ctx context.Context) (err error) {
 		button.DefaultState = 1
 	}
 	rpio.Close()
+
+	log.Infof("RPIO initialized")
 	h.captorSecurityUpper.DefaultState = 0
 	h.captorWaterUpper.DefaultState = 0
 
@@ -204,6 +206,8 @@ func (h *DFPBoard) Start(ctx context.Context) (err error) {
 	if err := h.gobot.Start(false); err != nil {
 		return err
 	}
+
+	log.Infof("Board initialized")
 
 	h.isOnline = true
 
