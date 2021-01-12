@@ -18,7 +18,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.7.0
 	github.com/spf13/viper v1.7.1
-	github.com/stianeikeland/go-rpio/v4 v4.4.0
+	github.com/stianeikeland/go-rpio/v4 v4.4.1-0.20200705092735-acc952dac3eb
 	github.com/stretchr/testify v1.6.1
 	github.com/x-cray/logrus-prefixed-formatter v0.5.2
 	gobot.io/x/gobot v1.15.0
