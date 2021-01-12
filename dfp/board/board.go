@@ -3,7 +3,6 @@ package dfpboard
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/disaster37/gobot-fat/dfp"
@@ -12,7 +11,6 @@ import (
 	"github.com/disaster37/gobot-fat/usecase"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"github.com/stianeikeland/go-rpio/v4"
 	"gobot.io/x/gobot"
 	"gobot.io/x/gobot/drivers/gpio"
 	"gobot.io/x/gobot/platforms/raspi"
@@ -175,16 +173,18 @@ func (h *DFPBoard) Start(ctx context.Context) (err error) {
 		}
 	*/
 	for _, button := range listPins {
-		pinNumber, err := strconv.ParseInt(button.Pin(), 10, 32)
-		if err != nil {
-			return err
-		}
-		pin := rpio.Pin(pinNumber)
-		pin.Input()
-		pin.PullUp()
+		/*
+			pinNumber, err := strconv.ParseInt(button.Pin(), 10, 32)
+			if err != nil {
+				return err
+			}
+			pin := rpio.Pin(pinNumber)
+			pin.Input()
+			pin.PullUp()
+		*/
 		button.DefaultState = 1
 	}
-	rpio.Close()
+	//rpio.Close()
 
 	log.Infof("RPIO initialized")
 	h.captorSecurityUpper.DefaultState = 0
