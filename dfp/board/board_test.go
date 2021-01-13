@@ -115,7 +115,7 @@ func TestStartStopIsOnline(t *testing.T) {
 	assert.NoError(t, err)
 	select {
 	case <-sem:
-	case <-time.After(5 * time.Second):
+	case <-time.After(10 * time.Second):
 		t.Errorf("DFP wash not started")
 	}
 

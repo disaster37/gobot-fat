@@ -11,11 +11,14 @@ func (h *DFPBoard) StartDFP(ctx context.Context) (err error) {
 
 	if !h.state.IsRunning {
 		h.state.IsRunning = true
-		err = h.ledGreen.On()
-		if err != nil {
-			return
+		if err = h.ledGreen.On(); err != nil {
+			return err
 		}
-		h.Publish("state", h.state)
+
+		if err = h.stateUsecase.Update(ctx, h.state); err != nil {
+			return err
+		}
+
 		h.sendEvent(ctx, "board", "dfp_start")
 	}
 
@@ -27,11 +30,13 @@ func (h *DFPBoard) StopDFP(ctx context.Context) (err error) {
 
 	if h.state.IsRunning {
 		h.state.IsRunning = false
-		err = h.ledGreen.Off()
-		if err != nil {
-			return
+		if err = h.ledGreen.Off(); err != nil {
+			return err
 		}
-		h.Publish("state", h.state)
+
+		if err := h.stateUsecase.Update(ctx, h.state); err != nil {
+			return err
+		}
 		h.sendEvent(ctx, "board", "dfp_stop")
 	}
 
@@ -59,9 +64,8 @@ func (h *DFPBoard) StartManualDrum(ctx context.Context) (err error) {
 			log.Debug("Run force drum")
 		}
 
-		err = h.relayDrum.On()
-		if err != nil {
-			return
+		if err = h.relayDrum.On(); err != nil {
+			return err
 		}
 
 	}
@@ -77,9 +81,8 @@ func (h *DFPBoard) StopManualDrum(ctx context.Context) (err error) {
 			log.Debug("Stop force drum")
 		}
 
-		err = h.relayDrum.Off()
-		if err != nil {
-			return
+		if err = h.relayDrum.Off(); err != nil {
+			return err
 		}
 	}
 	return
@@ -94,9 +97,8 @@ func (h *DFPBoard) StartManualPump(ctx context.Context) (err error) {
 			log.Debug("Run force pump")
 		}
 
-		err = h.relayPump.On()
-		if err != nil {
-			return
+		if err = h.relayPump.On(); err != nil {
+			return err
 		}
 	}
 
@@ -113,9 +115,8 @@ func (h *DFPBoard) StopManualPump(ctx context.Context) (err error) {
 			log.Debug("Stop force pump")
 		}
 
-		err = h.relayPump.Off()
-		if err != nil {
-			return
+		if err = h.relayPump.Off(); err != nil {
+			return err
 		}
 	}
 
@@ -123,8 +124,7 @@ func (h *DFPBoard) StopManualPump(ctx context.Context) (err error) {
 }
 
 func (h *DFPBoard) startDrum() {
-	err := h.relayDrum.On()
-	if err != nil {
+	if err := h.relayDrum.On(); err != nil {
 		log.Errorf("Error when start drum: %s", err.Error())
 		return
 	}
@@ -135,8 +135,7 @@ func (h *DFPBoard) startDrum() {
 }
 
 func (h *DFPBoard) stopDrum() {
-	err := h.relayDrum.Off()
-	if err != nil {
+	if err := h.relayDrum.Off(); err != nil {
 		log.Errorf("Error when stop drum: %s", err.Error())
 		return
 	}
@@ -147,8 +146,7 @@ func (h *DFPBoard) stopDrum() {
 }
 
 func (h *DFPBoard) startPump() {
-	err := h.relayPump.On()
-	if err != nil {
+	if err := h.relayPump.On(); err != nil {
 		log.Errorf("Error when start pump: %s", err.Error())
 		return
 	}
@@ -159,8 +157,7 @@ func (h *DFPBoard) startPump() {
 }
 
 func (h *DFPBoard) stopPump() {
-	err := h.relayPump.Off()
-	if err != nil {
+	if err := h.relayPump.Off(); err != nil {
 		log.Errorf("Error when stop pump: %s", err.Error())
 		return
 	}
@@ -176,14 +173,12 @@ func (h *DFPBoard) forceStopRelais() {
 
 		for isErr {
 			isErr = false
-			err := h.relayDrum.Off()
-			if err != nil {
+			if err := h.relayDrum.Off(); err != nil {
 				log.Errorf("Error when stop drump: %s", err.Error())
 				isErr = true
 			}
 
-			err = h.relayPump.Off()
-			if err != nil {
+			if err := h.relayPump.Off(); err != nil {
 				log.Errorf("Error when stop pump: %s", err.Error())
 				isErr = true
 			}

@@ -16,13 +16,18 @@ import (
 )
 
 const (
-	NewConfig   = "new-config"
-	NewReboot   = "new-reboot"
-	NewOffline  = "new-offline"
-	NewWash     = "new-wash"
-	NewSecurity = "new-security"
-	NewState    = "new-state"
-	Stop        = "stop"
+	NewConfig        = "new-config"
+	NewReboot        = "new-reboot"
+	NewOffline       = "new-offline"
+	NewWash          = "new-wash"
+	NewSecurity      = "new-security"
+	NewState         = "new-state"
+	Stop             = "stop"
+	EmergencyStopOn  = "emergency_stop_on"
+	EmergencyStopOff = "emergency_stop_off"
+
+	// Permit to test work function
+	NewInput = "new-input"
 )
 
 // DFPAdaptor is DFP board interface
@@ -138,7 +143,9 @@ func newDFP(board DFPAdaptor, configHandler *viper.Viper, config *models.DFPConf
 	dfpBoard.AddEvent(NewOffline)
 	dfpBoard.AddEvent(NewWash)
 	dfpBoard.AddEvent(NewSecurity)
-	dfpBoard.AddEvent(NewState)
+	dfpBoard.AddEvent(Stop)
+	dfpBoard.AddEvent(EmergencyStopOn)
+	dfpBoard.AddEvent(EmergencyStopOff)
 
 	log.Infof("Board %s initialized successfully", dfpBoard.Name())
 
