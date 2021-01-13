@@ -11,10 +11,8 @@ import (
 	"github.com/disaster37/gobot-fat/usecase"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"github.com/stianeikeland/go-rpio/v4"
 	"gobot.io/x/gobot"
 	"gobot.io/x/gobot/drivers/gpio"
-	"gobot.io/x/gobot/platforms/raspi"
 )
 
 const (
@@ -32,6 +30,7 @@ type DFPAdaptor interface {
 	gobot.Adaptor
 	gpio.DigitalReader
 	gpio.DigitalWriter
+	SetInputPullup(listPins []*gpio.ButtonDriver) (err error)
 }
 
 // DFPBoard is the DFP board
@@ -72,7 +71,7 @@ type DFPBoard struct {
 func NewDFP(configHandler *viper.Viper, config *models.DFPConfig, state *models.DFPState, eventUsecase event.Usecase, dfpStateUsecase usecase.UsecaseCRUD, eventer gobot.Eventer) (dfpBoard dfp.Board) {
 
 	//Create client
-	c := raspi.NewAdaptor()
+	c := NewRaspiAdaptor()
 
 	return newDFP(c, configHandler, config, state, eventUsecase, dfpStateUsecase, eventer)
 
@@ -169,27 +168,10 @@ func (h *DFPBoard) Start(ctx context.Context) (err error) {
 		h.captorWaterUpper,
 	}
 
-	if err := rpio.Open(); err != nil {
-		log.Errorf("Error when open rpio: %s", err.Error())
+	if err := h.board.SetInputPullup(listPins); err != nil {
 		return err
 	}
-	defer rpio.Close()
 
-	for _, button := range listPins {
-
-		// Need to translate pin
-		translatedPin, err := translatePin(button.Pin(), "3")
-		if err != nil {
-			return err
-		}
-		pin := rpio.Pin(translatedPin)
-		pin.Input()
-		pin.PullUp()
-
-		button.DefaultState = 1
-	}
-
-	log.Infof("RPIO initialized")
 	h.captorSecurityUpper.DefaultState = 0
 	h.captorWaterUpper.DefaultState = 0
 
@@ -233,7 +215,7 @@ func (h *DFPBoard) Stop(ctx context.Context) (err error) {
 	}
 
 	// Stop internal routine
-	h.chStop <- true
+	//h.chStop <- true
 
 	h.isOnline = false
 	h.isInitialized = false

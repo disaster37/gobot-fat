@@ -2,6 +2,8 @@ package helper
 
 import (
 	"sync"
+
+	"gobot.io/x/gobot/drivers/gpio"
 )
 
 type MockPlateform struct {
@@ -27,6 +29,15 @@ func (m *MockPlateform) Name() string     { return "test" }
 func (m *MockPlateform) SetName(n string) { return }
 func (m *MockPlateform) Connect() error   { return nil }
 func (m *MockPlateform) Finalize() error  { return nil }
+func (m *MockPlateform) SetInputPullup(listPins []*gpio.ButtonDriver) (err error) {
+
+	for _, button := range listPins {
+		button.DefaultState = 1
+	}
+
+	return
+
+}
 
 // Arest interface
 func (t *MockPlateform) TestReconnect(f func() error) {

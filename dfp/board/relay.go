@@ -35,6 +35,8 @@ func (h *DFPBoard) StopDFP(ctx context.Context) (err error) {
 		h.sendEvent(ctx, "board", "dfp_stop")
 	}
 
+	h.Publish(Stop, nil)
+
 	return
 }
 

@@ -52,7 +52,7 @@ func (h *DFPBoard) wash() {
 		select {
 		case evt := <-out:
 			switch evt.Name {
-			case "stop":
+			case Stop:
 				h.forceStopRelais()
 				chFinished <- true
 				return
@@ -74,7 +74,7 @@ func (h *DFPBoard) wash() {
 		select {
 		case evt := <-out:
 			switch evt.Name {
-			case "stop":
+			case Stop:
 				h.forceStopRelais()
 				chFinished <- true
 				return
@@ -90,6 +90,7 @@ func (h *DFPBoard) wash() {
 
 		h.state.IsWashed = false
 		h.Publish(NewState, h.state)
+		h.Publish(NewWash, h.state)
 		return
 	}()
 
