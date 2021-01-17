@@ -28,6 +28,8 @@ func TestStartStopDFP(t *testing.T) {
 	assert.False(t, board.state.IsRunning)
 	assert.Equal(t, 0, adaptor.DigitalPinState[board.ledGreen.Pin()])
 	assert.Equal(t, 0, adaptor.DigitalPinState[board.ledRed.Pin()])
+
+	board.Stop(context.Background())
 }
 
 func TestStartStopManualDrum(t *testing.T) {
@@ -52,6 +54,8 @@ func TestStartStopManualDrum(t *testing.T) {
 	err = board.StartManualDrum(context.Background())
 	assert.NoError(t, err)
 	assert.Equal(t, 0, adaptor.DigitalPinState[board.relayDrum.Pin()])
+
+	board.Stop(context.Background())
 }
 
 func TestStartStopManualPomp(t *testing.T) {
@@ -76,6 +80,8 @@ func TestStartStopManualPomp(t *testing.T) {
 	err = board.StartManualPump(context.Background())
 	assert.NoError(t, err)
 	assert.Equal(t, 0, adaptor.DigitalPinState[board.relayPump.Pin()])
+
+	board.Stop(context.Background())
 }
 
 func TestForceWashing(t *testing.T) {
@@ -96,6 +102,7 @@ func TestForceWashing(t *testing.T) {
 	case <-time.After(10 * time.Second):
 		t.Errorf("DFP wash not started")
 	}
+	board.Stop(context.Background())
 
 	// When is already on wash cycle, skip
 	board, _ = initTestBoard()
@@ -111,9 +118,9 @@ func TestForceWashing(t *testing.T) {
 	assert.NoError(t, err)
 	select {
 	case <-sem:
-
 	case <-time.After(10 * time.Second):
 	}
+	board.Stop(context.Background())
 
 	// When emergency stop
 	board, _ = initTestBoard()
@@ -132,5 +139,6 @@ func TestForceWashing(t *testing.T) {
 
 	case <-time.After(10 * time.Second):
 	}
+	board.Stop(context.Background())
 
 }

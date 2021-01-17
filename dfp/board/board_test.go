@@ -82,6 +82,7 @@ func TestStartStopIsOnline(t *testing.T) {
 	assert.Equal(t, 0, adaptor.DigitalPinState[board.relayPump.Pin()])
 	assert.Equal(t, 1, adaptor.DigitalPinState[board.ledGreen.Pin()])
 	assert.Equal(t, 0, adaptor.DigitalPinState[board.ledRed.Pin()])
+	board.Stop(context.Background())
 
 	// Normal start with all stopped on state and stopped
 	board, adaptor = initTestBoard()
@@ -106,6 +107,7 @@ func TestStartStopIsOnline(t *testing.T) {
 	assert.Equal(t, 0, adaptor.DigitalPinState[board.relayPump.Pin()])
 	assert.Equal(t, 0, adaptor.DigitalPinState[board.ledGreen.Pin()])
 	assert.Equal(t, 1, adaptor.DigitalPinState[board.ledRed.Pin()])
+	board.Stop(context.Background())
 
 	// Start with wash and running
 	board, adaptor = initTestBoard()
@@ -121,27 +123,12 @@ func TestStartStopIsOnline(t *testing.T) {
 	case <-time.After(10 * time.Second):
 		t.Errorf("DFP wash not started")
 	}
-
-	// Start with all started on state
-	/*
-		board, adaptor = initTestBoard()
-		board.state.PondPumpRunning = true
-		board.state.PondBubbleRunning = true
-		board.state.FilterBubbleRunning = true
-		board.state.WaterfallPumpRunning = true
-		board.state.UVC1Running = true
-		board.state.UVC2Running = true
-		err = board.Start(context.Background())
-		assert.NoError(t, err)
-		assert.Equal(t, 0, adaptor.DigitalPinState["1"])
-		assert.Equal(t, 0, adaptor.DigitalPinState["2"])
-		assert.Equal(t, 0, adaptor.DigitalPinState["3"])
-		assert.Equal(t, 0, adaptor.DigitalPinState["4"])
-		assert.Equal(t, 0, adaptor.DigitalPinState["5"])
-		assert.Equal(t, 1, adaptor.DigitalPinState["6"])
-	*/
+	board.Stop(context.Background())
 
 	// Stop
+	board, adaptor = initTestBoard()
+	err = board.Start(context.Background())
+	assert.NoError(t, err)
 	err = board.Stop(context.Background())
 	assert.NoError(t, err)
 	assert.False(t, board.IsOnline())

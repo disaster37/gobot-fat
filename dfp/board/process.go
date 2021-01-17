@@ -23,28 +23,31 @@ func (h *DFPBoard) wash() {
 	}
 	var wg sync.WaitGroup
 	wg.Add(2)
-	chFinishedStopEvent := make(chan bool)
-	chFinishedBlinkLed := make(chan bool)
-	chStoppedBlinkLed := make(chan bool)
-	chStoppedWash := make(chan bool)
+	chFinishedStopEvent := make(chan bool, 1)
+	chFinishedBlinkLed := make(chan bool, 1)
+	chStoppedBlinkLed := make(chan bool, 1)
+	chStoppedWash := make(chan bool, 1)
 	out := h.Subscribe()
 
 	// Check stop event
 	go func() {
-		select {
-		case evt := <-out:
-			switch evt.Name {
-			case Stop:
-				h.forceStopRelais()
-				chStoppedWash <- true
-				chStoppedBlinkLed <- true
-				break
+		for {
+			select {
+			case evt := <-out:
+				switch evt.Name {
+				case Stop:
+					h.forceStopRelais()
+					chStoppedWash <- true
+					chStoppedBlinkLed <- true
+					wg.Done()
+					return
+				}
+			case <-chFinishedStopEvent:
+				wg.Done()
+				return
 			}
-		case <-chFinishedStopEvent:
-			break
 		}
 
-		wg.Done()
 	}()
 
 	// Blink green led
@@ -336,12 +339,13 @@ func (h *DFPBoard) work() {
 			// Timer finished
 			if h.state.ShouldWash() {
 				h.wash()
-				panic("dd")
 			}
 			h.timeBetweenWash = time.NewTicker(time.Duration(h.config.WaitTimeBetweenWashing) * time.Second)
+			break
 
 		default:
 			log.Debug("Wash not lauched because of need to wait some time before run again")
+			break
 
 		}
 
@@ -354,6 +358,7 @@ func (h *DFPBoard) work() {
 	security := func(s interface{}) {
 
 		if h.captorSecurityUpper.Active || h.captorSecurityUnder.Active {
+
 			// Set security mode
 			if !h.state.IsSecurity {
 				log.Info("Set security mode")
@@ -366,6 +371,7 @@ func (h *DFPBoard) work() {
 					log.Errorf("Error when save state after detect security: %s", err.Error())
 				}
 			}
+
 			h.Publish(NewInput, "captor_security_pushed")
 		} else {
 			// Unset security mode

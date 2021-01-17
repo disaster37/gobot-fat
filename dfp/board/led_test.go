@@ -21,6 +21,8 @@ func TestTurnOnOffGreenLed(t *testing.T) {
 	// Turn off
 	board.turnOffGreenLed()
 	assert.Equal(t, 0, adaptor.DigitalPinState[board.ledGreen.Pin()])
+
+	board.Stop(context.Background())
 }
 
 func TestTurnOnOffRedLed(t *testing.T) {
@@ -37,4 +39,6 @@ func TestTurnOnOffRedLed(t *testing.T) {
 	// Turn off
 	board.turnOffRedLed()
 	assert.Equal(t, 0, adaptor.DigitalPinState[board.ledRed.Pin()])
+
+	board.Stop(context.Background())
 }

@@ -216,10 +216,15 @@ func (h *DFPBoard) Start(ctx context.Context) (err error) {
 // It send event of name `stop`. It can be used to stop routines.
 func (h *DFPBoard) Stop(ctx context.Context) (err error) {
 
-	err = h.gobot.Stop()
-	if err != nil {
-		return err
+	if h.isOnline {
+		err = h.gobot.Stop()
+		if err != nil {
+			return err
+		}
 	}
+
+	// Stop internal event
+	//h.Eventer.Close()
 
 	// Stop internal routine
 	//h.chStop <- true

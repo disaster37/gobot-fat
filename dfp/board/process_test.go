@@ -11,7 +11,7 @@ import (
 
 func TestWash(t *testing.T) {
 
-	sem := make(chan bool, 0)
+	sem := make(chan bool, 1)
 	board, adaptor := initTestBoard()
 	if err := board.Start(context.Background()); err != nil {
 		panic(err)
@@ -73,11 +73,13 @@ func TestWash(t *testing.T) {
 		assert.Equal(t, 0, adaptor.DigitalPinState[board.relayDrum.Pin()])
 		assert.Equal(t, 0, adaptor.DigitalPinState[board.ledGreen.Pin()])
 	}
+
+	board.Stop(context.Background())
 }
 
-func TestWork(t *testing.T) {
+func TestWorkButton(t *testing.T) {
 
-	sem := make(chan bool, 0)
+	sem := make(chan bool, 1)
 	board, adaptor := initTestBoard()
 	if err := board.Start(context.Background()); err != nil {
 		panic(err)
@@ -150,13 +152,15 @@ func TestWork(t *testing.T) {
 
 	// Test button wash
 	assert.Equal(t, 1, adaptor.DigitalPinState[board.buttonWash.Pin()])
-	board.Once(NewInput, func(s interface{}) {
+	assert.False(t, board.state.IsWashed)
+	assert.False(t, board.state.IsEmergencyStopped)
+	board.Once(NewWash, func(s interface{}) {
 		sem <- true
 	})
 	adaptor.DigitalPinState[board.buttonWash.Pin()] = 0
 	select {
 	case <-sem:
-	case <-time.After(5 * time.Second):
+	case <-time.After(10 * time.Second):
 		t.Errorf("DFP force wash not started")
 	}
 
@@ -218,6 +222,26 @@ func TestWork(t *testing.T) {
 		t.Errorf("DFP emergency stop OFF not started")
 	}
 
+	board.Stop(context.Background())
+
+}
+
+func TestWorkCaptor(t *testing.T) {
+	sem := make(chan bool, 1)
+	board, adaptor := initTestBoard()
+	if err := board.Start(context.Background()); err != nil {
+		panic(err)
+	}
+	board.config.StartWashingPumpBeforeWashing = 1
+	board.config.WashingDuration = 1
+	board.config.WaitTimeBetweenWashing = 2
+
+	// wait routine launch
+	time.Sleep(5 * time.Second)
+	if !board.isInitialized {
+		panic(errors.New("Board not initialized"))
+	}
+
 	// Test secruity upper captor ON
 	assert.Equal(t, 0, adaptor.DigitalPinState[board.captorSecurityUpper.Pin()])
 	assert.False(t, board.state.IsSecurity)
@@ -228,7 +252,7 @@ func TestWork(t *testing.T) {
 	select {
 	case <-sem:
 		assert.True(t, board.state.IsSecurity)
-	case <-time.After(5 * time.Second):
+	case <-time.After(10 * time.Second):
 		t.Errorf("DFP security upper ON not started")
 	}
 
@@ -246,10 +270,36 @@ func TestWork(t *testing.T) {
 		t.Errorf("DFP security upper OFF not started")
 	}
 
+	// Test secruity under captor ON
+	assert.Equal(t, 1, adaptor.DigitalPinState[board.captorSecurityUnder.Pin()])
+	assert.False(t, board.state.IsSecurity)
+	assert.False(t, board.captorSecurityUnder.Active)
+	board.Once(NewInput, func(s interface{}) {
+		sem <- true
+	})
+	adaptor.DigitalPinState[board.captorSecurityUnder.Pin()] = 0
+	select {
+	case <-sem:
+		assert.True(t, board.state.IsSecurity)
+	case <-time.After(10 * time.Second):
+		t.Errorf("DFP security under ON not started")
+	}
+
+	// Test secruity under captor OFF
+	assert.Equal(t, 0, adaptor.DigitalPinState[board.captorSecurityUnder.Pin()])
+	assert.True(t, board.state.IsSecurity)
+	board.Once(NewInput, func(s interface{}) {
+		sem <- true
+	})
+	adaptor.DigitalPinState[board.captorSecurityUnder.Pin()] = 1
+	select {
+	case <-sem:
+		assert.False(t, board.state.IsSecurity)
+	case <-time.After(5 * time.Second):
+		t.Errorf("DFP security upper OFF not started")
+	}
+
 	// Test water upper captor ON
-	board.state.IsSecurity = false
-	board.state.IsEmergencyStopped = false
-	//board.state.IsWashed = false
 	assert.Equal(t, 0, adaptor.DigitalPinState[board.captorWaterUpper.Pin()])
 	board.Once(NewInput, func(s interface{}) {
 		sem <- true
@@ -263,52 +313,18 @@ func TestWork(t *testing.T) {
 	adaptor.DigitalPinState[board.captorWaterUpper.Pin()] = 0
 
 	// Test water under captor ON
-	/*
-		assert.Equal(t, 1, adaptor.DigitalPinState[board.captorWaterUnder.Pin()])
-		board.Once(NewInput, func(s interface{}) {
-			sem <- true
-		})
-		adaptor.DigitalPinState[board.captorWaterUnder.Pin()] = 0
-		select {
-		case <-sem:
-		case <-time.After(5 * time.Second):
-			t.Errorf("DFP water under ON not started")
-		}
-		adaptor.DigitalPinState[board.captorWaterUnder.Pin()] = 1
-	*/
+	assert.Equal(t, 1, adaptor.DigitalPinState[board.captorWaterUnder.Pin()])
+	board.Once(NewInput, func(s interface{}) {
+		sem <- true
+	})
+	adaptor.DigitalPinState[board.captorWaterUnder.Pin()] = 0
+	select {
+	case <-sem:
+	case <-time.After(5 * time.Second):
+		t.Errorf("DFP water under ON not started")
+	}
+	adaptor.DigitalPinState[board.captorWaterUnder.Pin()] = 1
 
-	/*
-
-
-		// Test secruity under captor ON
-		assert.Equal(t, 1, adaptor.DigitalPinState[board.captorSecurityUnder.Pin()])
-		assert.False(t, board.state.IsSecurity)
-		assert.False(t, board.captorSecurityUnder.Active)
-		board.Once(NewInput, func(s interface{}) {
-			sem <- true
-		})
-		adaptor.DigitalPinState[board.captorSecurityUnder.Pin()] = 0
-		select {
-		case <-sem:
-			assert.True(t, board.state.IsSecurity)
-		case <-time.After(10 * time.Second):
-			t.Errorf("DFP security under ON not started")
-		}
-
-
-			// Test secruity under captor OFF
-			assert.Equal(t, 0, adaptor.DigitalPinState[board.captorSecurityUnder.Pin()])
-			assert.True(t, board.state.IsSecurity)
-			board.Once(NewInput, func(s interface{}) {
-				sem <- true
-			})
-			adaptor.DigitalPinState[board.captorSecurityUnder.Pin()] = 0
-			select {
-			case <-sem:
-				assert.False(t, board.state.IsSecurity)
-			case <-time.After(5 * time.Second):
-				t.Errorf("DFP security upper OFF not started")
-			}
-	*/
+	board.Stop(context.Background())
 
 }
