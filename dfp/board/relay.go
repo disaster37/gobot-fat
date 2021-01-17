@@ -2,6 +2,7 @@ package dfpboard
 
 import (
 	"context"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -60,9 +61,8 @@ func (h *DFPBoard) ForceWashing(ctx context.Context) (err error) {
 func (h *DFPBoard) StartManualDrum(ctx context.Context) (err error) {
 
 	if !h.state.IsWashed && !h.state.IsEmergencyStopped {
-		if log.IsLevelEnabled(log.DebugLevel) {
-			log.Debug("Run force drum")
-		}
+
+		log.Debug("Run force drum")
 
 		if err = h.relayDrum.On(); err != nil {
 			return err
@@ -77,9 +77,7 @@ func (h *DFPBoard) StartManualDrum(ctx context.Context) (err error) {
 func (h *DFPBoard) StopManualDrum(ctx context.Context) (err error) {
 
 	if !h.state.IsWashed {
-		if log.IsLevelEnabled(log.DebugLevel) {
-			log.Debug("Stop force drum")
-		}
+		log.Debug("Stop force drum")
 
 		if err = h.relayDrum.Off(); err != nil {
 			return err
@@ -93,9 +91,7 @@ func (h *DFPBoard) StopManualDrum(ctx context.Context) (err error) {
 func (h *DFPBoard) StartManualPump(ctx context.Context) (err error) {
 
 	if !h.state.IsWashed && !h.state.IsEmergencyStopped {
-		if log.IsLevelEnabled(log.DebugLevel) {
-			log.Debug("Run force pump")
-		}
+		log.Debug("Run force pump")
 
 		if err = h.relayPump.On(); err != nil {
 			return err
@@ -111,9 +107,7 @@ func (h *DFPBoard) StopManualPump(ctx context.Context) (err error) {
 
 	// Stop force pump
 	if !h.state.IsWashed {
-		if log.IsLevelEnabled(log.DebugLevel) {
-			log.Debug("Stop force pump")
-		}
+		log.Debug("Stop force pump")
 
 		if err = h.relayPump.Off(); err != nil {
 			return err
@@ -129,9 +123,8 @@ func (h *DFPBoard) startDrum() {
 		return
 	}
 
-	if log.IsLevelEnabled(log.DebugLevel) {
-		log.Debug("Start drum successfully")
-	}
+	log.Debug("Start drum successfully")
+
 }
 
 func (h *DFPBoard) stopDrum() {
@@ -140,9 +133,8 @@ func (h *DFPBoard) stopDrum() {
 		return
 	}
 
-	if log.IsLevelEnabled(log.DebugLevel) {
-		log.Debug("Stop drum successfully")
-	}
+	log.Debug("Stop drum successfully")
+
 }
 
 func (h *DFPBoard) startPump() {
@@ -151,9 +143,8 @@ func (h *DFPBoard) startPump() {
 		return
 	}
 
-	if log.IsLevelEnabled(log.DebugLevel) {
-		log.Debug("Start pump successfully")
-	}
+	log.Debug("Start pump successfully")
+
 }
 
 func (h *DFPBoard) stopPump() {
@@ -162,13 +153,13 @@ func (h *DFPBoard) stopPump() {
 		return
 	}
 
-	if log.IsLevelEnabled(log.DebugLevel) {
-		log.Debug("Stop pump successfully")
-	}
+	log.Debug("Stop pump successfully")
+
 }
 
 func (h *DFPBoard) forceStopRelais() {
-	go func() {
+
+	forceStopRelais := func() {
 		isErr := true
 
 		for isErr {
@@ -182,6 +173,20 @@ func (h *DFPBoard) forceStopRelais() {
 				log.Errorf("Error when stop pump: %s", err.Error())
 				isErr = true
 			}
+
+			if isErr {
+				time.Sleep(100 * time.Millisecond)
+			}
 		}
-	}()
+	}
+
+	// Lauch only routine in stop failed
+	if err := h.relayDrum.Off(); err != nil {
+		go forceStopRelais()
+		return
+	}
+	if err := h.relayPump.Off(); err != nil {
+		go forceStopRelais()
+		return
+	}
 }

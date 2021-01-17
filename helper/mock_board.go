@@ -21,8 +21,11 @@ type MockPlateform struct {
 	DigitalPinState         map[string]int
 	ValueReadState          map[string]interface{}
 	CallFunctionState       map[string]int
+	invertedInitialState    map[string]bool
 	expectedError           error
 }
+
+func (m *MockPlateform) SetInvertInitialPinState(pin string) { m.invertedInitialState[pin] = true }
 
 // Adaptor interface
 func (m *MockPlateform) Name() string     { return "test" }
@@ -32,7 +35,13 @@ func (m *MockPlateform) Finalize() error  { return nil }
 func (m *MockPlateform) SetInputPullup(listPins []*gpio.ButtonDriver) (err error) {
 
 	for _, button := range listPins {
-		button.DefaultState = 1
+
+		if !m.invertedInitialState[button.Pin()] {
+			button.DefaultState = 1
+
+			// When InputPullup, the default button state is 1
+			m.DigitalPinState[button.Pin()] = 1
+		}
 	}
 
 	return
@@ -151,6 +160,7 @@ func (t *MockPlateform) init() {
 		if t.expectedError != nil {
 			return 0, t.expectedError
 		}
+
 		return t.DigitalPinState[pin], nil
 	}
 
@@ -183,9 +193,10 @@ func (t *MockPlateform) init() {
 
 func NewMockPlateform() *MockPlateform {
 	m := &MockPlateform{
-		DigitalPinState:   make(map[string]int),
-		ValueReadState:    make(map[string]interface{}),
-		CallFunctionState: make(map[string]int),
+		DigitalPinState:      make(map[string]int),
+		ValueReadState:       make(map[string]interface{}),
+		CallFunctionState:    make(map[string]int),
+		invertedInitialState: make(map[string]bool),
 
 		testAdaptorServoWrite: func(pin string, val byte) (err error) {
 			return nil

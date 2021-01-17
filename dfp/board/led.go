@@ -9,9 +9,8 @@ func (h *DFPBoard) turnOnGreenLed() {
 		return
 	}
 
-	if log.IsLevelEnabled(log.DebugLevel) {
-		log.Debug("Turn on GreenLed successfully")
-	}
+	log.Debug("Turn on GreenLed successfully")
+
 }
 
 func (h *DFPBoard) turnOffGreenLed() {
@@ -20,10 +19,8 @@ func (h *DFPBoard) turnOffGreenLed() {
 		log.Errorf("Error when turn off GreenLed: %s", err.Error())
 		return
 	}
+	log.Debug("Turn off GreenLed successfully")
 
-	if log.IsLevelEnabled(log.DebugLevel) {
-		log.Debug("Turn off GreenLed successfully")
-	}
 }
 
 func (h *DFPBoard) turnOnRedLed() {
@@ -33,9 +30,8 @@ func (h *DFPBoard) turnOnRedLed() {
 		return
 	}
 
-	if log.IsLevelEnabled(log.DebugLevel) {
-		log.Debug("Turn on RedLed successfully")
-	}
+	log.Debug("Turn on RedLed successfully")
+
 }
 
 func (h *DFPBoard) turnOffRedLed() {
@@ -45,7 +41,6 @@ func (h *DFPBoard) turnOffRedLed() {
 		return
 	}
 
-	if log.IsLevelEnabled(log.DebugLevel) {
-		log.Debug("Turn off RedLed successfully")
-	}
+	log.Debug("Turn off RedLed successfully")
+
 }

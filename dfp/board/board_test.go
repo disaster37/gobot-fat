@@ -18,7 +18,7 @@ import (
 func initTestBoard() (*DFPBoard, *helper.MockPlateform) {
 	configHandler := viper.New()
 	configHandler.Set("name", "test")
-	configHandler.Set("button_polling", 10*time.Millisecond)
+	configHandler.Set("button_polling", 10)
 	configHandler.Set("pin.relay.drum", 3)
 	configHandler.Set("pin.relay.pomp", 5)
 	configHandler.Set("pin.led.green", 7)
@@ -47,6 +47,9 @@ func initTestBoard() (*DFPBoard, *helper.MockPlateform) {
 	eventUsecaseMock := eventusecase.NewMockEventBase()
 	mockBoard := helper.NewMockPlateform()
 	usecaseDFPMock := usecase.NewMockUsecasetBase()
+
+	mockBoard.SetInvertInitialPinState(configHandler.GetString("pin.captor.security_upper"))
+	mockBoard.SetInvertInitialPinState(configHandler.GetString("pin.captor.water_upper"))
 
 	board := newDFP(mockBoard, configHandler, dfpConfig, dfpState, eventUsecaseMock, usecaseDFPMock, eventer)
 

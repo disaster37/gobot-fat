@@ -2,6 +2,7 @@ package dfpboard
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/disaster37/gobot-fat/dfpconfig"
@@ -12,13 +13,20 @@ import (
 
 // Wash  run on routine for no blocking.
 func (h *DFPBoard) wash() {
+	mtx := &sync.Mutex{}
+	defer mtx.Unlock()
+	mtx.Lock()
 
 	h.state.IsWashed = true
 	if err := h.stateUsecase.Update(context.Background(), h.state); err != nil {
 		log.Errorf("Error when save state in wash routine: %s", err.Error())
 	}
-	chFinished := make(chan bool)
-	chStopped := make(chan bool)
+	var wg sync.WaitGroup
+	wg.Add(2)
+	chFinishedStopEvent := make(chan bool)
+	chFinishedBlinkLed := make(chan bool)
+	chStoppedBlinkLed := make(chan bool)
+	chStoppedWash := make(chan bool)
 	out := h.Subscribe()
 
 	// Check stop event
@@ -28,32 +36,36 @@ func (h *DFPBoard) wash() {
 			switch evt.Name {
 			case Stop:
 				h.forceStopRelais()
-				chStopped <- true
-				return
+				chStoppedWash <- true
+				chStoppedBlinkLed <- true
+				break
 			}
-		case <-chFinished:
-			return
+		case <-chFinishedStopEvent:
+			break
 		}
 
+		wg.Done()
 	}()
 
 	// Blink green led
 	go func() {
 		for {
 			select {
-			case <-chFinished:
+			case <-chFinishedBlinkLed:
 				h.turnOnGreenLed()
+				wg.Done()
 				return
-			case <-chStopped:
+			case <-chStoppedBlinkLed:
 				if h.state.IsRunning {
 					h.turnOnGreenLed()
 				} else {
 					h.turnOffGreenLed()
 				}
+				wg.Done()
 				return
 			default:
 				h.ledGreen.Toggle()
-				time.Sleep(1 * time.Second)
+				time.Sleep(500 * time.Millisecond)
 			}
 		}
 	}()
@@ -68,12 +80,23 @@ func (h *DFPBoard) wash() {
 		if err != nil {
 			log.Errorf("When start pump: %s", err.Error())
 			h.forceStopRelais()
-			chFinished <- true
+			chFinishedStopEvent <- true
+			chFinishedBlinkLed <- true
+			wg.Wait()
+			h.state.IsWashed = false
+			if err := h.stateUsecase.Update(context.Background(), h.state); err != nil {
+				log.Errorf("Error when save state in wash routine: %s", err.Error())
+			}
 			return
 		}
 		select {
-		case <-chStopped:
+		case <-chStoppedWash:
 			h.forceStopRelais()
+			wg.Wait()
+			h.state.IsWashed = false
+			if err := h.stateUsecase.Update(context.Background(), h.state); err != nil {
+				log.Errorf("Error when save state in wash routine: %s", err.Error())
+			}
 			return
 		case <-timer.C:
 		}
@@ -85,12 +108,23 @@ func (h *DFPBoard) wash() {
 		if err != nil {
 			log.Errorf("When start drum: %s", err.Error())
 			h.forceStopRelais()
-			chFinished <- true
+			chFinishedStopEvent <- true
+			chFinishedBlinkLed <- true
+			wg.Wait()
+			h.state.IsWashed = false
+			if err := h.stateUsecase.Update(context.Background(), h.state); err != nil {
+				log.Errorf("Error when save state in wash routine: %s", err.Error())
+			}
 			return
 		}
 		select {
-		case <-chStopped:
+		case <-chStoppedWash:
 			h.forceStopRelais()
+			wg.Wait()
+			h.state.IsWashed = false
+			if err := h.stateUsecase.Update(context.Background(), h.state); err != nil {
+				log.Errorf("Error when save state in wash routine: %s", err.Error())
+			}
 			return
 
 		case <-timer.C:
@@ -100,12 +134,16 @@ func (h *DFPBoard) wash() {
 		log.Debugf("Stop pump and drump, washing finished")
 		h.forceStopRelais()
 
+		chFinishedStopEvent <- true
+		chFinishedBlinkLed <- true
+
 		h.state.IsWashed = false
 		if err := h.stateUsecase.Update(context.Background(), h.state); err != nil {
 			log.Errorf("Error when save state in wash routine: %s", err.Error())
 		}
 
-		chFinished <- true
+		wg.Wait()
+
 		h.Publish(NewWash, h.state)
 		return
 	}()
@@ -145,38 +183,13 @@ func (h *DFPBoard) work() {
 		h.Publish(NewConfig, dfpConfig)
 	})
 
-	/******
-	 * Process internal events
-	 */
-
-	// Handle wash
-
-	h.On(NewWash, func(s interface{}) {
-		select {
-		case <-h.timeBetweenWash.C:
-			// Timer finished
-			if h.state.ShouldWash() {
-				h.wash()
-			}
-
-			h.timeBetweenWash = time.NewTicker(time.Duration(h.config.WaitTimeBetweenWashing) * time.Second)
-		default:
-			if log.IsLevelEnabled(log.DebugLevel) {
-				log.Debug("Wash not lauched because of need to wait some time before run again")
-			}
-		}
-
-	})
-
 	/*******
 	 * Process on button events
 	 */
 	// When button start
 
 	h.buttonStart.On(gpio.ButtonPush, func(s interface{}) {
-		if log.IsLevelEnabled(log.DebugLevel) {
-			log.Debug("Button start pushed")
-		}
+		log.Debug("Button start pushed")
 
 		err := h.StartDFP(ctx)
 		if err != nil {
@@ -189,9 +202,8 @@ func (h *DFPBoard) work() {
 
 	// When button stop
 	h.buttonStop.On(gpio.ButtonPush, func(s interface{}) {
-		if log.IsLevelEnabled(log.DebugLevel) {
-			log.Debug("Button stop pushed")
-		}
+
+		log.Debug("Button stop pushed")
 
 		err := h.StopDFP(ctx)
 		if err != nil {
@@ -204,17 +216,11 @@ func (h *DFPBoard) work() {
 
 	// When button wash
 	h.buttonWash.On(gpio.ButtonPush, func(s interface{}) {
-		if log.IsLevelEnabled(log.DebugLevel) {
-			log.Debug("Button wash pushed")
-		}
 
-		// Run force wash if not already wash, or is not on emergency stopped
-		if log.IsLevelEnabled(log.DebugLevel) {
+		log.Debug("Button wash pushed")
 
-			err := h.ForceWashing(ctx)
-			if err != nil {
-				log.Errorf("When force washing: %s", err.Error())
-			}
+		if err := h.ForceWashing(ctx); err != nil {
+			log.Errorf("When force washing: %s", err.Error())
 		}
 
 		h.Publish(NewInput, "button_wash_pushed")
@@ -224,9 +230,7 @@ func (h *DFPBoard) work() {
 	// Manual drum
 	h.buttonForceDrum.On(gpio.ButtonPush, func(s interface{}) {
 		// Start
-		if log.IsLevelEnabled(log.DebugLevel) {
-			log.Debug("Button force drum pushed")
-		}
+		log.Debug("Button force drum pushed")
 
 		err := h.StartManualDrum(ctx)
 		if err != nil {
@@ -238,9 +242,7 @@ func (h *DFPBoard) work() {
 	})
 	h.buttonForceDrum.On(gpio.ButtonRelease, func(s interface{}) {
 		// Stop
-		if log.IsLevelEnabled(log.DebugLevel) {
-			log.Debug("Button force drum released")
-		}
+		log.Debug("Button force drum released")
 
 		err := h.StopManualDrum(ctx)
 		if err != nil {
@@ -254,9 +256,7 @@ func (h *DFPBoard) work() {
 	// Manual pump
 	h.buttonForcePump.On(gpio.ButtonPush, func(s interface{}) {
 		// Start
-		if log.IsLevelEnabled(log.DebugLevel) {
-			log.Debug("Button force pump pushed")
-		}
+		log.Debug("Button force pump pushed")
 
 		err := h.StartManualPump(ctx)
 		if err != nil {
@@ -268,9 +268,7 @@ func (h *DFPBoard) work() {
 	})
 	h.buttonForcePump.On(gpio.ButtonRelease, func(s interface{}) {
 		// Stop
-		if log.IsLevelEnabled(log.DebugLevel) {
-			log.Debug("Button force pump released")
-		}
+		log.Debug("Button force pump released")
 
 		err := h.StopManualPump(ctx)
 		if err != nil {
@@ -283,9 +281,7 @@ func (h *DFPBoard) work() {
 
 	// When button emergency stop
 	h.buttonEmergencyStop.On(gpio.ButtonPush, func(s interface{}) {
-		if log.IsLevelEnabled(log.DebugLevel) {
-			log.Debug("Button emergency stop pushed")
-		}
+		log.Debug("Button emergency stop pushed")
 
 		// Publish event to stop current wash
 		h.Publish(Stop, nil)
@@ -308,9 +304,7 @@ func (h *DFPBoard) work() {
 		h.Publish(NewInput, "button_emergency_stop_pushed")
 	})
 	h.buttonEmergencyStop.On(gpio.ButtonRelease, func(s interface{}) {
-		if log.IsLevelEnabled(log.DebugLevel) {
-			log.Debug("Button emergency stop released")
-		}
+		log.Debug("Button emergency stop released")
 
 		// Publish even for external board
 		h.globalEventer.Publish(EmergencyStopOff, nil)
@@ -335,13 +329,20 @@ func (h *DFPBoard) work() {
 
 	// When water captor ask wash
 	wash := func(s interface{}) {
-		if log.IsLevelEnabled(log.DebugLevel) {
-			log.Debug("Water captor pushed")
-		}
+		log.Debug("Water captor pushed")
 
-		// Lauch event only if can wash
-		if h.state.ShouldWash() {
-			h.wash()
+		select {
+		case <-h.timeBetweenWash.C:
+			// Timer finished
+			if h.state.ShouldWash() {
+				h.wash()
+				panic("dd")
+			}
+			h.timeBetweenWash = time.NewTicker(time.Duration(h.config.WaitTimeBetweenWashing) * time.Second)
+
+		default:
+			log.Debug("Wash not lauched because of need to wait some time before run again")
+
 		}
 
 		h.Publish(NewInput, "captor_water_pushed")
@@ -351,6 +352,7 @@ func (h *DFPBoard) work() {
 
 	// When water captor ask security
 	security := func(s interface{}) {
+
 		if h.captorSecurityUpper.Active || h.captorSecurityUnder.Active {
 			// Set security mode
 			if !h.state.IsSecurity {
@@ -363,9 +365,8 @@ func (h *DFPBoard) work() {
 				if err := h.stateUsecase.Update(ctx, h.state); err != nil {
 					log.Errorf("Error when save state after detect security: %s", err.Error())
 				}
-
-				h.Publish(NewInput, "captor_security_pushed")
 			}
+			h.Publish(NewInput, "captor_security_pushed")
 		} else {
 			// Unset security mode
 			if h.state.IsSecurity {
@@ -378,9 +379,10 @@ func (h *DFPBoard) work() {
 					log.Errorf("Error when save state after unset security: %s", err.Error())
 				}
 
-				h.Publish(NewInput, "captor_security_released")
 			}
+			h.Publish(NewInput, "captor_security_release")
 		}
+
 	}
 	h.captorSecurityUpper.On(gpio.ButtonPush, security)
 	h.captorSecurityUpper.On(gpio.ButtonRelease, security)
