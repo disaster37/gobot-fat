@@ -7,7 +7,7 @@ import (
 
 // Event contain data event
 type Event struct {
-	ID                      string    `json:"id,omitempty"`
+	ModelGeneric
 	SourceID                string    `json:"source_id" validate:"required"`
 	SourceName              string    `json:"source_name" validate:"required"`
 	Timestamp               time.Time `json:"timestamp" validate:"required"`

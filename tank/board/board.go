@@ -7,9 +7,9 @@ import (
 
 	"github.com/disaster37/gobot-arest/drivers/extra"
 	"github.com/disaster37/gobot-arest/plateforms/arest"
-	"github.com/disaster37/gobot-fat/event"
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/tank"
+	"github.com/disaster37/gobot-fat/usecase"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"gobot.io/x/gobot"
@@ -34,7 +34,7 @@ type TankAdaptor interface {
 type TankBoard struct {
 	gobot            *gobot.Robot
 	board            TankAdaptor
-	eventUsecase     event.Usecase
+	eventUsecase     usecase.UsecaseCRUD
 	configHandler    *viper.Viper
 	config           *models.TankConfig
 	data             *models.Tank
@@ -49,7 +49,7 @@ type TankBoard struct {
 }
 
 // NewTank create handler to manage Tank
-func NewTank(configHandler *viper.Viper, config *models.TankConfig, eventUsecase event.Usecase, eventer gobot.Eventer) (tankHandler tank.Board) {
+func NewTank(configHandler *viper.Viper, config *models.TankConfig, eventUsecase usecase.UsecaseCRUD, eventer gobot.Eventer) (tankHandler tank.Board) {
 
 	//Create client
 	c := arest.NewHTTPAdaptor(configHandler.GetString("url"))
@@ -58,7 +58,7 @@ func NewTank(configHandler *viper.Viper, config *models.TankConfig, eventUsecase
 
 }
 
-func newTank(board TankAdaptor, configHandler *viper.Viper, config *models.TankConfig, eventUsecase event.Usecase, eventer gobot.Eventer, wait time.Duration) (tankHandler tank.Board) {
+func newTank(board TankAdaptor, configHandler *viper.Viper, config *models.TankConfig, eventUsecase usecase.UsecaseCRUD, eventer gobot.Eventer, wait time.Duration) (tankHandler tank.Board) {
 
 	// Create struct
 	tankBoard := &TankBoard{

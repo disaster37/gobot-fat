@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/disaster37/gobot-fat/board"
-	"github.com/disaster37/gobot-fat/event"
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/repository"
 	"github.com/disaster37/gobot-fat/tank"
@@ -24,7 +23,7 @@ import (
 )
 
 // init tank config and tank board usecase
-func initTank(ctx context.Context, eventer gobot.Eventer, api *echo.Group, configHandler *viper.Viper, elacticConn *elasticsearch.Client, sqlConn *gorm.DB, eventUsecase event.Usecase, boardUsecase board.Usecase) (err error) {
+func initTank(ctx context.Context, eventer gobot.Eventer, api *echo.Group, configHandler *viper.Viper, elacticConn *elasticsearch.Client, sqlConn *gorm.DB, eventUsecase usecase.UsecaseCRUD, boardUsecase board.Usecase) (err error) {
 
 	timeout := time.Duration(configHandler.GetInt("context.timeout")) * time.Second
 

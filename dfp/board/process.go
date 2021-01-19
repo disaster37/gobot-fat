@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/disaster37/gobot-fat/dfpconfig"
+	"github.com/disaster37/gobot-fat/dfpstate"
 	"github.com/disaster37/gobot-fat/models"
 	log "github.com/sirupsen/logrus"
 	"gobot.io/x/gobot/drivers/gpio"
@@ -13,9 +14,9 @@ import (
 
 // Wash  run on routine for no blocking.
 func (h *DFPBoard) wash() {
-	mtx := &sync.Mutex{}
-	defer mtx.Unlock()
-	mtx.Lock()
+	// Only one watch
+	defer h.Unlock()
+	h.Lock()
 
 	h.state.IsWashed = true
 	if err := h.stateUsecase.Update(context.Background(), h.state); err != nil {
@@ -34,8 +35,12 @@ func (h *DFPBoard) wash() {
 		for {
 			select {
 			case evt := <-out:
-				switch evt.Name {
-				case Stop:
+				if evt.Name == EventStopDFP || evt.Name == EventBoardStop || evt.Name == EventSetSecurity || evt.Name == EventSetEmergencyStop {
+
+					// Not stop when security event and security is disabled
+					if evt.Name == EventSetSecurity && h.state.IsDisableSecurity {
+						break
+					}
 					h.forceStopRelais()
 					chStoppedWash <- true
 					chStoppedBlinkLed <- true
@@ -141,13 +146,14 @@ func (h *DFPBoard) wash() {
 		chFinishedBlinkLed <- true
 
 		h.state.IsWashed = false
+		h.state.LastWashing = time.Now()
 		if err := h.stateUsecase.Update(context.Background(), h.state); err != nil {
 			log.Errorf("Error when save state in wash routine: %s", err.Error())
 		}
 
 		wg.Wait()
 
-		h.Publish(NewWash, h.state)
+		h.Publish(EventWash, h.state)
 		return
 	}()
 
@@ -161,7 +167,7 @@ func (h *DFPBoard) sendEvent(ctx context.Context, kind string, name string, args
 		EventType:  name,
 		EventKind:  kind,
 	}
-	err := h.eventUsecase.Store(ctx, event)
+	err := h.eventUsecase.Create(ctx, event)
 	if err != nil {
 		log.Errorf("Error when store new event: %s", err.Error())
 	}
@@ -175,15 +181,29 @@ func (h *DFPBoard) work() {
 	 * Process external events
 	 */
 	// Handle config
-
 	h.globalEventer.On(dfpconfig.NewDFPConfig, func(s interface{}) {
+
 		dfpConfig := s.(*models.DFPConfig)
 		log.Debugf("New config received for board %s, we update it", h.name)
 
 		h.config = dfpConfig
 
 		// Publish internal event
-		h.Publish(NewConfig, dfpConfig)
+		h.Publish(EventNewConfig, dfpConfig)
+
+	})
+
+	// Handle state
+	h.globalEventer.On(dfpstate.NewDFPState, func(s interface{}) {
+
+		dfpState := s.(*models.DFPState)
+		log.Debugf("New state received for board %s, we update it", h.name)
+
+		h.state.IsDisableSecurity = dfpState.IsDisableSecurity
+
+		// Publish internal event
+		h.Publish(EventNewState, dfpState)
+
 	})
 
 	/*******
@@ -199,7 +219,7 @@ func (h *DFPBoard) work() {
 			log.Errorf("When start DFP: %s", err.Error())
 		}
 
-		h.Publish(NewInput, "button_start_pushed")
+		h.Publish(EventNewInput, "button_start_pushed")
 
 	})
 
@@ -213,7 +233,7 @@ func (h *DFPBoard) work() {
 			log.Errorf("When stop DFP: %s", err.Error())
 		}
 
-		h.Publish(NewInput, "button_stop_pushed")
+		h.Publish(EventNewInput, "button_stop_pushed")
 
 	})
 
@@ -226,7 +246,7 @@ func (h *DFPBoard) work() {
 			log.Errorf("When force washing: %s", err.Error())
 		}
 
-		h.Publish(NewInput, "button_wash_pushed")
+		h.Publish(EventNewInput, "button_wash_pushed")
 
 	})
 
@@ -240,7 +260,7 @@ func (h *DFPBoard) work() {
 			log.Errorf("When start manual drum: %s", err.Error())
 		}
 
-		h.Publish(NewInput, "button_drum_pushed")
+		h.Publish(EventNewInput, "button_drum_pushed")
 
 	})
 	h.buttonForceDrum.On(gpio.ButtonRelease, func(s interface{}) {
@@ -252,7 +272,7 @@ func (h *DFPBoard) work() {
 			log.Errorf("When stop manual drum: %s", err.Error())
 		}
 
-		h.Publish(NewInput, "button_drum_released")
+		h.Publish(EventNewInput, "button_drum_released")
 
 	})
 
@@ -266,7 +286,7 @@ func (h *DFPBoard) work() {
 			log.Errorf("When start manual pump: %s", err.Error())
 		}
 
-		h.Publish(NewInput, "button_pomp_pushed")
+		h.Publish(EventNewInput, "button_pomp_pushed")
 
 	})
 	h.buttonForcePump.On(gpio.ButtonRelease, func(s interface{}) {
@@ -278,7 +298,7 @@ func (h *DFPBoard) work() {
 			log.Errorf("When stop manual pump: %s", err.Error())
 		}
 
-		h.Publish(NewInput, "button_pomp_released")
+		h.Publish(EventNewInput, "button_pomp_released")
 
 	})
 
@@ -286,44 +306,22 @@ func (h *DFPBoard) work() {
 	h.buttonEmergencyStop.On(gpio.ButtonPush, func(s interface{}) {
 		log.Debug("Button emergency stop pushed")
 
-		// Publish event to stop current wash
-		h.Publish(Stop, nil)
-
-		// Stop all relay
-		h.forceStopRelais()
-
-		// Publish even for external board
-		h.globalEventer.Publish(EmergencyStopOn, nil)
-
-		// Set red led
-		h.turnOnRedLed()
-
-		// Update state
-		h.state.IsEmergencyStopped = true
-		if err := h.stateUsecase.Update(ctx, h.state); err != nil {
-			log.Errorf("Error when save state after emergency stop pushed: %s", err.Error())
+		err := h.SetEmergencyStop(ctx)
+		if err != nil {
+			log.Errorf("When set emergency stop for DFP: %s", err.Error())
 		}
 
-		h.Publish(NewInput, "button_emergency_stop_pushed")
+		h.Publish(EventNewInput, "button_emergency_stop_pushed")
 	})
 	h.buttonEmergencyStop.On(gpio.ButtonRelease, func(s interface{}) {
 		log.Debug("Button emergency stop released")
 
-		// Publish even for external board
-		h.globalEventer.Publish(EmergencyStopOff, nil)
-
-		// Turn off red label if DFP is running
-		if h.state.IsRunning {
-			h.turnOffRedLed()
+		err := h.UnsetEmergencyStop(ctx)
+		if err != nil {
+			log.Errorf("When unset emergency stop for DFP: %s", err.Error())
 		}
 
-		// Update state
-		h.state.IsEmergencyStopped = false
-		if err := h.stateUsecase.Update(ctx, h.state); err != nil {
-			log.Errorf("Error when save state after button emergency stop released: %s", err.Error())
-		}
-
-		h.Publish(NewInput, "button_emergency_stop_released")
+		h.Publish(EventNewInput, "button_emergency_stop_released")
 	})
 
 	/*******
@@ -349,7 +347,7 @@ func (h *DFPBoard) work() {
 
 		}
 
-		h.Publish(NewInput, "captor_water_pushed")
+		h.Publish(EventNewInput, "captor_water_pushed")
 	}
 	h.captorWaterUpper.On(gpio.ButtonPush, wash)
 	h.captorWaterUnder.On(gpio.ButtonPush, wash)
@@ -359,34 +357,20 @@ func (h *DFPBoard) work() {
 
 		if h.captorSecurityUpper.Active || h.captorSecurityUnder.Active {
 
-			// Set security mode
-			if !h.state.IsSecurity {
-				log.Info("Set security mode")
-				h.state.IsSecurity = true
-				h.turnOnRedLed()
-				h.forceStopRelais()
-				h.Publish(NewSecurity, true)
-
-				if err := h.stateUsecase.Update(ctx, h.state); err != nil {
-					log.Errorf("Error when save state after detect security: %s", err.Error())
-				}
+			err := h.SetSecurity(ctx)
+			if err != nil {
+				log.Errorf("When set security for DFP: %s", err.Error())
 			}
 
-			h.Publish(NewInput, "captor_security_pushed")
+			h.Publish(EventNewInput, "captor_security_pushed")
 		} else {
-			// Unset security mode
-			if h.state.IsSecurity {
-				log.Info("Unset security mode")
-				h.state.IsSecurity = false
-				h.turnOffRedLed()
-				h.Publish(NewSecurity, false)
 
-				if err := h.stateUsecase.Update(ctx, h.state); err != nil {
-					log.Errorf("Error when save state after unset security: %s", err.Error())
-				}
-
+			err := h.UnsetSecurity(ctx)
+			if err != nil {
+				log.Errorf("When unset security for DFP: %s", err.Error())
 			}
-			h.Publish(NewInput, "captor_security_release")
+
+			h.Publish(EventNewInput, "captor_security_release")
 		}
 
 	}

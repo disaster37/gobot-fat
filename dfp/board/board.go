@@ -3,10 +3,10 @@ package dfpboard
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/disaster37/gobot-fat/dfp"
-	"github.com/disaster37/gobot-fat/event"
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/usecase"
 	log "github.com/sirupsen/logrus"
@@ -16,18 +16,21 @@ import (
 )
 
 const (
-	NewConfig        = "new-config"
-	NewReboot        = "new-reboot"
-	NewOffline       = "new-offline"
-	NewWash          = "new-wash"
-	NewSecurity      = "new-security"
-	NewState         = "new-state"
-	Stop             = "stop"
-	EmergencyStopOn  = "emergency_stop_on"
-	EmergencyStopOff = "emergency_stop_off"
+	EventNewConfig          = "dfp-new-config"
+	EventNewState           = "dfp-new-state"
+	EventBoardReboot        = "dfp-board-reboot"
+	EventBoardOffline       = "dfp-board-offline"
+	EventBoardStop          = "dfp-board-stop"
+	EventWash               = "dfp-new-wash"
+	EventStopDFP            = "dfp-stop-dfp"
+	EventStartDFP           = "dfp-start-dfp"
+	EventSetSecurity        = "dfp-set-security"
+	EventUnsetSecurity      = "dfp-unset-security"
+	EventSetEmergencyStop   = "dfp-set-emergency-stop"
+	EventUnsetEmergencyStop = "dfp-unset-emergency-stop"
 
 	// Permit to test work function
-	NewInput = "new-input"
+	EventNewInput = "new-input"
 )
 
 // DFPAdaptor is DFP board interface
@@ -44,7 +47,7 @@ type DFPBoard struct {
 	config              *models.DFPConfig
 	board               DFPAdaptor
 	gobot               *gobot.Robot
-	eventUsecase        event.Usecase
+	eventUsecase        usecase.UsecaseCRUD
 	stateUsecase        usecase.UsecaseCRUD
 	configHandler       *viper.Viper
 	isOnline            bool
@@ -67,13 +70,13 @@ type DFPBoard struct {
 	globalEventer       gobot.Eventer
 	isRunning           bool
 	name                string
-	chStop              chan bool
 	timeBetweenWash     *time.Ticker
 	gobot.Eventer
+	sync.Mutex
 }
 
 // NewDFP create board to manage DFP
-func NewDFP(configHandler *viper.Viper, config *models.DFPConfig, state *models.DFPState, eventUsecase event.Usecase, dfpStateUsecase usecase.UsecaseCRUD, eventer gobot.Eventer) (dfpBoard dfp.Board) {
+func NewDFP(configHandler *viper.Viper, config *models.DFPConfig, state *models.DFPState, eventUsecase usecase.UsecaseCRUD, dfpStateUsecase usecase.UsecaseCRUD, eventer gobot.Eventer) (dfpBoard dfp.Board) {
 
 	//Create client
 	c := NewRaspiAdaptor()
@@ -82,7 +85,7 @@ func NewDFP(configHandler *viper.Viper, config *models.DFPConfig, state *models.
 
 }
 
-func newDFP(board DFPAdaptor, configHandler *viper.Viper, config *models.DFPConfig, state *models.DFPState, eventUsecase event.Usecase, dfpStateUsecase usecase.UsecaseCRUD, eventer gobot.Eventer) dfp.Board {
+func newDFP(board DFPAdaptor, configHandler *viper.Viper, config *models.DFPConfig, state *models.DFPState, eventUsecase usecase.UsecaseCRUD, dfpStateUsecase usecase.UsecaseCRUD, eventer gobot.Eventer) dfp.Board {
 
 	buttonPollingDuration := configHandler.GetDuration("button_polling") * time.Millisecond
 	// Create struct
@@ -111,7 +114,6 @@ func newDFP(board DFPAdaptor, configHandler *viper.Viper, config *models.DFPConf
 		captorSecurityUnder: gpio.NewButtonDriver(board, configHandler.GetString("pin.captor.security_under"), buttonPollingDuration),
 		captorWaterUpper:    gpio.NewButtonDriver(board, configHandler.GetString("pin.captor.water_upper"), buttonPollingDuration),
 		captorWaterUnder:    gpio.NewButtonDriver(board, configHandler.GetString("pin.captor.water_under"), buttonPollingDuration),
-		chStop:              make(chan bool),
 		timeBetweenWash:     time.NewTicker(time.Duration(1 * time.Nanosecond)),
 		Eventer:             gobot.NewEventer(),
 	}
@@ -138,14 +140,18 @@ func newDFP(board DFPAdaptor, configHandler *viper.Viper, config *models.DFPConf
 		dfpBoard.work,
 	)
 
-	dfpBoard.AddEvent(NewConfig)
-	dfpBoard.AddEvent(NewReboot)
-	dfpBoard.AddEvent(NewOffline)
-	dfpBoard.AddEvent(NewWash)
-	dfpBoard.AddEvent(NewSecurity)
-	dfpBoard.AddEvent(Stop)
-	dfpBoard.AddEvent(EmergencyStopOn)
-	dfpBoard.AddEvent(EmergencyStopOff)
+	dfpBoard.AddEvent(EventNewConfig)
+	dfpBoard.AddEvent(EventNewState)
+	dfpBoard.AddEvent(EventBoardReboot)
+	dfpBoard.AddEvent(EventBoardOffline)
+	dfpBoard.AddEvent(EventWash)
+	dfpBoard.AddEvent(EventStopDFP)
+	dfpBoard.AddEvent(EventStartDFP)
+	dfpBoard.AddEvent(EventSetSecurity)
+	dfpBoard.AddEvent(EventUnsetSecurity)
+	dfpBoard.AddEvent(EventSetEmergencyStop)
+	dfpBoard.AddEvent(EventUnsetEmergencyStop)
+	dfpBoard.AddEvent(EventBoardStop)
 
 	log.Infof("Board %s initialized successfully", dfpBoard.Name())
 
@@ -216,6 +222,18 @@ func (h *DFPBoard) Start(ctx context.Context) (err error) {
 // It send event of name `stop`. It can be used to stop routines.
 func (h *DFPBoard) Stop(ctx context.Context) (err error) {
 
+	// Internal event
+	h.Publish(EventBoardStop, nil)
+
+	// Stop outputs
+	h.forceStopRelais()
+	h.turnOffGreenLed()
+	h.turnOffRedLed()
+
+	// Not publish on global event to avoid stop pump and uvc each time we restart program
+	// It can be dangerous to stop board.
+
+	// Then stop board
 	if h.isOnline {
 		err = h.gobot.Stop()
 		if err != nil {
@@ -223,18 +241,10 @@ func (h *DFPBoard) Stop(ctx context.Context) (err error) {
 		}
 	}
 
-	// Stop internal event
-	//h.Eventer.Close()
-
-	// Stop internal routine
-	//h.chStop <- true
-
 	h.isOnline = false
 	h.isInitialized = false
 
 	h.sendEvent(ctx, fmt.Sprintf("stop_%s", h.name), "board")
-
-	h.Publish(Stop, true)
 
 	return nil
 }

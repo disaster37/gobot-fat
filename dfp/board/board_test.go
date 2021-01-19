@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	eventusecase "github.com/disaster37/gobot-fat/event/usecase"
 	"github.com/disaster37/gobot-fat/helper"
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/usecase"
@@ -44,7 +43,7 @@ func initTestBoard() (*DFPBoard, *helper.MockPlateform) {
 		IsRunning: true,
 	}
 	eventer := gobot.NewEventer()
-	eventUsecaseMock := eventusecase.NewMockEventBase()
+	eventUsecaseMock := usecase.NewMockUsecasetBase()
 	mockBoard := helper.NewMockPlateform()
 	usecaseDFPMock := usecase.NewMockUsecasetBase()
 
@@ -57,8 +56,7 @@ func initTestBoard() (*DFPBoard, *helper.MockPlateform) {
 }
 
 func TestStartStopIsOnline(t *testing.T) {
-	sem := make(chan bool, 0)
-	//waitDuration := 100 * time.Millisecond
+	var status chan bool
 
 	// Normal start with all stopped on state and running
 	board, adaptor := initTestBoard()
@@ -109,29 +107,25 @@ func TestStartStopIsOnline(t *testing.T) {
 	assert.Equal(t, 1, adaptor.DigitalPinState[board.ledRed.Pin()])
 	board.Stop(context.Background())
 
-	// Start with wash and running
+	// Start with wash and running)
 	board, adaptor = initTestBoard()
 	board.state.IsWashed = true
-
-	board.Once(NewWash, func(s interface{}) {
-		sem <- true
-	})
+	status = helper.WaitEvent(board.Eventer, EventWash, 5*time.Second)
 	err = board.Start(context.Background())
 	assert.NoError(t, err)
-	select {
-	case <-sem:
-	case <-time.After(10 * time.Second):
-		t.Errorf("DFP wash not started")
-	}
+	assert.True(t, <-status)
 	board.Stop(context.Background())
 
 	// Stop
+	// It emit event
 	board, adaptor = initTestBoard()
 	err = board.Start(context.Background())
 	assert.NoError(t, err)
+	status = helper.WaitEvent(board.Eventer, EventBoardStop, 1*time.Second)
 	err = board.Stop(context.Background())
 	assert.NoError(t, err)
-	assert.False(t, board.IsOnline())
+	assert.True(t, <-status)
+
 }
 
 func TestGetBoard(t *testing.T) {

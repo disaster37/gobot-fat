@@ -12,7 +12,6 @@ import (
 	dfpConfigHttpDeliver "github.com/disaster37/gobot-fat/dfpconfig/delivery/http"
 	"github.com/disaster37/gobot-fat/dfpstate"
 	dfpStateHttpDeliver "github.com/disaster37/gobot-fat/dfpstate/delivery/http"
-	"github.com/disaster37/gobot-fat/event"
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/repository"
 	"github.com/disaster37/gobot-fat/usecase"
@@ -25,7 +24,7 @@ import (
 )
 
 // init DFP config, state and board usecase
-func initDFP(ctx context.Context, eventer gobot.Eventer, api *echo.Group, configHandler *viper.Viper, elacticConn *elasticsearch.Client, sqlConn *gorm.DB, eventUsecase event.Usecase, boardUsecase board.Usecase) (err error) {
+func initDFP(ctx context.Context, eventer gobot.Eventer, api *echo.Group, configHandler *viper.Viper, elacticConn *elasticsearch.Client, sqlConn *gorm.DB, eventUsecase usecase.UsecaseCRUD, boardUsecase board.Usecase) (err error) {
 
 	timeout := time.Duration(configHandler.GetInt("context.timeout")) * time.Second
 

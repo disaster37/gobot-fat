@@ -2,7 +2,9 @@ package helper
 
 import (
 	"sync"
+	"time"
 
+	"gobot.io/x/gobot"
 	"gobot.io/x/gobot/drivers/gpio"
 )
 
@@ -218,4 +220,30 @@ func NewMockPlateform() *MockPlateform {
 	m.init()
 
 	return m
+}
+
+func WaitEvent(e gobot.Eventer, eventName string, timeout time.Duration) chan bool {
+	out := e.Subscribe()
+	status := make(chan bool, 0)
+
+	go func() {
+	loop:
+		for {
+			select {
+			case evt := <-out:
+				if evt.Name == eventName {
+					status <- true
+					break loop
+				}
+			case <-time.After(timeout):
+				status <- false
+				break loop
+			}
+		}
+
+		e.Unsubscribe(out)
+	}()
+
+	return status
+
 }

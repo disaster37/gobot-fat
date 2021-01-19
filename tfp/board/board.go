@@ -7,7 +7,6 @@ import (
 
 	"github.com/disaster37/gobot-arest/drivers/extra"
 	"github.com/disaster37/gobot-arest/plateforms/arest"
-	"github.com/disaster37/gobot-fat/event"
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/tfp"
 	"github.com/disaster37/gobot-fat/usecase"
@@ -40,7 +39,7 @@ type TFPBoard struct {
 	board              TFPAdaptor
 	state              *models.TFPState
 	config             *models.TFPConfig
-	eventUsecase       event.Usecase
+	eventUsecase       usecase.UsecaseCRUD
 	stateUsecase       usecase.UsecaseCRUD
 	relayPompPond      *gpio.RelayDriver
 	relayPompWaterfall *gpio.RelayDriver
@@ -59,7 +58,7 @@ type TFPBoard struct {
 }
 
 // NewTFP create board to manage TFP
-func NewTFP(configHandler *viper.Viper, config *models.TFPConfig, state *models.TFPState, eventUsecase event.Usecase, tfpStateUsecase usecase.UsecaseCRUD, eventer gobot.Eventer) (tfpBoard tfp.Board) {
+func NewTFP(configHandler *viper.Viper, config *models.TFPConfig, state *models.TFPState, eventUsecase usecase.UsecaseCRUD, tfpStateUsecase usecase.UsecaseCRUD, eventer gobot.Eventer) (tfpBoard tfp.Board) {
 
 	//Create client
 	c := arest.NewHTTPAdaptor(configHandler.GetString("url"))
@@ -68,7 +67,7 @@ func NewTFP(configHandler *viper.Viper, config *models.TFPConfig, state *models.
 
 }
 
-func newTFP(board TFPAdaptor, configHandler *viper.Viper, config *models.TFPConfig, state *models.TFPState, eventUsecase event.Usecase, tfpStateUsecase usecase.UsecaseCRUD, eventer gobot.Eventer, wait time.Duration) (tfpHandler tfp.Board) {
+func newTFP(board TFPAdaptor, configHandler *viper.Viper, config *models.TFPConfig, state *models.TFPState, eventUsecase usecase.UsecaseCRUD, tfpStateUsecase usecase.UsecaseCRUD, eventer gobot.Eventer, wait time.Duration) (tfpHandler tfp.Board) {
 
 	// Create struct
 	tfpBoard := &TFPBoard{

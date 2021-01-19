@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/disaster37/gobot-fat/helper"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -12,15 +13,22 @@ func (h *DFPBoard) StartDFP(ctx context.Context) (err error) {
 
 	if !h.state.IsRunning {
 		h.state.IsRunning = true
+
 		if err = h.ledGreen.On(); err != nil {
 			return err
 		}
 
-		if err = h.stateUsecase.Update(ctx, h.state); err != nil {
+		if err := h.stateUsecase.Update(ctx, h.state); err != nil {
 			return err
 		}
 
 		h.sendEvent(ctx, "board", "dfp_start")
+
+		// Publish internal event
+		h.Publish(EventStartDFP, nil)
+
+		// Publish global event
+		h.globalEventer.Publish(EventStartDFP, nil)
 	}
 
 	return
@@ -29,8 +37,11 @@ func (h *DFPBoard) StartDFP(ctx context.Context) (err error) {
 // StopDFP stop dfp and disable auto
 func (h *DFPBoard) StopDFP(ctx context.Context) (err error) {
 
+	h.forceStopRelais()
+
 	if h.state.IsRunning {
 		h.state.IsRunning = false
+
 		if err = h.ledGreen.Off(); err != nil {
 			return err
 		}
@@ -38,10 +49,133 @@ func (h *DFPBoard) StopDFP(ctx context.Context) (err error) {
 		if err := h.stateUsecase.Update(ctx, h.state); err != nil {
 			return err
 		}
+
 		h.sendEvent(ctx, "board", "dfp_stop")
+
+		// Publish internal event
+		h.Publish(EventStopDFP, nil)
+
+		// Publish global event
+		h.globalEventer.Publish(EventStopDFP, nil)
 	}
 
-	h.Publish(Stop, nil)
+	return
+}
+
+// SetEmergencyStop put DFP on emergency stop
+// It send a global event to inform antoher board
+func (h *DFPBoard) SetEmergencyStop(ctx context.Context) (err error) {
+
+	// Stops all relais
+	h.forceStopRelais()
+
+	if !h.state.IsEmergencyStopped {
+		h.state.IsEmergencyStopped = true
+
+		if err = h.ledRed.On(); err != nil {
+			return err
+		}
+
+		if err := h.stateUsecase.Update(ctx, h.state); err != nil {
+			return err
+		}
+
+		h.sendEvent(ctx, "board", "dfp_set_emergency_stop")
+
+		// Publish internal event
+		h.Publish(EventSetEmergencyStop, nil)
+
+		// Publish global event
+		h.globalEventer.Publish(helper.SetEmergencyStop, nil)
+	}
+
+	return
+}
+
+// UnsetEmergencyStop remove the emergency stop
+// It send global event to inform another board
+func (h *DFPBoard) UnsetEmergencyStop(ctx context.Context) (err error) {
+
+	if h.state.IsEmergencyStopped {
+		h.state.IsEmergencyStopped = false
+
+		// Turn off red led
+		if !h.state.IsSecurity {
+			if err = h.ledRed.Off(); err != nil {
+				return err
+			}
+		}
+
+		if err := h.stateUsecase.Update(ctx, h.state); err != nil {
+			return err
+		}
+
+		h.sendEvent(ctx, "board", "dfp_unset_emergency_stop")
+
+		// Publish internal event
+		h.Publish(EventUnsetEmergencyStop, nil)
+
+		// Publish global event
+		h.globalEventer.Publish(helper.UnsetEmergencyStop, nil)
+	}
+
+	return
+}
+
+// SetSecurity put DFP on security
+// It send a global event to inform antoher board
+func (h *DFPBoard) SetSecurity(ctx context.Context) (err error) {
+
+	if !h.state.IsSecurity {
+		h.state.IsSecurity = true
+
+		if err = h.ledRed.On(); err != nil {
+			return err
+		}
+
+		if err := h.stateUsecase.Update(ctx, h.state); err != nil {
+			return err
+		}
+
+		h.sendEvent(ctx, "board", "dfp_set_security")
+
+		// Publish internal event
+		h.Publish(EventSetSecurity, nil)
+
+		// Publish global event
+		h.globalEventer.Publish(EventSetSecurity, nil)
+	}
+
+	return
+}
+
+// UnsetSecurity remove the security
+// It send global event to inform another board
+func (h *DFPBoard) UnsetSecurity(ctx context.Context) (err error) {
+
+	if h.state.IsSecurity {
+		h.state.IsSecurity = false
+
+		if !h.state.IsEmergencyStopped {
+			// Turn off red led
+			if err = h.ledRed.Off(); err != nil {
+				return err
+			}
+
+		}
+
+		if err := h.stateUsecase.Update(ctx, h.state); err != nil {
+			return err
+		}
+
+		h.sendEvent(ctx, "board", "dfp_unset_security")
+
+		// Publish internal event
+		h.Publish(EventUnsetSecurity, nil)
+
+		// Publish global event
+		h.globalEventer.Publish(EventUnsetSecurity, nil)
+	}
 
 	return
 }
@@ -115,46 +249,6 @@ func (h *DFPBoard) StopManualPump(ctx context.Context) (err error) {
 	}
 
 	return
-}
-
-func (h *DFPBoard) startDrum() {
-	if err := h.relayDrum.On(); err != nil {
-		log.Errorf("Error when start drum: %s", err.Error())
-		return
-	}
-
-	log.Debug("Start drum successfully")
-
-}
-
-func (h *DFPBoard) stopDrum() {
-	if err := h.relayDrum.Off(); err != nil {
-		log.Errorf("Error when stop drum: %s", err.Error())
-		return
-	}
-
-	log.Debug("Stop drum successfully")
-
-}
-
-func (h *DFPBoard) startPump() {
-	if err := h.relayPump.On(); err != nil {
-		log.Errorf("Error when start pump: %s", err.Error())
-		return
-	}
-
-	log.Debug("Start pump successfully")
-
-}
-
-func (h *DFPBoard) stopPump() {
-	if err := h.relayPump.Off(); err != nil {
-		log.Errorf("Error when stop pump: %s", err.Error())
-		return
-	}
-
-	log.Debug("Stop pump successfully")
-
 }
 
 func (h *DFPBoard) forceStopRelais() {

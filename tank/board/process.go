@@ -120,7 +120,7 @@ func (h *TankBoard) sendEvent(ctx context.Context, eventType string, eventKind s
 		}
 	}
 
-	err := h.eventUsecase.Store(ctx, event)
+	err := h.eventUsecase.Create(ctx, event)
 	if err != nil {
 		log.Errorf("Error when store new event: %s", err.Error())
 	}

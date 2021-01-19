@@ -12,15 +12,16 @@ import (
 	boardUsecase "github.com/disaster37/gobot-fat/board/usecase"
 	"github.com/disaster37/gobot-fat/dfpconfig"
 	"github.com/disaster37/gobot-fat/dfpstate"
-	eventRepository "github.com/disaster37/gobot-fat/event/repository"
-	eventUsecase "github.com/disaster37/gobot-fat/event/usecase"
+	"github.com/disaster37/gobot-fat/helper"
 	loginHttpDeliver "github.com/disaster37/gobot-fat/login/delivery/http"
 	loginUsecase "github.com/disaster37/gobot-fat/login/usecase"
 	dfpMiddleware "github.com/disaster37/gobot-fat/middleware"
 	"github.com/disaster37/gobot-fat/models"
+	"github.com/disaster37/gobot-fat/repository"
 	"github.com/disaster37/gobot-fat/tankconfig"
 	"github.com/disaster37/gobot-fat/tfpconfig"
 	"github.com/disaster37/gobot-fat/tfpstate"
+	"github.com/disaster37/gobot-fat/usecase"
 	elastic "github.com/elastic/go-elasticsearch/v7"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -106,12 +107,17 @@ func main() {
 	api.Use(middL.IsAdmin)
 
 	// Init global resources
-	eventRepoES := eventRepository.NewElasticsearchEventRepository(es, "dfp-event-alias")
+
 	timeoutContext := time.Duration(configHandler.GetInt("context.timeout")) * time.Second
-	eventU := eventUsecase.NewEventUsecase(eventRepoES, timeoutContext)
+	eventRepoES := repository.NewElasticsearchRepository(es, configHandler.GetString("elasticsearch.index.event"))
+	eventUsecase := usecase.NewEventUsecase(eventRepoES, timeoutContext)
 	loginU := loginUsecase.NewLoginUsecase(configHandler)
 	ctx := context.Background()
 	eventer := gobot.NewEventer()
+	eventer.AddEvent(helper.SetEmergencyStop)
+	eventer.AddEvent(helper.UnsetEmergencyStop)
+	eventer.AddEvent(helper.SetSecurity)
+	eventer.AddEvent(helper.UnsetSecurity)
 	loginHttpDeliver.NewLoginHandler(e, loginU)
 
 	// Init global events
@@ -130,21 +136,21 @@ func main() {
 	/***********************
 	 * INIT TFP
 	 */
-	if err := initTFP(ctx, eventer, api, configHandler, es, db, eventU, boardU); err != nil {
+	if err := initTFP(ctx, eventer, api, configHandler, es, db, eventUsecase, boardU); err != nil {
 		panic(err)
 	}
 
 	/***********************
 	 * Tank
 	 */
-	if err := initTank(ctx, eventer, api, configHandler, es, db, eventU, boardU); err != nil {
+	if err := initTank(ctx, eventer, api, configHandler, es, db, eventUsecase, boardU); err != nil {
 		panic(err)
 	}
 
 	/*****************************
 	 * INIT DFP
 	 */
-	if err := initDFP(ctx, eventer, api, configHandler, es, db, eventU, boardU); err != nil {
+	if err := initDFP(ctx, eventer, api, configHandler, es, db, eventUsecase, boardU); err != nil {
 		panic(err)
 	}
 
