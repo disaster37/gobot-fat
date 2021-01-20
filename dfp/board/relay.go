@@ -18,7 +18,7 @@ func (h *DFPBoard) StartDFP(ctx context.Context) (err error) {
 			return err
 		}
 
-		if err := h.stateUsecase.Update(ctx, h.state); err != nil {
+		if err = h.stateUsecase.Update(ctx, h.state); err != nil {
 			return err
 		}
 
@@ -46,7 +46,7 @@ func (h *DFPBoard) StopDFP(ctx context.Context) (err error) {
 			return err
 		}
 
-		if err := h.stateUsecase.Update(ctx, h.state); err != nil {
+		if err = h.stateUsecase.Update(ctx, h.state); err != nil {
 			return err
 		}
 
@@ -76,7 +76,7 @@ func (h *DFPBoard) SetEmergencyStop(ctx context.Context) (err error) {
 			return err
 		}
 
-		if err := h.stateUsecase.Update(ctx, h.state); err != nil {
+		if err = h.stateUsecase.Update(ctx, h.state); err != nil {
 			return err
 		}
 
@@ -106,7 +106,7 @@ func (h *DFPBoard) UnsetEmergencyStop(ctx context.Context) (err error) {
 			}
 		}
 
-		if err := h.stateUsecase.Update(ctx, h.state); err != nil {
+		if err = h.stateUsecase.Update(ctx, h.state); err != nil {
 			return err
 		}
 
@@ -133,7 +133,7 @@ func (h *DFPBoard) SetSecurity(ctx context.Context) (err error) {
 			return err
 		}
 
-		if err := h.stateUsecase.Update(ctx, h.state); err != nil {
+		if err = h.stateUsecase.Update(ctx, h.state); err != nil {
 			return err
 		}
 
@@ -164,7 +164,7 @@ func (h *DFPBoard) UnsetSecurity(ctx context.Context) (err error) {
 
 		}
 
-		if err := h.stateUsecase.Update(ctx, h.state); err != nil {
+		if err = h.stateUsecase.Update(ctx, h.state); err != nil {
 			return err
 		}
 
@@ -253,17 +253,20 @@ func (h *DFPBoard) StopManualPump(ctx context.Context) (err error) {
 
 func (h *DFPBoard) forceStopRelais() {
 
+	var err error
+
 	forceStopRelais := func() {
+		var err error
 		isErr := true
 
 		for isErr {
 			isErr = false
-			if err := h.relayDrum.Off(); err != nil {
+			if err = h.relayDrum.Off(); err != nil {
 				log.Errorf("Error when stop drump: %s", err.Error())
 				isErr = true
 			}
 
-			if err := h.relayPump.Off(); err != nil {
+			if err = h.relayPump.Off(); err != nil {
 				log.Errorf("Error when stop pump: %s", err.Error())
 				isErr = true
 			}
@@ -275,11 +278,11 @@ func (h *DFPBoard) forceStopRelais() {
 	}
 
 	// Lauch only routine in stop failed
-	if err := h.relayDrum.Off(); err != nil {
+	if err = h.relayDrum.Off(); err != nil {
 		go forceStopRelais()
 		return
 	}
-	if err := h.relayPump.Off(); err != nil {
+	if err = h.relayPump.Off(); err != nil {
 		go forceStopRelais()
 		return
 	}

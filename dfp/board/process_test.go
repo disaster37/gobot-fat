@@ -221,8 +221,10 @@ func TestWorkUpdateConfig(t *testing.T) {
 	// Send update config event
 	newConfig := &models.DFPConfig{
 		TemperatureThresholdWhenFrozen: 10,
+		ForceWashingDuration:           120,
+		ForceWashingDurationWhenFrozen: 180,
 	}
-	status = helper.WaitEvent(board.Eventer, EventNewConfig, 5*time.Second)
+	status = helper.WaitEvent(board.Eventer, EventNewConfig, 10*time.Second)
 	board.globalEventer.Publish(dfpconfig.NewDFPConfig, newConfig)
 	assert.True(t, <-status)
 	assert.Equal(t, newConfig, board.config)
@@ -240,7 +242,7 @@ func TestWorkUpdateState(t *testing.T) {
 	newState := &models.DFPState{
 		IsDisableSecurity: true,
 	}
-	status = helper.WaitEvent(board.Eventer, EventNewState, 5*time.Second)
+	status = helper.WaitEvent(board.Eventer, EventNewState, 10*time.Second)
 	board.globalEventer.Publish(dfpstate.NewDFPState, newState)
 	assert.True(t, <-status)
 	assert.Equal(t, newState.IsDisableSecurity, board.state.IsDisableSecurity)

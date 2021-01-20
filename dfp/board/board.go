@@ -43,34 +43,37 @@ type DFPAdaptor interface {
 
 // DFPBoard is the DFP board
 type DFPBoard struct {
-	state               *models.DFPState
-	config              *models.DFPConfig
-	board               DFPAdaptor
-	gobot               *gobot.Robot
-	eventUsecase        usecase.UsecaseCRUD
-	stateUsecase        usecase.UsecaseCRUD
-	configHandler       *viper.Viper
-	isOnline            bool
-	isInitialized       bool
-	relayDrum           *gpio.RelayDriver
-	relayPump           *gpio.RelayDriver
-	ledGreen            *gpio.LedDriver
-	ledRed              *gpio.LedDriver
-	ledButtons          []*gpio.LedDriver
-	buttonStart         *gpio.ButtonDriver
-	buttonStop          *gpio.ButtonDriver
-	buttonForceDrum     *gpio.ButtonDriver
-	buttonForcePump     *gpio.ButtonDriver
-	buttonWash          *gpio.ButtonDriver
-	buttonEmergencyStop *gpio.ButtonDriver
-	captorWaterUpper    *gpio.ButtonDriver
-	captorWaterUnder    *gpio.ButtonDriver
-	captorSecurityUpper *gpio.ButtonDriver
-	captorSecurityUnder *gpio.ButtonDriver
-	globalEventer       gobot.Eventer
-	isRunning           bool
-	name                string
-	timeBetweenWash     *time.Ticker
+	state                   *models.DFPState
+	config                  *models.DFPConfig
+	board                   DFPAdaptor
+	gobot                   *gobot.Robot
+	eventUsecase            usecase.UsecaseCRUD
+	stateUsecase            usecase.UsecaseCRUD
+	configHandler           *viper.Viper
+	isOnline                bool
+	isInitialized           bool
+	relayDrum               *gpio.RelayDriver
+	relayPump               *gpio.RelayDriver
+	ledGreen                *gpio.LedDriver
+	ledRed                  *gpio.LedDriver
+	ledButtons              []*gpio.LedDriver
+	buttonStart             *gpio.ButtonDriver
+	buttonStop              *gpio.ButtonDriver
+	buttonForceDrum         *gpio.ButtonDriver
+	buttonForcePump         *gpio.ButtonDriver
+	buttonWash              *gpio.ButtonDriver
+	buttonEmergencyStop     *gpio.ButtonDriver
+	captorWaterUpper        *gpio.ButtonDriver
+	captorWaterUnder        *gpio.ButtonDriver
+	captorSecurityUpper     *gpio.ButtonDriver
+	captorSecurityUnder     *gpio.ButtonDriver
+	globalEventer           gobot.Eventer
+	isRunning               bool
+	name                    string
+	timeBetweenWash         *time.Ticker
+	waitTimeForceWash       *time.Ticker
+	waitTimeForceWashFrozen *time.Ticker
+	schedulingRoutines      []*time.Ticker
 	gobot.Eventer
 	sync.Mutex
 }
@@ -116,6 +119,7 @@ func newDFP(board DFPAdaptor, configHandler *viper.Viper, config *models.DFPConf
 		captorWaterUnder:    gpio.NewButtonDriver(board, configHandler.GetString("pin.captor.water_under"), buttonPollingDuration),
 		timeBetweenWash:     time.NewTicker(time.Duration(1 * time.Nanosecond)),
 		Eventer:             gobot.NewEventer(),
+		schedulingRoutines:  make([]*time.Ticker, 0),
 	}
 
 	dfpBoard.gobot = gobot.NewRobot(
@@ -163,7 +167,7 @@ func newDFP(board DFPAdaptor, configHandler *viper.Viper, config *models.DFPConf
 func (h *DFPBoard) Start(ctx context.Context) (err error) {
 
 	// Start connexion to set some initial state on I/O
-	if err := h.board.Connect(); err != nil {
+	if err = h.board.Connect(); err != nil {
 		return err
 	}
 
@@ -181,7 +185,7 @@ func (h *DFPBoard) Start(ctx context.Context) (err error) {
 		h.captorWaterUpper,
 	}
 
-	if err := h.board.SetInputPullup(listPins); err != nil {
+	if err = h.board.SetInputPullup(listPins); err != nil {
 		return err
 	}
 
@@ -204,7 +208,7 @@ func (h *DFPBoard) Start(ctx context.Context) (err error) {
 		h.wash()
 	}
 
-	if err := h.gobot.Start(false); err != nil {
+	if err = h.gobot.Start(false); err != nil {
 		return err
 	}
 
@@ -235,10 +239,14 @@ func (h *DFPBoard) Stop(ctx context.Context) (err error) {
 
 	// Then stop board
 	if h.isOnline {
-		err = h.gobot.Stop()
-		if err != nil {
+		if err = h.gobot.Stop(); err != nil {
 			return err
 		}
+	}
+
+	// Stop scheduling routines
+	for _, ticker := range h.schedulingRoutines {
+		ticker.Stop()
 	}
 
 	h.isOnline = false

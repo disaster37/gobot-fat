@@ -3,8 +3,7 @@ package dfpboard
 import log "github.com/sirupsen/logrus"
 
 func (h *DFPBoard) turnOnGreenLed() {
-	err := h.ledGreen.On()
-	if err != nil {
+	if err := h.ledGreen.On(); err != nil {
 		log.Errorf("Error when turn on GreenLed: %s", err.Error())
 		return
 	}
@@ -14,18 +13,17 @@ func (h *DFPBoard) turnOnGreenLed() {
 }
 
 func (h *DFPBoard) turnOffGreenLed() {
-	err := h.ledGreen.Off()
-	if err != nil {
+	if err := h.ledGreen.Off(); err != nil {
 		log.Errorf("Error when turn off GreenLed: %s", err.Error())
 		return
 	}
+
 	log.Debug("Turn off GreenLed successfully")
 
 }
 
 func (h *DFPBoard) turnOnRedLed() {
-	err := h.ledRed.On()
-	if err != nil {
+	if err := h.ledRed.On(); err != nil {
 		log.Errorf("Error when turn on RedLed: %s", err.Error())
 		return
 	}
@@ -35,8 +33,7 @@ func (h *DFPBoard) turnOnRedLed() {
 }
 
 func (h *DFPBoard) turnOffRedLed() {
-	err := h.ledRed.Off()
-	if err != nil {
+	if err := h.ledRed.Off(); err != nil {
 		log.Errorf("Error when turn of RedLed: %s", err.Error())
 		return
 	}
