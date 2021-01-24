@@ -35,6 +35,8 @@ func (m *MockPlateform) SetName(n string) { return }
 func (m *MockPlateform) Connect() error   { return nil }
 func (m *MockPlateform) Finalize() error  { return nil }
 func (m *MockPlateform) SetInputPullup(listPins []*gpio.ButtonDriver) (err error) {
+	m.mtx.Lock()
+	defer m.mtx.Unlock()
 
 	for _, button := range listPins {
 

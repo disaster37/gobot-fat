@@ -25,11 +25,29 @@ func (h *DFPBoard) wash() {
 		log.Errorf("Error when save state in wash routine: %s", err.Error())
 	}
 	var wg sync.WaitGroup
-	wg.Add(2)
+	wg.Add(1)
 	chFinishedStopEvent := make(chan bool, 1)
-	chFinishedBlinkLed := make(chan bool, 1)
-	chStoppedBlinkLed := make(chan bool, 1)
 	chStoppedWash := make(chan bool, 1)
+
+	ledControl := h.blinkGreenLed()
+
+	handleError := func() {
+		h.forceStopRelais()
+		chFinishedStopEvent <- true
+		ledControl.Stop()
+		wg.Wait()
+		h.state.IsWashed = false
+		if err := h.stateUsecase.Update(context.Background(), h.state); err != nil {
+			log.Errorf("Error when save state in wash routine: %s", err.Error())
+		}
+		ledControl.Wait()
+		if h.state.IsRunning {
+			h.turnOnGreenLed()
+		} else {
+			h.turnOffGreenLed()
+		}
+		return
+	}
 
 	// Check stop event
 	go func() {
@@ -45,7 +63,8 @@ func (h *DFPBoard) wash() {
 					}
 					h.forceStopRelais()
 					chStoppedWash <- true
-					chStoppedBlinkLed <- true
+					ledControl.Stop()
+					ledControl.Wait()
 					h.Unsubscribe(out)
 					wg.Done()
 					return
@@ -59,29 +78,6 @@ func (h *DFPBoard) wash() {
 
 	}()
 
-	// Blink green led
-	go func() {
-		for {
-			select {
-			case <-chFinishedBlinkLed:
-				h.turnOnGreenLed()
-				wg.Done()
-				return
-			case <-chStoppedBlinkLed:
-				if h.state.IsRunning {
-					h.turnOnGreenLed()
-				} else {
-					h.turnOffGreenLed()
-				}
-				wg.Done()
-				return
-			default:
-				h.ledGreen.Toggle()
-				time.Sleep(500 * time.Millisecond)
-			}
-		}
-	}()
-
 	// Run wash
 	go func() {
 
@@ -92,15 +88,9 @@ func (h *DFPBoard) wash() {
 		timer := time.NewTimer(time.Duration(h.config.StartWashingPumpBeforeWashing) * time.Second)
 		if err = h.relayPump.On(); err != nil {
 			log.Errorf("When start pump: %s", err.Error())
-			h.forceStopRelais()
-			chFinishedStopEvent <- true
-			chFinishedBlinkLed <- true
-			wg.Wait()
-			h.state.IsWashed = false
-			if err = h.stateUsecase.Update(context.Background(), h.state); err != nil {
-				log.Errorf("Error when save state in wash routine: %s", err.Error())
-			}
+			handleError()
 			return
+
 		}
 		select {
 		case <-chStoppedWash:
@@ -119,14 +109,7 @@ func (h *DFPBoard) wash() {
 		timer = time.NewTimer(time.Duration(h.config.WashingDuration) * time.Second)
 		if err = h.relayDrum.On(); err != nil {
 			log.Errorf("When start drum: %s", err.Error())
-			h.forceStopRelais()
-			chFinishedStopEvent <- true
-			chFinishedBlinkLed <- true
-			wg.Wait()
-			h.state.IsWashed = false
-			if err = h.stateUsecase.Update(context.Background(), h.state); err != nil {
-				log.Errorf("Error when save state in wash routine: %s", err.Error())
-			}
+			handleError()
 			return
 		}
 		select {
@@ -147,7 +130,7 @@ func (h *DFPBoard) wash() {
 		h.forceStopRelais()
 
 		chFinishedStopEvent <- true
-		chFinishedBlinkLed <- true
+		ledControl.Stop()
 
 		h.state.IsWashed = false
 		h.state.LastWashing = time.Now()
@@ -159,6 +142,7 @@ func (h *DFPBoard) wash() {
 		h.waitTimeForceWash = time.NewTicker(time.Duration(h.config.ForceWashingDuration) * time.Second)
 		h.waitTimeForceWashFrozen = time.NewTicker(time.Duration(h.config.ForceWashingDurationWhenFrozen) * time.Second)
 
+		ledControl.Wait()
 		wg.Wait()
 
 		h.Publish(EventWash, h.state)
@@ -188,7 +172,8 @@ func (h *DFPBoard) work() {
 	 * Process external events
 	 */
 	// Handle config
-	h.globalEventer.On(dfpconfig.NewDFPConfig, func(s interface{}) {
+	h.on(h.globalEventer, dfpconfig.NewDFPConfig, func(s interface{}) {
+		//panic("plop2")
 
 		dfpConfig := s.(*models.DFPConfig)
 		log.Debugf("New config received for board %s, we update it", h.name)
@@ -201,8 +186,9 @@ func (h *DFPBoard) work() {
 	})
 
 	// Handle state
-	h.globalEventer.On(dfpstate.NewDFPState, func(s interface{}) {
+	h.on(h.globalEventer, dfpstate.NewDFPState, func(s interface{}) {
 
+		//panic("plop")
 		dfpState := s.(*models.DFPState)
 		log.Debugf("New state received for board %s, we update it", h.name)
 
@@ -218,19 +204,16 @@ func (h *DFPBoard) work() {
 	 */
 	// When button start
 
-	h.buttonStart.On(gpio.ButtonPush, func(s interface{}) {
+	h.on(h.buttonStart, gpio.ButtonPush, func(s interface{}) {
 		log.Debug("Button start pushed")
 
 		if err := h.StartDFP(ctx); err != nil {
 			log.Errorf("When start DFP: %s", err.Error())
 		}
-
-		h.Publish(EventNewInput, "button_start_pushed")
-
 	})
 
 	// When button stop
-	h.buttonStop.On(gpio.ButtonPush, func(s interface{}) {
+	h.on(h.buttonStop, gpio.ButtonPush, func(s interface{}) {
 
 		log.Debug("Button stop pushed")
 
@@ -238,25 +221,20 @@ func (h *DFPBoard) work() {
 			log.Errorf("When stop DFP: %s", err.Error())
 		}
 
-		h.Publish(EventNewInput, "button_stop_pushed")
-
 	})
 
 	// When button wash
-	h.buttonWash.On(gpio.ButtonPush, func(s interface{}) {
+	h.on(h.buttonWash, gpio.ButtonPush, func(s interface{}) {
 
 		log.Debug("Button wash pushed")
 
 		if err := h.ForceWashing(ctx); err != nil {
 			log.Errorf("When force washing: %s", err.Error())
 		}
-
-		h.Publish(EventNewInput, "button_wash_pushed")
-
 	})
 
 	// Manual drum
-	h.buttonForceDrum.On(gpio.ButtonPush, func(s interface{}) {
+	h.on(h.buttonForceDrum, gpio.ButtonPush, func(s interface{}) {
 		// Start
 		log.Debug("Button force drum pushed")
 
@@ -267,7 +245,7 @@ func (h *DFPBoard) work() {
 		h.Publish(EventNewInput, "button_drum_pushed")
 
 	})
-	h.buttonForceDrum.On(gpio.ButtonRelease, func(s interface{}) {
+	h.on(h.buttonForceDrum, gpio.ButtonRelease, func(s interface{}) {
 		// Stop
 		log.Debug("Button force drum released")
 
@@ -280,7 +258,7 @@ func (h *DFPBoard) work() {
 	})
 
 	// Manual pump
-	h.buttonForcePump.On(gpio.ButtonPush, func(s interface{}) {
+	h.on(h.buttonForcePump, gpio.ButtonPush, func(s interface{}) {
 		// Start
 		log.Debug("Button force pump pushed")
 
@@ -291,7 +269,7 @@ func (h *DFPBoard) work() {
 		h.Publish(EventNewInput, "button_pomp_pushed")
 
 	})
-	h.buttonForcePump.On(gpio.ButtonRelease, func(s interface{}) {
+	h.on(h.buttonForcePump, gpio.ButtonRelease, func(s interface{}) {
 		// Stop
 		log.Debug("Button force pump released")
 
@@ -304,23 +282,19 @@ func (h *DFPBoard) work() {
 	})
 
 	// When button emergency stop
-	h.buttonEmergencyStop.On(gpio.ButtonPush, func(s interface{}) {
+	h.on(h.buttonEmergencyStop, gpio.ButtonPush, func(s interface{}) {
 		log.Debug("Button emergency stop pushed")
 
 		if err := h.SetEmergencyStop(ctx); err != nil {
 			log.Errorf("When set emergency stop for DFP: %s", err.Error())
 		}
-
-		h.Publish(EventNewInput, "button_emergency_stop_pushed")
 	})
-	h.buttonEmergencyStop.On(gpio.ButtonRelease, func(s interface{}) {
+	h.on(h.buttonEmergencyStop, gpio.ButtonRelease, func(s interface{}) {
 		log.Debug("Button emergency stop released")
 
 		if err := h.UnsetEmergencyStop(ctx); err != nil {
 			log.Errorf("When unset emergency stop for DFP: %s", err.Error())
 		}
-
-		h.Publish(EventNewInput, "button_emergency_stop_released")
 	})
 
 	/*******
@@ -345,11 +319,9 @@ func (h *DFPBoard) work() {
 			break
 
 		}
-
-		h.Publish(EventNewInput, "captor_water_pushed")
 	}
-	h.captorWaterUpper.On(gpio.ButtonPush, wash)
-	h.captorWaterUnder.On(gpio.ButtonPush, wash)
+	h.on(h.captorWaterUpper, gpio.ButtonPush, wash)
+	h.on(h.captorWaterUnder, gpio.ButtonPush, wash)
 
 	// When water captor ask security
 	security := func(s interface{}) {
@@ -359,22 +331,18 @@ func (h *DFPBoard) work() {
 			if err := h.SetSecurity(ctx); err != nil {
 				log.Errorf("When set security for DFP: %s", err.Error())
 			}
-
-			h.Publish(EventNewInput, "captor_security_pushed")
 		} else {
 
 			if err := h.UnsetSecurity(ctx); err != nil {
 				log.Errorf("When unset security for DFP: %s", err.Error())
 			}
-
-			h.Publish(EventNewInput, "captor_security_release")
 		}
 
 	}
-	h.captorSecurityUpper.On(gpio.ButtonPush, security)
-	h.captorSecurityUpper.On(gpio.ButtonRelease, security)
-	h.captorSecurityUnder.On(gpio.ButtonPush, security)
-	h.captorSecurityUnder.On(gpio.ButtonRelease, security)
+	h.on(h.captorSecurityUpper, gpio.ButtonPush, security)
+	h.on(h.captorSecurityUpper, gpio.ButtonRelease, security)
+	h.on(h.captorSecurityUnder, gpio.ButtonPush, security)
+	h.on(h.captorSecurityUnder, gpio.ButtonRelease, security)
 
 	/*********
 	 * Scheduling routines
@@ -446,4 +414,44 @@ func (h *DFPBoard) runWashInactivity() {
 		}
 	}()
 
+}
+
+// Use on instead gobot.Eventer.On because of it not close routine at board is stopped.
+// So, if you start / stop / start board, you have so many routine
+func (h *DFPBoard) on(driver gobot.Eventer, event string, f func(data interface{})) {
+
+	halt := make(chan bool)
+
+	// Detect stop board
+	go func() {
+		out := h.Subscribe()
+
+		for {
+			select {
+			case evt := <-out:
+				if evt.Name == EventBoardStop {
+					halt <- true
+					h.Unsubscribe(out)
+					return
+				}
+			}
+		}
+	}()
+
+	// Handle on event
+	go func() {
+		out := driver.Subscribe()
+		for {
+			select {
+			case <-halt:
+				driver.Unsubscribe(out)
+				return
+			case evt := <-out:
+				if evt.Name == event {
+					f(evt.Data)
+				}
+			}
+		}
+
+	}()
 }

@@ -16,20 +16,37 @@ import (
 )
 
 const (
-	EventNewConfig          = "dfp-new-config"
-	EventNewState           = "dfp-new-state"
-	EventBoardReboot        = "dfp-board-reboot"
-	EventBoardOffline       = "dfp-board-offline"
-	EventBoardStop          = "dfp-board-stop"
-	EventWash               = "dfp-new-wash"
-	EventStopDFP            = "dfp-stop-dfp"
-	EventStartDFP           = "dfp-start-dfp"
-	EventSetSecurity        = "dfp-set-security"
-	EventUnsetSecurity      = "dfp-unset-security"
-	EventSetEmergencyStop   = "dfp-set-emergency-stop"
+	// EventNewConfig  receive new DFPConfig
+	EventNewConfig = "dfp-new-config"
+
+	// EventNewState receive New DFPState
+	EventNewState = "dfp-new-state"
+
+	// EventBoardStop board stopped
+	EventBoardStop = "dfp-board-stop"
+
+	// EventWash wash
+	EventWash = "dfp-new-wash"
+
+	// EventStopDFP DFP stopped
+	EventStopDFP = "dfp-stop-dfp"
+
+	// EventStartDFP DFP started
+	EventStartDFP = "dfp-start-dfp"
+
+	// EventSetSecurity set security
+	EventSetSecurity = "dfp-set-security"
+
+	// EventUnsetSecurity unset security
+	EventUnsetSecurity = "dfp-unset-security"
+
+	// EventSetEmergencyStop set emergency stop
+	EventSetEmergencyStop = "dfp-set-emergency-stop"
+
+	// EventUnsetEmergencyStop unset emergency stop
 	EventUnsetEmergencyStop = "dfp-unset-emergency-stop"
 
-	// Permit to test work function
+	// EventNewInput Permit to test work function
 	EventNewInput = "new-input"
 )
 
@@ -56,7 +73,6 @@ type DFPBoard struct {
 	relayPump               *gpio.RelayDriver
 	ledGreen                *gpio.LedDriver
 	ledRed                  *gpio.LedDriver
-	ledButtons              []*gpio.LedDriver
 	buttonStart             *gpio.ButtonDriver
 	buttonStop              *gpio.ButtonDriver
 	buttonForceDrum         *gpio.ButtonDriver
@@ -88,10 +104,12 @@ func NewDFP(configHandler *viper.Viper, config *models.DFPConfig, state *models.
 
 }
 
+// newDFP create board to manage DFP
 func newDFP(board DFPAdaptor, configHandler *viper.Viper, config *models.DFPConfig, state *models.DFPState, eventUsecase usecase.UsecaseCRUD, dfpStateUsecase usecase.UsecaseCRUD, eventer gobot.Eventer) dfp.Board {
 
 	buttonPollingDuration := configHandler.GetDuration("button_polling") * time.Millisecond
-	// Create struct
+
+	// Init board
 	dfpBoard := &DFPBoard{
 		board:               board,
 		eventUsecase:        eventUsecase,
@@ -122,6 +140,7 @@ func newDFP(board DFPAdaptor, configHandler *viper.Viper, config *models.DFPConf
 		schedulingRoutines:  make([]*time.Ticker, 0),
 	}
 
+	// Create gobot robot
 	dfpBoard.gobot = gobot.NewRobot(
 		dfpBoard.Name(),
 		[]gobot.Connection{dfpBoard.board},
@@ -144,10 +163,9 @@ func newDFP(board DFPAdaptor, configHandler *viper.Viper, config *models.DFPConf
 		dfpBoard.work,
 	)
 
+	// Add events on eventer
 	dfpBoard.AddEvent(EventNewConfig)
 	dfpBoard.AddEvent(EventNewState)
-	dfpBoard.AddEvent(EventBoardReboot)
-	dfpBoard.AddEvent(EventBoardOffline)
 	dfpBoard.AddEvent(EventWash)
 	dfpBoard.AddEvent(EventStopDFP)
 	dfpBoard.AddEvent(EventStartDFP)
@@ -160,7 +178,6 @@ func newDFP(board DFPAdaptor, configHandler *viper.Viper, config *models.DFPConf
 	log.Infof("Board %s initialized successfully", dfpBoard.Name())
 
 	return dfpBoard
-
 }
 
 // Start will init some item, like INPUT_PULLUP button, then start gobot
@@ -184,11 +201,9 @@ func (h *DFPBoard) Start(ctx context.Context) (err error) {
 		h.captorWaterUnder,
 		h.captorWaterUpper,
 	}
-
 	if err = h.board.SetInputPullup(listPins); err != nil {
 		return err
 	}
-
 	h.captorSecurityUpper.DefaultState = 0
 	h.captorWaterUpper.DefaultState = 0
 

@@ -1,44 +1,49 @@
 package dfpboard
 
 import (
-	"context"
-	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestTurnOnOffGreenLed(t *testing.T) {
-
-	board, adaptor := initTestBoard()
-	if err := board.Start(context.Background()); err != nil {
-		panic(err)
-	}
+func (s *DFPBoardTestSuite) TestTurnOnOffBlinkGreenLed() {
 
 	// Turn on
-	board.turnOnGreenLed()
-	assert.Equal(t, 1, adaptor.DigitalPinState[board.ledGreen.Pin()])
+	s.board.turnOnGreenLed()
+	assert.Equal(s.T(), 1, s.adaptor.DigitalPinState[s.board.ledGreen.Pin()])
 
 	// Turn off
-	board.turnOffGreenLed()
-	assert.Equal(t, 0, adaptor.DigitalPinState[board.ledGreen.Pin()])
+	s.board.turnOffGreenLed()
+	assert.Equal(s.T(), 0, s.adaptor.DigitalPinState[s.board.ledGreen.Pin()])
 
-	board.Stop(context.Background())
+	// Blink
+	lc := s.board.blinkGreenLed()
+	time.Sleep(200 * time.Millisecond)
+	currentState := s.board.ledGreen.State()
+	time.Sleep(1 * time.Second)
+	assert.NotEqual(s.T(), currentState, s.board.ledGreen.State())
+	lc.Stop()
+	lc.Wait()
+	assert.False(s.T(), s.board.ledGreen.State())
+
 }
 
-func TestTurnOnOffRedLed(t *testing.T) {
-
-	board, adaptor := initTestBoard()
-	if err := board.Start(context.Background()); err != nil {
-		panic(err)
-	}
+func (s *DFPBoardTestSuite) TestTurnOnOffRedLed() {
 
 	// Turn on
-	board.turnOnRedLed()
-	assert.Equal(t, 1, adaptor.DigitalPinState[board.ledRed.Pin()])
+	s.board.turnOnRedLed()
+	assert.Equal(s.T(), 1, s.adaptor.DigitalPinState[s.board.ledRed.Pin()])
 
 	// Turn off
-	board.turnOffRedLed()
-	assert.Equal(t, 0, adaptor.DigitalPinState[board.ledRed.Pin()])
+	s.board.turnOffRedLed()
+	assert.Equal(s.T(), 0, s.adaptor.DigitalPinState[s.board.ledRed.Pin()])
 
-	board.Stop(context.Background())
+	// Blink
+	lc := s.board.blinkRedLed()
+	currentState := s.board.ledRed.State()
+	time.Sleep(1 * time.Second)
+	assert.NotEqual(s.T(), currentState, s.board.ledRed.State())
+	lc.Stop()
+	lc.Wait()
+	assert.Equal(s.T(), currentState, s.board.ledRed.State())
 }

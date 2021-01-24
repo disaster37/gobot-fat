@@ -4,142 +4,148 @@ import (
 	"context"
 	"reflect"
 	"testing"
-	"time"
 
 	"github.com/disaster37/gobot-fat/helper"
 	"github.com/disaster37/gobot-fat/models"
-	"github.com/disaster37/gobot-fat/usecase"
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
-	"gobot.io/x/gobot"
+	"github.com/stretchr/testify/suite"
 )
 
-func initTestBoard() (*DFPBoard, *helper.MockPlateform) {
-	configHandler := viper.New()
-	configHandler.Set("name", "test")
-	configHandler.Set("button_polling", 10)
-	configHandler.Set("pin.relay.drum", 3)
-	configHandler.Set("pin.relay.pomp", 5)
-	configHandler.Set("pin.led.green", 7)
-	configHandler.Set("pin.led.red", 8)
-	configHandler.Set("pin.button.emergency_stop", 10)
-	configHandler.Set("pin.button.start", 11)
-	configHandler.Set("pin.button.stop", 12)
-	configHandler.Set("pin.button.wash", 13)
-	configHandler.Set("pin.button.force_drum", 15)
-	configHandler.Set("pin.button.force_pump", 16)
-	configHandler.Set("pin.captor.security_upper", 18)
-	configHandler.Set("pin.captor.security_under", 19)
-	configHandler.Set("pin.captor.water_upper", 21)
-	configHandler.Set("pin.captor.water_under", 22)
-	dfpConfig := &models.DFPConfig{
+type DFPBoardTestSuite struct {
+	suite.Suite
+	board   *DFPBoard
+	adaptor *helper.MockPlateform
+}
+
+func TestDFPBoardTestSuite(t *testing.T) {
+	suite.Run(t, new(DFPBoardTestSuite))
+}
+
+func (s *DFPBoardTestSuite) SetupSuite() {
+	s.board, s.adaptor = initTestBoard()
+	if err := s.board.Start(context.Background()); err != nil {
+		panic(err)
+	}
+}
+
+// Put default state for i/o
+func (s *DFPBoardTestSuite) SetupTest() {
+
+	// Button
+	s.adaptor.DigitalPinState[s.board.buttonStart.Pin()] = 1
+	s.adaptor.DigitalPinState[s.board.buttonStop.Pin()] = 1
+	s.adaptor.DigitalPinState[s.board.buttonWash.Pin()] = 1
+	s.adaptor.DigitalPinState[s.board.buttonEmergencyStop.Pin()] = 1
+	s.adaptor.DigitalPinState[s.board.buttonForceDrum.Pin()] = 1
+	s.adaptor.DigitalPinState[s.board.buttonForcePump.Pin()] = 1
+
+	// Captor
+	s.adaptor.DigitalPinState[s.board.captorSecurityUpper.Pin()] = 0
+	s.adaptor.DigitalPinState[s.board.captorSecurityUnder.Pin()] = 1
+	s.adaptor.DigitalPinState[s.board.captorWaterUpper.Pin()] = 0
+	s.adaptor.DigitalPinState[s.board.captorWaterUnder.Pin()] = 1
+
+	// Relay
+	s.adaptor.DigitalPinState[s.board.relayDrum.Pin()] = 0
+	s.adaptor.DigitalPinState[s.board.relayPump.Pin()] = 0
+
+	// Led
+	s.adaptor.DigitalPinState[s.board.ledGreen.Pin()] = 1
+	s.adaptor.DigitalPinState[s.board.ledRed.Pin()] = 0
+
+	// State
+	s.board.state = &models.DFPState{
+		IsRunning: true,
+	}
+
+	// Config
+	s.board.config = &models.DFPConfig{
 		ForceWashingDuration:           180,
 		ForceWashingDurationWhenFrozen: 60,
 		StartWashingPumpBeforeWashing:  1,
 		WaitTimeBetweenWashing:         1,
 		WashingDuration:                1,
 	}
-	dfpState := &models.DFPState{
-		IsRunning: true,
-	}
-	eventer := gobot.NewEventer()
-	eventUsecaseMock := usecase.NewMockUsecasetBase()
-	mockBoard := helper.NewMockPlateform()
-	usecaseDFPMock := usecase.NewMockUsecasetBase()
-
-	mockBoard.SetInvertInitialPinState(configHandler.GetString("pin.captor.security_upper"))
-	mockBoard.SetInvertInitialPinState(configHandler.GetString("pin.captor.water_upper"))
-
-	board := newDFP(mockBoard, configHandler, dfpConfig, dfpState, eventUsecaseMock, usecaseDFPMock, eventer)
-
-	return board.(*DFPBoard), mockBoard
 }
 
-func TestStartStopIsOnline(t *testing.T) {
-	var status chan bool
+func (s *DFPBoardTestSuite) TestStartStopIsOnline() {
 
 	// Normal start with all stopped on state and running
-	board, adaptor := initTestBoard()
-	err := board.Start(context.Background())
-	assert.NoError(t, err)
+	assert.True(s.T(), s.board.IsOnline())
+	assert.Equal(s.T(), 1, s.board.buttonForceDrum.DefaultState)
+	assert.Equal(s.T(), 1, s.board.buttonForcePump.DefaultState)
+	assert.Equal(s.T(), 1, s.board.buttonEmergencyStop.DefaultState)
+	assert.Equal(s.T(), 1, s.board.buttonStart.DefaultState)
+	assert.Equal(s.T(), 1, s.board.buttonStop.DefaultState)
+	assert.Equal(s.T(), 1, s.board.buttonWash.DefaultState)
 
-	assert.True(t, board.IsOnline())
-	assert.Equal(t, 1, board.buttonForceDrum.DefaultState)
-	assert.Equal(t, 1, board.buttonForcePump.DefaultState)
-	assert.Equal(t, 1, board.buttonEmergencyStop.DefaultState)
-	assert.Equal(t, 1, board.buttonStart.DefaultState)
-	assert.Equal(t, 1, board.buttonStop.DefaultState)
-	assert.Equal(t, 1, board.buttonWash.DefaultState)
+	assert.Equal(s.T(), 1, s.board.captorSecurityUnder.DefaultState)
+	assert.Equal(s.T(), 0, s.board.captorSecurityUpper.DefaultState)
+	assert.Equal(s.T(), 1, s.board.captorWaterUnder.DefaultState)
+	assert.Equal(s.T(), 0, s.board.captorWaterUpper.DefaultState)
 
-	assert.Equal(t, 1, board.captorSecurityUnder.DefaultState)
-	assert.Equal(t, 0, board.captorSecurityUpper.DefaultState)
-	assert.Equal(t, 1, board.captorWaterUnder.DefaultState)
-	assert.Equal(t, 0, board.captorWaterUpper.DefaultState)
+	assert.Equal(s.T(), 0, s.adaptor.DigitalPinState[s.board.relayDrum.Pin()])
+	assert.Equal(s.T(), 0, s.adaptor.DigitalPinState[s.board.relayPump.Pin()])
+	assert.Equal(s.T(), 1, s.adaptor.DigitalPinState[s.board.ledGreen.Pin()])
+	assert.Equal(s.T(), 0, s.adaptor.DigitalPinState[s.board.ledRed.Pin()])
 
-	assert.Equal(t, 0, adaptor.DigitalPinState[board.relayDrum.Pin()])
-	assert.Equal(t, 0, adaptor.DigitalPinState[board.relayPump.Pin()])
-	assert.Equal(t, 1, adaptor.DigitalPinState[board.ledGreen.Pin()])
-	assert.Equal(t, 0, adaptor.DigitalPinState[board.ledRed.Pin()])
-	board.Stop(context.Background())
+	/*
+		// Normal start with all stopped on state and stopped
+		board, adaptor = initTestBoard()
+		board.state.IsRunning = false
+		err = board.Start(context.Background())
+		assert.NoError(t, err)
 
-	// Normal start with all stopped on state and stopped
-	board, adaptor = initTestBoard()
-	board.state.IsRunning = false
-	err = board.Start(context.Background())
-	assert.NoError(t, err)
+		assert.True(t, board.IsOnline())
+		assert.Equal(t, 1, board.buttonForceDrum.DefaultState)
+		assert.Equal(t, 1, board.buttonForcePump.DefaultState)
+		assert.Equal(t, 1, board.buttonEmergencyStop.DefaultState)
+		assert.Equal(t, 1, board.buttonStart.DefaultState)
+		assert.Equal(t, 1, board.buttonStop.DefaultState)
+		assert.Equal(t, 1, board.buttonWash.DefaultState)
 
-	assert.True(t, board.IsOnline())
-	assert.Equal(t, 1, board.buttonForceDrum.DefaultState)
-	assert.Equal(t, 1, board.buttonForcePump.DefaultState)
-	assert.Equal(t, 1, board.buttonEmergencyStop.DefaultState)
-	assert.Equal(t, 1, board.buttonStart.DefaultState)
-	assert.Equal(t, 1, board.buttonStop.DefaultState)
-	assert.Equal(t, 1, board.buttonWash.DefaultState)
+		assert.Equal(t, 1, board.captorSecurityUnder.DefaultState)
+		assert.Equal(t, 0, board.captorSecurityUpper.DefaultState)
+		assert.Equal(t, 1, board.captorWaterUnder.DefaultState)
+		assert.Equal(t, 0, board.captorWaterUpper.DefaultState)
 
-	assert.Equal(t, 1, board.captorSecurityUnder.DefaultState)
-	assert.Equal(t, 0, board.captorSecurityUpper.DefaultState)
-	assert.Equal(t, 1, board.captorWaterUnder.DefaultState)
-	assert.Equal(t, 0, board.captorWaterUpper.DefaultState)
+		assert.Equal(t, 0, adaptor.DigitalPinState[board.relayDrum.Pin()])
+		assert.Equal(t, 0, adaptor.DigitalPinState[board.relayPump.Pin()])
+		assert.Equal(t, 0, adaptor.DigitalPinState[board.ledGreen.Pin()])
+		assert.Equal(t, 1, adaptor.DigitalPinState[board.ledRed.Pin()])
+		board.Stop(context.Background())
 
-	assert.Equal(t, 0, adaptor.DigitalPinState[board.relayDrum.Pin()])
-	assert.Equal(t, 0, adaptor.DigitalPinState[board.relayPump.Pin()])
-	assert.Equal(t, 0, adaptor.DigitalPinState[board.ledGreen.Pin()])
-	assert.Equal(t, 1, adaptor.DigitalPinState[board.ledRed.Pin()])
-	board.Stop(context.Background())
+		// Start with wash and running)
+		board, adaptor = initTestBoard()
+		board.state.IsWashed = true
+		status = helper.WaitEvent(board.Eventer, EventWash, 5*time.Second)
+		err = board.Start(context.Background())
+		assert.NoError(t, err)
+		assert.True(t, <-status)
+		board.Stop(context.Background())
 
-	// Start with wash and running)
-	board, adaptor = initTestBoard()
-	board.state.IsWashed = true
-	status = helper.WaitEvent(board.Eventer, EventWash, 5*time.Second)
-	err = board.Start(context.Background())
-	assert.NoError(t, err)
-	assert.True(t, <-status)
-	board.Stop(context.Background())
-
-	// Stop
-	// It emit event
-	board, adaptor = initTestBoard()
-	err = board.Start(context.Background())
-	assert.NoError(t, err)
-	status = helper.WaitEvent(board.Eventer, EventBoardStop, 1*time.Second)
-	err = board.Stop(context.Background())
-	assert.NoError(t, err)
-	assert.True(t, <-status)
+		// Stop
+		// It emit event
+		board, adaptor = initTestBoard()
+		err = board.Start(context.Background())
+		assert.NoError(t, err)
+		status = helper.WaitEvent(board.Eventer, EventBoardStop, 1*time.Second)
+		err = board.Stop(context.Background())
+		assert.NoError(t, err)
+		assert.True(t, <-status)
+	*/
 
 }
 
-func TestGetBoard(t *testing.T) {
-	board, _ := initTestBoard()
-	assert.Equal(t, "test", board.Board().Name)
-	assert.False(t, board.Board().IsOnline)
+func (s *DFPBoardTestSuite) TestGetBoard() {
+	assert.Equal(s.T(), "test", s.board.Board().Name)
+	assert.True(s.T(), s.board.Board().IsOnline)
 }
 
-func TestName(t *testing.T) {
-	board, _ := initTestBoard()
-	assert.Equal(t, "test", board.Name())
+func (s *DFPBoardTestSuite) TestName() {
+	assert.Equal(s.T(), "test", s.board.Name())
 }
 
-func TestState(t *testing.T) {
-	board, _ := initTestBoard()
-	assert.True(t, reflect.DeepEqual(models.DFPState{IsRunning: true}, board.State()))
+func (s *DFPBoardTestSuite) TestState() {
+	assert.True(s.T(), reflect.DeepEqual(models.DFPState{IsRunning: true}, s.board.State()))
 }
