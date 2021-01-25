@@ -31,6 +31,7 @@ func (h *DFPBoard) wash() {
 
 	ledControl := h.blinkGreenLed()
 
+	// Handle error during washing
 	handleError := func() {
 		h.forceStopRelais()
 		chFinishedStopEvent <- true
@@ -65,6 +66,11 @@ func (h *DFPBoard) wash() {
 					chStoppedWash <- true
 					ledControl.Stop()
 					ledControl.Wait()
+					if h.state.IsRunning {
+						h.turnOnGreenLed()
+					} else {
+						h.turnOffGreenLed()
+					}
 					h.Unsubscribe(out)
 					wg.Done()
 					return

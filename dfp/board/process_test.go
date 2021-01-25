@@ -185,7 +185,7 @@ func (s *DFPBoardTestSuite) TestWorkUpdateState() {
 func (s *DFPBoardTestSuite) TestWash() {
 
 	s.board.config.StartWashingPumpBeforeWashing = 1
-	s.board.config.WashingDuration = 1
+	s.board.config.WashingDuration = 2
 
 	// Wash
 	status := helper.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)

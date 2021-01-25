@@ -40,10 +40,11 @@ func (s *DFPBoardTestSuite) TestTurnOnOffRedLed() {
 
 	// Blink
 	lc := s.board.blinkRedLed()
+	time.Sleep(200 * time.Millisecond)
 	currentState := s.board.ledRed.State()
 	time.Sleep(1 * time.Second)
 	assert.NotEqual(s.T(), currentState, s.board.ledRed.State())
 	lc.Stop()
 	lc.Wait()
-	assert.Equal(s.T(), currentState, s.board.ledRed.State())
+	assert.False(s.T(), s.board.ledRed.State())
 }

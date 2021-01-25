@@ -134,9 +134,9 @@ func (t *MockPlateform) TestAdaptorValuesRead(f func() (vals map[string]interfac
 	t.testAdaptorValuesRead = f
 }
 func (t *MockPlateform) TestAdaptorFunctionCall(f func(name string, parameters string) (val int, err error)) {
+	t.testAdaptorFunctionCall = f
 	t.mtx.Lock()
 	defer t.mtx.Unlock()
-	t.testAdaptorFunctionCall = f
 }
 
 func (t *MockPlateform) ValueRead(name string) (val interface{}, err error) {
@@ -156,10 +156,14 @@ func (t *MockPlateform) FunctionCall(name string, parameters string) (val int, e
 }
 
 func (t *MockPlateform) SetError(err error) {
+	t.mtx.Lock()
+	defer t.mtx.Unlock()
 	t.expectedError = err
 }
 
 func (t *MockPlateform) init() {
+	t.mtx.Lock()
+	defer t.mtx.Unlock()
 	t.testAdaptorDigitalRead = func(pin string) (val int, err error) {
 		if t.expectedError != nil {
 			return 0, t.expectedError

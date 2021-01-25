@@ -4,6 +4,7 @@ import (
 	"context"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/disaster37/gobot-fat/helper"
 	"github.com/disaster37/gobot-fat/models"
@@ -26,6 +27,11 @@ func (s *DFPBoardTestSuite) SetupSuite() {
 	if err := s.board.Start(context.Background()); err != nil {
 		panic(err)
 	}
+
+	// wait initialized
+	for !s.board.isInitialized {
+		time.Sleep(1 * time.Second)
+	}
 }
 
 // Put default state for i/o
@@ -46,12 +52,12 @@ func (s *DFPBoardTestSuite) SetupTest() {
 	s.adaptor.DigitalPinState[s.board.captorWaterUnder.Pin()] = 1
 
 	// Relay
-	s.adaptor.DigitalPinState[s.board.relayDrum.Pin()] = 0
-	s.adaptor.DigitalPinState[s.board.relayPump.Pin()] = 0
+	s.board.relayDrum.Off()
+	s.board.relayPump.Off()
 
 	// Led
-	s.adaptor.DigitalPinState[s.board.ledGreen.Pin()] = 1
-	s.adaptor.DigitalPinState[s.board.ledRed.Pin()] = 0
+	s.board.ledGreen.On()
+	s.board.ledRed.Off()
 
 	// State
 	s.board.state = &models.DFPState{
