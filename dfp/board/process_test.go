@@ -142,7 +142,7 @@ func (s *DFPBoardTestSuite) TestWaterCaptor() {
 	// Don't run more wash after some time
 	// First, run wash to update timer
 	// Then control other wash not run
-	s.board.config.WaitTimeBetweenWashing = 10
+	s.board.config.WaitTimeBetweenWashing = 60
 	status = helper.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
 	s.adaptor.SetDigitalPinState(s.board.captorWaterUpper.Pin(), 1)
 	assert.True(s.T(), <-status)
