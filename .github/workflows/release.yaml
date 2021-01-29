@@ -47,7 +47,7 @@ jobs:
     
     # Run testing on the code
     - name: Run testing
-      run: go test -v ./... -coverprofile=coverage.txt -covermode=atomic
+      run: go test -v ./... -coverprofile=coverage.txt -covermode=atomic -p 1
     
     - name: Upload coverage report
       uses: codecov/codecov-action@v1.0.2
