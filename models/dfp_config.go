@@ -28,6 +28,9 @@ type DFPConfig struct {
 
 	// StartWashingPumpBeforeWashing is the time in seconds witch we start washing pump before run washing cycle
 	StartWashingPumpBeforeWashing int `json:"start_washing_pump_before_washing" gorm:"column:start_washing_pump_before_washing;type:bigint" validate:"required"`
+
+	// WaitTimeBeforeUnsetSecurity is the time in minutes before auto unset security to avoid flapping
+	WaitTimeBeforeUnsetSecurity int `json:"wait_time_before_unset_security" gorm:"column:wait_time_before_unset_security;type:bigint" validate:"required"`
 }
 
 func (h *DFPConfig) String() string {

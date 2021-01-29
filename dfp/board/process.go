@@ -339,8 +339,14 @@ func (h *DFPBoard) work() {
 			}
 		} else {
 
-			if err := h.UnsetSecurity(ctx); err != nil {
-				log.Errorf("When unset security for DFP: %s", err.Error())
+			// Wait some time before auto unset security to avoid flapping
+			time.Sleep(time.Duration(h.config.WaitTimeBeforeUnsetSecurity) * time.Minute)
+
+			// Some time elapsed, we need to check the current state
+			if !h.captorSecurityUpper.Active && !h.captorSecurityUnder.Active {
+				if err := h.UnsetSecurity(ctx); err != nil {
+					log.Errorf("When unset security for DFP: %s", err.Error())
+				}
 			}
 		}
 

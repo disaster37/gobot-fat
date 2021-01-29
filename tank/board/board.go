@@ -17,10 +17,11 @@ import (
 )
 
 const (
-	NewDistance = "new-distance"
-	NewConfig   = "new-config"
-	NewReboot   = "new-reboot"
-	NewOffline  = "new-offline"
+	EventNewDistance  = "new-distance"
+	EventNewConfig    = "new-config"
+	EventBoardReboot  = "board-reboot"
+	EventBoardOffline = "board-offline"
+	EventBoardStop    = "board-stop"
 )
 
 type TankAdaptor interface {
@@ -88,10 +89,11 @@ func newTank(board TankAdaptor, configHandler *viper.Viper, config *models.TankC
 		tankBoard.work,
 	)
 
-	tankBoard.AddEvent(NewDistance)
-	tankBoard.AddEvent(NewConfig)
-	tankBoard.AddEvent(NewReboot)
-	tankBoard.AddEvent(NewOffline)
+	tankBoard.AddEvent(EventNewDistance)
+	tankBoard.AddEvent(EventNewConfig)
+	tankBoard.AddEvent(EventBoardReboot)
+	tankBoard.AddEvent(EventBoardOffline)
+	tankBoard.AddEvent(EventBoardStop)
 
 	log.Infof("Board %s initialized successfully", tankBoard.Name())
 
@@ -144,6 +146,9 @@ func (h *TankBoard) Start(ctx context.Context) (err error) {
 
 // Stop stop the functions handle by board
 func (h *TankBoard) Stop(ctx context.Context) (err error) {
+
+	// Internal event
+	h.Publish(EventBoardStop, nil)
 
 	err = h.gobot.Stop()
 	if err != nil {

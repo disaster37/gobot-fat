@@ -143,7 +143,7 @@ func (h *DFPBoard) SetSecurity(ctx context.Context) (err error) {
 		h.Publish(EventSetSecurity, nil)
 
 		// Publish global event
-		h.globalEventer.Publish(EventSetSecurity, nil)
+		h.globalEventer.Publish(helper.SetSecurity, nil)
 	}
 
 	return
@@ -174,7 +174,7 @@ func (h *DFPBoard) UnsetSecurity(ctx context.Context) (err error) {
 		h.Publish(EventUnsetSecurity, nil)
 
 		// Publish global event
-		h.globalEventer.Publish(EventUnsetSecurity, nil)
+		h.globalEventer.Publish(helper.UnsetSecurity, nil)
 	}
 
 	return

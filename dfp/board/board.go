@@ -263,6 +263,7 @@ func (h *DFPBoard) Stop(ctx context.Context) (err error) {
 	for _, ticker := range h.schedulingRoutines {
 		ticker.Stop()
 	}
+	h.schedulingRoutines = make([]*time.Ticker, 0)
 
 	h.isOnline = false
 	h.isInitialized = false

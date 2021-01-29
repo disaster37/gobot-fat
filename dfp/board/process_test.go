@@ -16,14 +16,14 @@ func (s *DFPBoardTestSuite) TestButtonStart() {
 	// When DFP  stopped
 	s.board.state.IsRunning = false
 	status := helper.WaitEvent(s.board.Eventer, EventStartDFP, 1*time.Second)
-	s.adaptor.DigitalPinState[s.board.buttonStart.Pin()] = 0
+	s.adaptor.SetDigitalPinState(s.board.buttonStart.Pin(), 0)
 	assert.True(s.T(), <-status)
 	assert.True(s.T(), s.board.state.IsRunning)
-	s.adaptor.DigitalPinState[s.board.buttonStart.Pin()] = 1
+	s.adaptor.SetDigitalPinState(s.board.buttonStart.Pin(), 1)
 
 	// When DFP alreay running
 	status = helper.WaitEvent(s.board.Eventer, EventStartDFP, 1*time.Second)
-	s.adaptor.DigitalPinState[s.board.buttonStart.Pin()] = 0
+	s.adaptor.SetDigitalPinState(s.board.buttonStart.Pin(), 0)
 	assert.False(s.T(), <-status)
 	assert.True(s.T(), s.board.state.IsRunning)
 
@@ -33,14 +33,14 @@ func (s *DFPBoardTestSuite) TestButtonStop() {
 
 	// When DFP running
 	status := helper.WaitEvent(s.board.Eventer, EventStopDFP, 1*time.Second)
-	s.adaptor.DigitalPinState[s.board.buttonStop.Pin()] = 0
+	s.adaptor.SetDigitalPinState(s.board.buttonStop.Pin(), 0)
 	assert.True(s.T(), <-status)
 	assert.False(s.T(), s.board.state.IsRunning)
-	s.adaptor.DigitalPinState[s.board.buttonStop.Pin()] = 1
+	s.adaptor.SetDigitalPinState(s.board.buttonStop.Pin(), 1)
 
 	// When DFP already stopped
 	status = helper.WaitEvent(s.board.Eventer, EventStopDFP, 1*time.Second)
-	s.adaptor.DigitalPinState[s.board.buttonStop.Pin()] = 0
+	s.adaptor.SetDigitalPinState(s.board.buttonStop.Pin(), 0)
 	assert.False(s.T(), <-status)
 	assert.False(s.T(), s.board.state.IsRunning)
 }
@@ -48,35 +48,35 @@ func (s *DFPBoardTestSuite) TestButtonStop() {
 func (s *DFPBoardTestSuite) TestButtonForceDrum() {
 	// Test button Force drum ON
 	status := helper.WaitEvent(s.board.Eventer, EventNewInput, 1*time.Second)
-	s.adaptor.DigitalPinState[s.board.buttonForceDrum.Pin()] = 0
+	s.adaptor.SetDigitalPinState(s.board.buttonForceDrum.Pin(), 0)
 	assert.True(s.T(), <-status)
-	assert.Equal(s.T(), 1, s.adaptor.DigitalPinState[s.board.relayDrum.Pin()])
+	assert.Equal(s.T(), 1, s.adaptor.GetDigitalPinState(s.board.relayDrum.Pin()))
 
 	// Test button Force drum OFF
 	status = helper.WaitEvent(s.board.Eventer, EventNewInput, 1*time.Second)
-	s.adaptor.DigitalPinState[s.board.buttonForceDrum.Pin()] = 1
+	s.adaptor.SetDigitalPinState(s.board.buttonForceDrum.Pin(), 1)
 	assert.True(s.T(), <-status)
-	assert.Equal(s.T(), 0, s.adaptor.DigitalPinState[s.board.relayDrum.Pin()])
+	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.relayDrum.Pin()))
 }
 
 func (s *DFPBoardTestSuite) TestButtonForcePump() {
 	// Test button Force pump ON
 	status := helper.WaitEvent(s.board.Eventer, EventNewInput, 1*time.Second)
-	s.adaptor.DigitalPinState[s.board.buttonForcePump.Pin()] = 0
+	s.adaptor.SetDigitalPinState(s.board.buttonForcePump.Pin(), 0)
 	assert.True(s.T(), <-status)
-	assert.Equal(s.T(), 1, s.adaptor.DigitalPinState[s.board.relayPump.Pin()])
+	assert.Equal(s.T(), 1, s.adaptor.GetDigitalPinState(s.board.relayPump.Pin()))
 
 	// Test button Force pump OFF
 	status = helper.WaitEvent(s.board.Eventer, EventNewInput, 1*time.Second)
-	s.adaptor.DigitalPinState[s.board.buttonForcePump.Pin()] = 1
+	s.adaptor.SetDigitalPinState(s.board.buttonForcePump.Pin(), 1)
 	assert.True(s.T(), <-status)
-	assert.Equal(s.T(), 0, s.adaptor.DigitalPinState[s.board.relayPump.Pin()])
+	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.relayPump.Pin()))
 }
 
 func (s *DFPBoardTestSuite) TestButtonForceWash() {
 
 	status := helper.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
-	s.adaptor.DigitalPinState[s.board.buttonWash.Pin()] = 0
+	s.adaptor.SetDigitalPinState(s.board.buttonWash.Pin(), 0)
 	assert.True(s.T(), <-status)
 }
 
@@ -84,59 +84,59 @@ func (s *DFPBoardTestSuite) TestButtonEmergencyStop() {
 
 	// Set emergency stop
 	status := helper.WaitEvent(s.board.Eventer, EventSetEmergencyStop, 1*time.Second)
-	s.adaptor.DigitalPinState[s.board.buttonEmergencyStop.Pin()] = 0
+	s.adaptor.SetDigitalPinState(s.board.buttonEmergencyStop.Pin(), 0)
 	assert.True(s.T(), <-status)
 	assert.True(s.T(), s.board.state.IsEmergencyStopped)
-	assert.Equal(s.T(), 1, s.adaptor.DigitalPinState[s.board.ledRed.Pin()])
+	assert.Equal(s.T(), 1, s.adaptor.GetDigitalPinState(s.board.ledRed.Pin()))
 
 	// Unset emergency stop
 	status = helper.WaitEvent(s.board.Eventer, EventUnsetEmergencyStop, 1*time.Second)
-	s.adaptor.DigitalPinState[s.board.buttonEmergencyStop.Pin()] = 1
+	s.adaptor.SetDigitalPinState(s.board.buttonEmergencyStop.Pin(), 1)
 	assert.True(s.T(), <-status)
 	assert.False(s.T(), s.board.state.IsEmergencyStopped)
-	assert.Equal(s.T(), 0, s.adaptor.DigitalPinState[s.board.ledRed.Pin()])
+	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.ledRed.Pin()))
 }
 
 func (s *DFPBoardTestSuite) TestSecurityCaptor() {
 	// Test secruity upper captor ON
 	status := helper.WaitEvent(s.board.Eventer, EventSetSecurity, 1*time.Second)
-	s.adaptor.DigitalPinState[s.board.captorSecurityUpper.Pin()] = 1
+	s.adaptor.SetDigitalPinState(s.board.captorSecurityUpper.Pin(), 1)
 	assert.True(s.T(), <-status)
 	assert.True(s.T(), s.board.state.IsSecurity)
-	assert.Equal(s.T(), 1, s.adaptor.DigitalPinState[s.board.ledRed.Pin()])
+	assert.Equal(s.T(), 1, s.adaptor.GetDigitalPinState(s.board.ledRed.Pin()))
 
 	// Test secruity upper captor OFF
 	status = helper.WaitEvent(s.board.Eventer, EventUnsetSecurity, 1*time.Second)
-	s.adaptor.DigitalPinState[s.board.captorSecurityUpper.Pin()] = 0
+	s.adaptor.SetDigitalPinState(s.board.captorSecurityUpper.Pin(), 0)
 	assert.True(s.T(), <-status)
 	assert.False(s.T(), s.board.state.IsSecurity)
-	assert.Equal(s.T(), 0, s.adaptor.DigitalPinState[s.board.ledRed.Pin()])
+	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.ledRed.Pin()))
 
 	// Test secruity under captor ON
 	status = helper.WaitEvent(s.board.Eventer, EventSetSecurity, 1*time.Second)
-	s.adaptor.DigitalPinState[s.board.captorSecurityUnder.Pin()] = 0
+	s.adaptor.SetDigitalPinState(s.board.captorSecurityUnder.Pin(), 0)
 	assert.True(s.T(), <-status)
 	assert.True(s.T(), s.board.state.IsSecurity)
-	assert.Equal(s.T(), 1, s.adaptor.DigitalPinState[s.board.ledRed.Pin()])
+	assert.Equal(s.T(), 1, s.adaptor.GetDigitalPinState(s.board.ledRed.Pin()))
 
 	// Test secruity under captor OFF
 	status = helper.WaitEvent(s.board.Eventer, EventUnsetSecurity, 1*time.Second)
-	s.adaptor.DigitalPinState[s.board.captorSecurityUnder.Pin()] = 1
+	s.adaptor.SetDigitalPinState(s.board.captorSecurityUnder.Pin(), 1)
 	assert.True(s.T(), <-status)
 	assert.False(s.T(), s.board.state.IsSecurity)
-	assert.Equal(s.T(), 0, s.adaptor.DigitalPinState[s.board.ledRed.Pin()])
+	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.ledRed.Pin()))
 }
 
 func (s *DFPBoardTestSuite) TestWaterCaptor() {
 	// Test water upper captor ON
 	status := helper.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
-	s.adaptor.DigitalPinState[s.board.captorWaterUpper.Pin()] = 1
+	s.adaptor.SetDigitalPinState(s.board.captorWaterUpper.Pin(), 1)
 	assert.True(s.T(), <-status)
-	s.adaptor.DigitalPinState[s.board.captorWaterUpper.Pin()] = 0
+	s.adaptor.SetDigitalPinState(s.board.captorWaterUpper.Pin(), 0)
 
 	// Test water under captor ON
 	status = helper.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
-	s.adaptor.DigitalPinState[s.board.captorWaterUnder.Pin()] = 0
+	s.adaptor.SetDigitalPinState(s.board.captorWaterUnder.Pin(), 0)
 	assert.True(s.T(), <-status)
 
 	// Don't run more wash after some time
@@ -144,11 +144,11 @@ func (s *DFPBoardTestSuite) TestWaterCaptor() {
 	// Then control other wash not run
 	s.board.config.WaitTimeBetweenWashing = 10
 	status = helper.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
-	s.adaptor.DigitalPinState[s.board.captorWaterUpper.Pin()] = 1
+	s.adaptor.SetDigitalPinState(s.board.captorWaterUpper.Pin(), 1)
 	assert.True(s.T(), <-status)
-	s.adaptor.DigitalPinState[s.board.captorWaterUpper.Pin()] = 0
+	s.adaptor.SetDigitalPinState(s.board.captorWaterUpper.Pin(), 0)
 	status = helper.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
-	s.adaptor.DigitalPinState[s.board.captorWaterUpper.Pin()] = 1
+	s.adaptor.SetDigitalPinState(s.board.captorWaterUpper.Pin(), 1)
 	assert.False(s.T(), <-status)
 
 	// Sorry for that, it's just to be sure is not broke other tests.
@@ -191,15 +191,15 @@ func (s *DFPBoardTestSuite) TestWash() {
 	status := helper.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
 	s.board.wash()
 	time.Sleep(500 * time.Millisecond)
-	assert.Equal(s.T(), 1, s.adaptor.DigitalPinState[s.board.relayPump.Pin()])
-	assert.Equal(s.T(), 0, s.adaptor.DigitalPinState[s.board.relayDrum.Pin()])
+	assert.Equal(s.T(), 1, s.adaptor.GetDigitalPinState(s.board.relayPump.Pin()))
+	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.relayDrum.Pin()))
 	time.Sleep(1 * time.Second)
-	assert.Equal(s.T(), 1, s.adaptor.DigitalPinState[s.board.relayPump.Pin()])
-	assert.Equal(s.T(), 1, s.adaptor.DigitalPinState[s.board.relayDrum.Pin()])
+	assert.Equal(s.T(), 1, s.adaptor.GetDigitalPinState(s.board.relayPump.Pin()))
+	assert.Equal(s.T(), 1, s.adaptor.GetDigitalPinState(s.board.relayDrum.Pin()))
 	assert.True(s.T(), <-status)
-	assert.Equal(s.T(), 0, s.adaptor.DigitalPinState[s.board.relayPump.Pin()])
-	assert.Equal(s.T(), 0, s.adaptor.DigitalPinState[s.board.relayDrum.Pin()])
-	assert.Equal(s.T(), 1, s.adaptor.DigitalPinState[s.board.ledGreen.Pin()])
+	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.relayPump.Pin()))
+	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.relayDrum.Pin()))
+	assert.Equal(s.T(), 1, s.adaptor.GetDigitalPinState(s.board.ledGreen.Pin()))
 
 	// When stop during process
 	status = helper.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
@@ -208,9 +208,9 @@ func (s *DFPBoardTestSuite) TestWash() {
 	err := s.board.StopDFP(context.Background())
 	assert.NoError(s.T(), err)
 	assert.False(s.T(), <-status)
-	assert.Equal(s.T(), 0, s.adaptor.DigitalPinState[s.board.relayPump.Pin()])
-	assert.Equal(s.T(), 0, s.adaptor.DigitalPinState[s.board.relayDrum.Pin()])
-	assert.Equal(s.T(), 0, s.adaptor.DigitalPinState[s.board.ledGreen.Pin()])
+	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.relayPump.Pin()))
+	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.relayDrum.Pin()))
+	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.ledGreen.Pin()))
 	s.board.state.IsRunning = true
 
 	// When emergency stop during process
@@ -220,9 +220,9 @@ func (s *DFPBoardTestSuite) TestWash() {
 	err = s.board.SetEmergencyStop(context.Background())
 	assert.NoError(s.T(), err)
 	assert.False(s.T(), <-status)
-	assert.Equal(s.T(), 0, s.adaptor.DigitalPinState[s.board.relayPump.Pin()])
-	assert.Equal(s.T(), 0, s.adaptor.DigitalPinState[s.board.relayDrum.Pin()])
-	assert.Equal(s.T(), 1, s.adaptor.DigitalPinState[s.board.ledGreen.Pin()])
+	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.relayPump.Pin()))
+	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.relayDrum.Pin()))
+	assert.Equal(s.T(), 1, s.adaptor.GetDigitalPinState(s.board.ledGreen.Pin()))
 	s.board.state.IsEmergencyStopped = false
 
 	// When security during process
@@ -232,8 +232,8 @@ func (s *DFPBoardTestSuite) TestWash() {
 	err = s.board.SetSecurity(context.Background())
 	assert.NoError(s.T(), err)
 	assert.False(s.T(), <-status)
-	assert.Equal(s.T(), 0, s.adaptor.DigitalPinState[s.board.relayPump.Pin()])
-	assert.Equal(s.T(), 0, s.adaptor.DigitalPinState[s.board.relayDrum.Pin()])
-	assert.Equal(s.T(), 1, s.adaptor.DigitalPinState[s.board.ledGreen.Pin()])
+	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.relayPump.Pin()))
+	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.relayDrum.Pin()))
+	assert.Equal(s.T(), 1, s.adaptor.GetDigitalPinState(s.board.ledGreen.Pin()))
 
 }

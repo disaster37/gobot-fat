@@ -10,11 +10,11 @@ func (s *DFPBoardTestSuite) TestTurnOnOffBlinkGreenLed() {
 
 	// Turn on
 	s.board.turnOnGreenLed()
-	assert.Equal(s.T(), 1, s.adaptor.DigitalPinState[s.board.ledGreen.Pin()])
+	assert.Equal(s.T(), 1, s.adaptor.GetDigitalPinState(s.board.ledGreen.Pin()))
 
 	// Turn off
 	s.board.turnOffGreenLed()
-	assert.Equal(s.T(), 0, s.adaptor.DigitalPinState[s.board.ledGreen.Pin()])
+	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.ledGreen.Pin()))
 
 	// Blink
 	lc := s.board.blinkGreenLed()
@@ -32,11 +32,11 @@ func (s *DFPBoardTestSuite) TestTurnOnOffRedLed() {
 
 	// Turn on
 	s.board.turnOnRedLed()
-	assert.Equal(s.T(), 1, s.adaptor.DigitalPinState[s.board.ledRed.Pin()])
+	assert.Equal(s.T(), 1, s.adaptor.GetDigitalPinState(s.board.ledRed.Pin()))
 
 	// Turn off
 	s.board.turnOffRedLed()
-	assert.Equal(s.T(), 0, s.adaptor.DigitalPinState[s.board.ledRed.Pin()])
+	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.ledRed.Pin()))
 
 	// Blink
 	lc := s.board.blinkRedLed()

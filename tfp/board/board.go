@@ -17,10 +17,15 @@ import (
 )
 
 const (
-	NewConfig  = "new-config"
-	NewReboot  = "new-reboot"
-	NewOffline = "new-offline"
-	NewState   = "new-state"
+	EventBoardStop          = "board-stop"
+	EventBoardReboot        = "board-reboot"
+	EventBoardOffline       = "board-offline"
+	EventNewState           = "new-state"
+	EventNewConfig          = "new-config"
+	EventSetSecurity        = "set-security"
+	EventUnsetSecurity      = "unset-security"
+	EventSetEmergencyStop   = "set-emergency-stop"
+	EventUnsetEmergencyStop = "unset-emergency-stop"
 )
 
 // TFPAdaptor is TFP board interface
@@ -52,8 +57,8 @@ type TFPBoard struct {
 	configHandler      *viper.Viper
 	isOnline           bool
 	isInitialized      bool
+	schedulingRoutines []*time.Ticker
 	globalEventer      gobot.Eventer
-	chStop             chan bool
 	gobot.Eventer
 }
 
@@ -89,8 +94,8 @@ func newTFP(board TFPAdaptor, configHandler *viper.Viper, config *models.TFPConf
 		relayBubblePond:    gpio.NewRelayDriver(board, configHandler.GetString("pin.relay.pond_bubble")),
 		valueRebooted:      extra.NewValueDriver(board, "isRebooted", wait),
 		functionRebooted:   extra.NewFunctionDriver(board, "acknoledgeRebooted", ""),
-		chStop:             make(chan bool),
 		Eventer:            gobot.NewEventer(),
+		schedulingRoutines: make([]*time.Ticker, 0),
 	}
 
 	tfpBoard.gobot = gobot.NewRobot(
@@ -109,10 +114,11 @@ func newTFP(board TFPAdaptor, configHandler *viper.Viper, config *models.TFPConf
 		tfpBoard.work,
 	)
 
-	tfpBoard.AddEvent(NewConfig)
-	tfpBoard.AddEvent(NewState)
-	tfpBoard.AddEvent(NewReboot)
-	tfpBoard.AddEvent(NewOffline)
+	tfpBoard.AddEvent(EventNewConfig)
+	tfpBoard.AddEvent(EventNewState)
+	tfpBoard.AddEvent(EventBoardReboot)
+	tfpBoard.AddEvent(EventBoardOffline)
+	tfpBoard.AddEvent(EventBoardStop)
 
 	log.Infof("Board %s initialized successfully", tfpBoard.Name())
 
@@ -226,13 +232,19 @@ func (h *TFPBoard) Start(ctx context.Context) (err error) {
 // Stop stop the functions handle by board
 func (h *TFPBoard) Stop(ctx context.Context) (err error) {
 
+	// Internal event
+	h.Publish(EventBoardStop, nil)
+
+	// Stop scheduling routines
+	for _, ticker := range h.schedulingRoutines {
+		ticker.Stop()
+	}
+	h.schedulingRoutines = make([]*time.Ticker, 0)
+
 	err = h.gobot.Stop()
 	if err != nil {
 		return err
 	}
-
-	// Stop internal routine
-	h.chStop <- true
 
 	h.isOnline = false
 	h.isInitialized = false

@@ -20,9 +20,9 @@ type MockPlateform struct {
 	testAdaptorValueRead    func(name string) (val interface{}, err error)
 	testAdaptorValuesRead   func() (vals map[string]interface{}, err error)
 	testAdaptorFunctionCall func(name string, parameters string) (val int, err error)
-	DigitalPinState         map[string]int
-	ValueReadState          map[string]interface{}
-	CallFunctionState       map[string]int
+	digitalPinState         map[string]int
+	valueReadState          map[string]interface{}
+	callFunctionState       map[string]int
 	invertedInitialState    map[string]bool
 	expectedError           error
 }
@@ -44,12 +44,54 @@ func (m *MockPlateform) SetInputPullup(listPins []*gpio.ButtonDriver) (err error
 			button.DefaultState = 1
 
 			// When InputPullup, the default button state is 1
-			m.DigitalPinState[button.Pin()] = 1
+			m.digitalPinState[button.Pin()] = 1
 		}
 	}
 
 	return
 
+}
+
+func (m *MockPlateform) GetDigitalPinState(pin string) int {
+	m.mtx.Lock()
+	defer m.mtx.Unlock()
+
+	return m.digitalPinState[pin]
+}
+
+func (m *MockPlateform) SetDigitalPinState(pin string, value int) {
+	m.mtx.Lock()
+	defer m.mtx.Unlock()
+
+	m.digitalPinState[pin] = value
+}
+
+func (m *MockPlateform) GetValueReadState(pin string) interface{} {
+	m.mtx.Lock()
+	defer m.mtx.Unlock()
+
+	return m.valueReadState[pin]
+}
+
+func (m *MockPlateform) SetValueReadState(pin string, value interface{}) {
+	m.mtx.Lock()
+	defer m.mtx.Unlock()
+
+	m.valueReadState[pin] = value
+}
+
+func (m *MockPlateform) GetCallFunctionState(pin string) int {
+	m.mtx.Lock()
+	defer m.mtx.Unlock()
+
+	return m.callFunctionState[pin]
+}
+
+func (m *MockPlateform) SetCallFunctionState(pin string, value int) {
+	m.mtx.Lock()
+	defer m.mtx.Unlock()
+
+	m.callFunctionState[pin] = value
 }
 
 // Arest interface
@@ -169,15 +211,15 @@ func (t *MockPlateform) init() {
 			return 0, t.expectedError
 		}
 
-		return t.DigitalPinState[pin], nil
+		return t.digitalPinState[pin], nil
 	}
 
 	t.testAdaptorValueRead = func(name string) (val interface{}, err error) {
 		if t.expectedError != nil {
 			return 0, t.expectedError
 		}
-		if t.ValueReadState[name] != nil {
-			return t.ValueReadState[name], nil
+		if t.valueReadState[name] != nil {
+			return t.valueReadState[name], nil
 		}
 		return nil, nil
 	}
@@ -186,14 +228,14 @@ func (t *MockPlateform) init() {
 		if t.expectedError != nil {
 			return 0, t.expectedError
 		}
-		return t.CallFunctionState[name], nil
+		return t.callFunctionState[name], nil
 	}
 
 	t.testAdaptorDigitalWrite = func(pin string, val byte) (err error) {
 		if t.expectedError != nil {
 			return t.expectedError
 		}
-		t.DigitalPinState[pin] = int(val)
+		t.digitalPinState[pin] = int(val)
 		return nil
 	}
 
@@ -201,9 +243,9 @@ func (t *MockPlateform) init() {
 
 func NewMockPlateform() *MockPlateform {
 	m := &MockPlateform{
-		DigitalPinState:      make(map[string]int),
-		ValueReadState:       make(map[string]interface{}),
-		CallFunctionState:    make(map[string]int),
+		digitalPinState:      make(map[string]int),
+		valueReadState:       make(map[string]interface{}),
+		callFunctionState:    make(map[string]int),
 		invertedInitialState: make(map[string]bool),
 
 		testAdaptorServoWrite: func(pin string, val byte) (err error) {

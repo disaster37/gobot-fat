@@ -16,8 +16,8 @@ func (s *DFPBoardTestSuite) TestStartStopDFP() {
 	assert.NoError(s.T(), err)
 	assert.False(s.T(), <-status)
 	assert.True(s.T(), s.board.state.IsRunning)
-	assert.Equal(s.T(), 1, s.adaptor.DigitalPinState[s.board.ledGreen.Pin()])
-	assert.Equal(s.T(), 0, s.adaptor.DigitalPinState[s.board.ledRed.Pin()])
+	assert.Equal(s.T(), 1, s.adaptor.GetDigitalPinState(s.board.ledGreen.Pin()))
+	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.ledRed.Pin()))
 
 	// Start DFP when stopped
 	s.board.state.IsRunning = false
@@ -26,8 +26,8 @@ func (s *DFPBoardTestSuite) TestStartStopDFP() {
 	assert.NoError(s.T(), err)
 	assert.True(s.T(), <-status)
 	assert.True(s.T(), s.board.state.IsRunning)
-	assert.Equal(s.T(), 1, s.adaptor.DigitalPinState[s.board.ledGreen.Pin()])
-	assert.Equal(s.T(), 0, s.adaptor.DigitalPinState[s.board.ledRed.Pin()])
+	assert.Equal(s.T(), 1, s.adaptor.GetDigitalPinState(s.board.ledGreen.Pin()))
+	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.ledRed.Pin()))
 
 	// Stop DFP when running
 	s.board.state.IsRunning = true
@@ -36,8 +36,8 @@ func (s *DFPBoardTestSuite) TestStartStopDFP() {
 	assert.NoError(s.T(), err)
 	assert.True(s.T(), <-status)
 	assert.False(s.T(), s.board.state.IsRunning)
-	assert.Equal(s.T(), 0, s.adaptor.DigitalPinState[s.board.ledGreen.Pin()])
-	assert.Equal(s.T(), 0, s.adaptor.DigitalPinState[s.board.ledRed.Pin()])
+	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.ledGreen.Pin()))
+	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.ledRed.Pin()))
 
 	// Stop DFP when stopped
 	s.board.state.IsRunning = false
@@ -46,8 +46,8 @@ func (s *DFPBoardTestSuite) TestStartStopDFP() {
 	assert.NoError(s.T(), err)
 	assert.False(s.T(), <-status)
 	assert.False(s.T(), s.board.state.IsRunning)
-	assert.Equal(s.T(), 0, s.adaptor.DigitalPinState[s.board.ledGreen.Pin()])
-	assert.Equal(s.T(), 0, s.adaptor.DigitalPinState[s.board.ledRed.Pin()])
+	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.ledGreen.Pin()))
+	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.ledRed.Pin()))
 
 }
 
@@ -56,18 +56,18 @@ func (s *DFPBoardTestSuite) TestStartStopManualDrum() {
 	// Start manual drum
 	err := s.board.StartManualDrum(context.Background())
 	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), 1, s.adaptor.DigitalPinState[s.board.relayDrum.Pin()])
+	assert.Equal(s.T(), 1, s.adaptor.GetDigitalPinState(s.board.relayDrum.Pin()))
 
 	// Stop manual drum
 	err = s.board.StopManualDrum(context.Background())
 	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), 0, s.adaptor.DigitalPinState[s.board.relayDrum.Pin()])
+	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.relayDrum.Pin()))
 
 	// Can start when emergency stop
 	s.board.state.IsEmergencyStopped = true
 	err = s.board.StartManualDrum(context.Background())
 	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), 0, s.adaptor.DigitalPinState[s.board.relayDrum.Pin()])
+	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.relayDrum.Pin()))
 }
 
 func (s *DFPBoardTestSuite) TestStartStopManualPomp() {
@@ -75,18 +75,18 @@ func (s *DFPBoardTestSuite) TestStartStopManualPomp() {
 	// Start manual pump
 	err := s.board.StartManualPump(context.Background())
 	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), 1, s.adaptor.DigitalPinState[s.board.relayPump.Pin()])
+	assert.Equal(s.T(), 1, s.adaptor.GetDigitalPinState(s.board.relayPump.Pin()))
 
 	// Stop manual pump
 	err = s.board.StopManualPump(context.Background())
 	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), 0, s.adaptor.DigitalPinState[s.board.relayPump.Pin()])
+	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.relayPump.Pin()))
 
 	// Can start when emergency stop
 	s.board.state.IsEmergencyStopped = true
 	err = s.board.StartManualPump(context.Background())
 	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), 0, s.adaptor.DigitalPinState[s.board.relayPump.Pin()])
+	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.relayPump.Pin()))
 }
 
 func (s *DFPBoardTestSuite) TestSetUnsetSecurity() {
@@ -98,7 +98,7 @@ func (s *DFPBoardTestSuite) TestSetUnsetSecurity() {
 	assert.NoError(s.T(), err)
 	assert.True(s.T(), <-status)
 	assert.True(s.T(), s.board.state.IsSecurity)
-	assert.Equal(s.T(), 1, s.adaptor.DigitalPinState[s.board.ledRed.Pin()])
+	assert.Equal(s.T(), 1, s.adaptor.GetDigitalPinState(s.board.ledRed.Pin()))
 
 	// Set security when security
 	s.board.state.IsSecurity = true
@@ -115,7 +115,7 @@ func (s *DFPBoardTestSuite) TestSetUnsetSecurity() {
 	assert.NoError(s.T(), err)
 	assert.True(s.T(), <-status)
 	assert.False(s.T(), s.board.state.IsSecurity)
-	assert.Equal(s.T(), 0, s.adaptor.DigitalPinState[s.board.ledRed.Pin()])
+	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.ledRed.Pin()))
 
 	// Unset security when no security
 	s.board.state.IsSecurity = false
@@ -135,7 +135,7 @@ func (s *DFPBoardTestSuite) TestSetUnsetEmergencyStop() {
 	assert.NoError(s.T(), err)
 	assert.True(s.T(), <-status)
 	assert.True(s.T(), s.board.state.IsEmergencyStopped)
-	assert.Equal(s.T(), 1, s.adaptor.DigitalPinState[s.board.ledRed.Pin()])
+	assert.Equal(s.T(), 1, s.adaptor.GetDigitalPinState(s.board.ledRed.Pin()))
 
 	// Set emergency stop when emergency stop
 	s.board.state.IsEmergencyStopped = true
@@ -151,7 +151,7 @@ func (s *DFPBoardTestSuite) TestSetUnsetEmergencyStop() {
 	assert.NoError(s.T(), err)
 	assert.True(s.T(), <-status)
 	assert.False(s.T(), s.board.state.IsEmergencyStopped)
-	assert.Equal(s.T(), 0, s.adaptor.DigitalPinState[s.board.ledRed.Pin()])
+	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.ledRed.Pin()))
 
 	// Unset emergency stop when no emergency stop
 	s.board.state.IsEmergencyStopped = false

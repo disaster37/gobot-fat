@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/disaster37/gobot-fat/helper"
 	"github.com/disaster37/gobot-fat/tfpstate"
+	"gobot.io/x/gobot"
 
 	"github.com/disaster37/gobot-arest/drivers/extra"
-	"github.com/disaster37/gobot-fat/board"
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/tfpconfig"
 	"github.com/labstack/gommon/log"
@@ -19,18 +20,18 @@ func (h *TFPBoard) work() {
 	ctx := context.Background()
 
 	// Handle config
-	h.globalEventer.On(tfpconfig.NewTFPConfig, func(s interface{}) {
+	h.on(h.globalEventer, tfpconfig.NewTFPConfig, func(s interface{}) {
 		tfpConfig := s.(*models.TFPConfig)
 		log.Debugf("New config received for board %s, we update it", h.name)
 
 		h.config = tfpConfig
 
 		// Publish internal event
-		h.Publish(NewConfig, tfpConfig)
+		h.Publish(EventNewConfig, tfpConfig)
 	})
 
 	// Handle state
-	h.globalEventer.On(tfpstate.NewTFPState, func(s interface{}) {
+	h.on(h.globalEventer, tfpstate.NewTFPState, func(s interface{}) {
 
 		tfpState := s.(*models.TFPState)
 		log.Debugf("New state received for board %s, we update it", h.name)
@@ -39,11 +40,11 @@ func (h *TFPBoard) work() {
 		h.state.OzoneBlisterNbHour = tfpState.OzoneBlisterNbHour
 
 		// Publish internal event
-		h.Publish(NewState, h.state)
+		h.Publish(EventNewState, h.state)
 	})
 
 	// Handle board reboot
-	h.valueRebooted.On(extra.NewValue, func(s interface{}) {
+	h.on(h.valueRebooted, extra.NewValue, func(s interface{}) {
 		log.Debug("New value fired for isRebooted")
 
 		isRebooted := s.(bool)
@@ -67,12 +68,12 @@ func (h *TFPBoard) work() {
 			h.isOnline = true
 
 			// Publish internal event
-			h.Publish(NewReboot, nil)
+			h.Publish(EventBoardReboot, nil)
 		}
 	})
 
 	// Handle board error / offline
-	h.valueRebooted.On(extra.Error, func(s interface{}) {
+	h.on(h.valueRebooted, extra.Error, func(s interface{}) {
 		h.isOnline = false
 
 		err := s.(error)
@@ -82,23 +83,117 @@ func (h *TFPBoard) work() {
 		h.sendEvent(ctx, fmt.Sprintf("offline_%s", h.name), "board")
 
 		// Publish internal event
-		h.Publish(NewOffline, nil)
+		h.Publish(EventBoardOffline, nil)
+
+	})
+
+	// Handle set emergency stop
+	h.on(h.globalEventer, helper.SetEmergencyStop, func(s interface{}) {
+		h.state.IsEmergencyStopped = true
+
+		// Stop UVC1
+		if err := h.relayUVC1.Off(); err != nil {
+			log.Errorf("Error when stop UVC1: %s", err.Error())
+		}
+
+		// Stop UVC2
+		if err := h.relayUVC2.Off(); err != nil {
+			log.Errorf("Error when stop UVC2: %s", err.Error())
+		}
+
+		// Stop pond pump
+		if err := h.relayPompPond.Off(); err != nil {
+			log.Errorf("Error when stop pond pump: %s", err.Error())
+		}
+
+		// Stop pond bubble
+		if err := h.relayBubblePond.Off(); err != nil {
+			log.Errorf("Error when stop pond bubble: %s", err.Error())
+		}
+
+		// Stop filter bubble
+		if err := h.relayBubbleFilter.Off(); err != nil {
+			log.Errorf("Error when stop filter bubble: %s", err.Error())
+		}
+
+		// Stop waterfall pump
+		if err := h.relayPompWaterfall.Off(); err != nil {
+			log.Errorf("Error when stop waterfall pump: %s", err.Error())
+		}
+
+		// Publish internal event
+		h.Publish(EventSetEmergencyStop, nil)
+	})
+
+	// Handle unset emergency stop
+	h.on(h.globalEventer, helper.UnsetEmergencyStop, func(s interface{}) {
+
+		h.state.IsEmergencyStopped = false
+
+		h.handleUnsetSecurityOrEmergencyStop()
+
+		// Publish internal event
+		h.Publish(EventUnsetEmergencyStop, nil)
+	})
+
+	// Handle set secrutity
+	h.on(h.globalEventer, helper.SetSecurity, func(s interface{}) {
+		h.state.IsSecurity = true
+
+		// Stop UVC1
+		if err := h.relayUVC1.Off(); err != nil {
+			log.Errorf("Error when stop UVC1: %s", err.Error())
+		}
+
+		// Stop UVC2
+		if err := h.relayUVC2.Off(); err != nil {
+			log.Errorf("Error when stop UVC2: %s", err.Error())
+		}
+
+		// Stop pond pump
+		if err := h.relayPompPond.Off(); err != nil {
+			log.Errorf("Error when stop pond pump: %s", err.Error())
+		}
+
+		// Stop waterfall pump
+		if err := h.relayPompWaterfall.Off(); err != nil {
+			log.Errorf("Error when stop waterfall pond pump: %s", err.Error())
+		}
+
+		// Publish internal event
+		h.Publish(EventSetSecurity, nil)
+	})
+
+	// Handler unset security
+	h.on(h.globalEventer, helper.UnsetSecurity, func(data interface{}) {
+
+		h.state.IsSecurity = false
+
+		h.handleUnsetSecurityOrEmergencyStop()
+
+		// Publish internal event
+		h.Publish(EventUnsetSecurity, nil)
 
 	})
 
 	// Handle blister time
-	board.NewHandler(ctx, 1*time.Hour, h.chStop, h.handleBlisterTime)
+	h.schedulingRoutines = append(h.schedulingRoutines, gobot.Every(1*time.Hour, h.handleBlisterTime))
 
 	// Handle waterfall auto
-	board.NewHandler(ctx, 1*time.Minute, h.chStop, h.handleWaterfallAuto)
+	h.schedulingRoutines = append(h.schedulingRoutines, gobot.Every(1*time.Minute, h.handleWaterfallAuto))
 
 	h.isInitialized = true
 }
 
 // handleBlisterTime permit to increment the number of hour of each blister enabled
-func (h *TFPBoard) handleBlisterTime(ctx context.Context) {
-
+func (h *TFPBoard) handleBlisterTime() {
+	ctx := context.Background()
 	isUpdated := false
+
+	// If we can start relay, All UVC are already stopped
+	if !h.canStartRelay() {
+		return
+	}
 
 	switch h.config.Mode {
 	case "ozone":
@@ -138,7 +233,8 @@ func (h *TFPBoard) handleBlisterTime(ctx context.Context) {
 }
 
 // handleWaterfall auto permit to start and stop waterfall automatically
-func (h *TFPBoard) handleWaterfallAuto(ctx context.Context) {
+func (h *TFPBoard) handleWaterfallAuto() {
+	ctx := context.Background()
 
 	if h.config.IsWaterfallAuto {
 		startDate, err := time.Parse("15:04", h.config.StartTimeWaterfall)
@@ -167,6 +263,8 @@ func (h *TFPBoard) handleWaterfallAuto(ctx context.Context) {
 					log.Errorf("Error when try to start automatically waterfall pomp: %s", err.Error())
 					return
 				}
+				// Force state if security or emergency stop, to start after that
+				h.state.WaterfallPumpRunning = true
 				h.state.AcknoledgeWaterfallAuto = true
 				isUpdated = true
 			}
@@ -210,5 +308,101 @@ func (h *TFPBoard) sendEvent(ctx context.Context, eventType string, eventKind st
 	err := h.eventUsecase.Create(ctx, event)
 	if err != nil {
 		log.Errorf("Error when store new event: %s", err.Error())
+	}
+}
+
+// Use on instead gobot.Eventer.On because of it not close routine at board is stopped.
+// So, if you start / stop / start board, you have so many routine
+func (h *TFPBoard) on(driver gobot.Eventer, event string, f func(data interface{})) {
+
+	halt := make(chan bool)
+
+	// Detect stop board
+	go func() {
+		out := h.Subscribe()
+
+		for {
+			select {
+			case evt := <-out:
+				if evt.Name == EventBoardStop {
+					halt <- true
+					h.Unsubscribe(out)
+					return
+				}
+			}
+		}
+	}()
+
+	// Handle on event
+	go func() {
+		out := driver.Subscribe()
+		for {
+			select {
+			case <-halt:
+				driver.Unsubscribe(out)
+				return
+			case evt := <-out:
+				if evt.Name == event {
+					f(evt.Data)
+				}
+			}
+		}
+
+	}()
+}
+
+func (h *TFPBoard) handleUnsetSecurityOrEmergencyStop() {
+
+	ctx := context.Background()
+
+	// We can start bubbles
+	if !h.state.IsEmergencyStopped {
+
+		// Filter bubble
+		if h.state.FilterBubbleRunning {
+			if err := h.StartFilterBubble(ctx); err != nil {
+				log.Errorf("When start filter bubble: %s", err.Error())
+			}
+		}
+
+		// Pond bubble
+		if h.state.PondBubbleRunning {
+			if err := h.StartPondBubble(ctx); err != nil {
+				log.Errorf("When start pond bubble: %s", err.Error())
+			}
+		}
+
+	}
+
+	// Start other relais
+	if h.canStartRelay() {
+
+		// Pond pump
+		if h.state.PondPumpRunning {
+			if err := h.StartPondPump(ctx); err != nil {
+				log.Errorf("When start pond pump: %s", err.Error())
+			}
+		}
+
+		// UVC1
+		if h.state.UVC1Running {
+			if err := h.StartUVC1(ctx); err != nil {
+				log.Errorf("When start UVC1: %s", err.Error())
+			}
+		}
+
+		// UVC2
+		if h.state.UVC2Running {
+			if err := h.StartUVC2(ctx); err != nil {
+				log.Errorf("When start UVC2: %s", err.Error())
+			}
+		}
+
+		// Waterfall pump
+		if h.state.WaterfallPumpRunning {
+			if err := h.StartWaterfallPump(ctx); err != nil {
+				log.Errorf("When start waterfall pump: %s", err.Error())
+			}
+		}
 	}
 }
