@@ -462,7 +462,7 @@ func (h *DFPBoard) readTemperatureSensor() {
 	ctx := context.Background()
 	sensors, err := ds18b20.Sensors()
 	if err != nil {
-		panic(err)
+		log.Errorf("Error when read 1-wire: %s", err.Error())
 	}
 
 	log.Debugf("sensor IDs: %v\n", sensors)
