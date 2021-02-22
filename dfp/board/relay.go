@@ -134,7 +134,7 @@ func (h *DFPBoard) SetSecurity(ctx context.Context) (err error) {
 	if !h.state.IsSecurity {
 
 		//  Start timer to avoid flapping
-		h.waitTimeUnsetSecurity = time.NewTicker(time.Duration(h.config.WaitTimeBeforeUnsetSecurity) * time.Minute)
+		h.waitTimeUnsetSecurity = time.NewTicker(time.Duration(h.config.WaitTimeBeforeUnsetSecurity) * time.Second)
 
 		h.state.IsSecurity = true
 

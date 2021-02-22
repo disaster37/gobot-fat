@@ -106,6 +106,7 @@ func (s *DFPBoardTestSuite) TestSecurityCaptor() {
 	assert.Equal(s.T(), 1, s.adaptor.GetDigitalPinState(s.board.ledRed.Pin()))
 
 	// Test secruity upper captor OFF
+	time.Sleep(1 * time.Second)
 	status = helper.WaitEvent(s.board.Eventer, EventUnsetSecurity, 1*time.Second)
 	s.adaptor.SetDigitalPinState(s.board.captorSecurityUpper.Pin(), 0)
 	assert.True(s.T(), <-status)
@@ -120,6 +121,7 @@ func (s *DFPBoardTestSuite) TestSecurityCaptor() {
 	assert.Equal(s.T(), 1, s.adaptor.GetDigitalPinState(s.board.ledRed.Pin()))
 
 	// Test secruity under captor OFF
+	time.Sleep(1 * time.Second)
 	status = helper.WaitEvent(s.board.Eventer, EventUnsetSecurity, 1*time.Second)
 	s.adaptor.SetDigitalPinState(s.board.captorSecurityUnder.Pin(), 1)
 	assert.True(s.T(), <-status)

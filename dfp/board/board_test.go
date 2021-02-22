@@ -71,6 +71,7 @@ func (s *DFPBoardTestSuite) SetupTest() {
 		StartWashingPumpBeforeWashing:  1,
 		WaitTimeBetweenWashing:         1,
 		WashingDuration:                1,
+		WaitTimeBeforeUnsetSecurity:    1,
 	}
 }
 
