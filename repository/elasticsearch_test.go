@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/disaster37/gobot-fat/helper"
+	"github.com/disaster37/gobot-fat/mock"
 	"github.com/disaster37/gobot-fat/models"
 	elastic "github.com/elastic/go-elasticsearch/v7"
 	"github.com/stretchr/testify/assert"
@@ -15,10 +15,10 @@ import (
 func TestGetElasticsearch(t *testing.T) {
 
 	// When record found
-	mocktrans := &helper.MockTransport{
+	mocktrans := &mock.MockTransport{
 		Response: &http.Response{
 			StatusCode: http.StatusOK,
-			Body:       helper.Fixture("get_config.json"),
+			Body:       mock.Fixture("get_config.json"),
 		},
 	}
 	mocktrans.RoundTripFn = func(req *http.Request) (*http.Response, error) { return mocktrans.Response, nil }
@@ -41,10 +41,10 @@ func TestGetElasticsearch(t *testing.T) {
 	assert.Equal(t, "2020-02-06T10:40:12Z", dfpConfig.UpdatedAt.Format(time.RFC3339Nano))
 
 	// When record not found
-	mocktrans = &helper.MockTransport{
+	mocktrans = &mock.MockTransport{
 		Response: &http.Response{
 			StatusCode: http.StatusOK,
-			Body:       helper.Fixture("get_not_found.json"),
+			Body:       mock.Fixture("get_not_found.json"),
 		},
 	}
 	mocktrans.RoundTripFn = func(req *http.Request) (*http.Response, error) { return mocktrans.Response, nil }
@@ -65,10 +65,10 @@ func TestGetElasticsearch(t *testing.T) {
 func TestListElasticsearch(t *testing.T) {
 
 	// When records found
-	mocktrans := &helper.MockTransport{
+	mocktrans := &mock.MockTransport{
 		Response: &http.Response{
 			StatusCode: http.StatusOK,
-			Body:       helper.Fixture("search_config.json"),
+			Body:       mock.Fixture("search_config.json"),
 		},
 	}
 	mocktrans.RoundTripFn = func(req *http.Request) (*http.Response, error) { return mocktrans.Response, nil }
@@ -94,10 +94,10 @@ func TestListElasticsearch(t *testing.T) {
 	}
 
 	// When use slice of struct
-	mocktrans = &helper.MockTransport{
+	mocktrans = &mock.MockTransport{
 		Response: &http.Response{
 			StatusCode: http.StatusOK,
-			Body:       helper.Fixture("search_config.json"),
+			Body:       mock.Fixture("search_config.json"),
 		},
 	}
 	mocktrans.RoundTripFn = func(req *http.Request) (*http.Response, error) { return mocktrans.Response, nil }
@@ -121,10 +121,10 @@ func TestListElasticsearch(t *testing.T) {
 	}
 
 	// When no record found
-	mocktrans = &helper.MockTransport{
+	mocktrans = &mock.MockTransport{
 		Response: &http.Response{
 			StatusCode: http.StatusOK,
-			Body:       helper.Fixture("search_not_found.json"),
+			Body:       mock.Fixture("search_not_found.json"),
 		},
 	}
 	mocktrans.RoundTripFn = func(req *http.Request) (*http.Response, error) { return mocktrans.Response, nil }
@@ -144,10 +144,10 @@ func TestListElasticsearch(t *testing.T) {
 
 func TestUpdateElasticsearch(t *testing.T) {
 
-	mocktrans := &helper.MockTransport{
+	mocktrans := &mock.MockTransport{
 		Response: &http.Response{
 			StatusCode: http.StatusOK,
-			Body:       helper.Fixture("update_config.json"),
+			Body:       mock.Fixture("update_config.json"),
 		},
 	}
 	mocktrans.RoundTripFn = func(req *http.Request) (*http.Response, error) { return mocktrans.Response, nil }
@@ -183,10 +183,10 @@ func TestUpdateElasticsearch(t *testing.T) {
 
 func TestCreateElasticsearch(t *testing.T) {
 
-	mocktrans := &helper.MockTransport{
+	mocktrans := &mock.MockTransport{
 		Response: &http.Response{
 			StatusCode: http.StatusOK,
-			Body:       helper.Fixture("update_config.json"),
+			Body:       mock.Fixture("update_config.json"),
 		},
 	}
 	mocktrans.RoundTripFn = func(req *http.Request) (*http.Response, error) { return mocktrans.Response, nil }

@@ -1,7 +1,6 @@
-package helper
+package mock
 
-
-import(
+import (
 	"net/http"
 )
 

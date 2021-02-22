@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/disaster37/gobot-arest/drivers/extra"
-	"github.com/disaster37/gobot-fat/helper"
+	"github.com/disaster37/gobot-fat/mock"
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/tankconfig"
 	"github.com/stretchr/testify/assert"
@@ -16,7 +16,7 @@ func (s *TankBoardTestSuite) TestWork() {
 	waitDuration := 100 * time.Millisecond
 
 	// Check update distance
-	status := helper.WaitEvent(s.board, EventNewDistance, waitDuration)
+	status := mock.WaitEvent(s.board, EventNewDistance, waitDuration)
 	s.adaptor.SetValueReadState("distance", float64(50))
 	assert.True(s.T(), <-status)
 	assert.Equal(s.T(), int(50), s.board.data.Level)
@@ -30,7 +30,7 @@ func (s *TankBoardTestSuite) TestWork() {
 		LiterPerCm:   5,
 		SensorHeight: 5,
 	}
-	status = helper.WaitEvent(s.board, EventNewConfig, waitDuration)
+	status = mock.WaitEvent(s.board, EventNewConfig, waitDuration)
 	s.board.globalEventer.Publish(tankconfig.NewTankConfig, newConfig)
 	assert.True(s.T(), <-status)
 	assert.Equal(s.T(), newConfig, s.board.config)
@@ -41,13 +41,13 @@ func (s *TankBoardTestSuite) TestWork() {
 		isReconnectCalled = true
 		return nil
 	})
-	status = helper.WaitEvent(s.board, EventBoardReboot, waitDuration)
+	status = mock.WaitEvent(s.board, EventBoardReboot, waitDuration)
 	s.adaptor.SetValueReadState("isRebooted", true)
 	assert.True(s.T(), <-status)
 	assert.True(s.T(), isReconnectCalled)
 
 	// Check offline
-	status = helper.WaitEvent(s.board, EventBoardOffline, waitDuration)
+	status = mock.WaitEvent(s.board, EventBoardOffline, waitDuration)
 	s.board.valueRebooted.Publish(extra.Error, errors.New("test"))
 	assert.True(s.T(), <-status)
 	assert.False(s.T(), s.board.IsOnline())

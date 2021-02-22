@@ -1,4 +1,4 @@
-package helper
+package mock
 
 import "github.com/disaster37/gobot-fat/mail"
 

@@ -3,14 +3,14 @@ package tfpboard
 import (
 	"time"
 
-	"github.com/disaster37/gobot-fat/helper"
+	"github.com/disaster37/gobot-fat/mock"
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/usecase"
 	"github.com/spf13/viper"
 	"gobot.io/x/gobot"
 )
 
-func initTestBoard() (*TFPBoard, *helper.MockPlateform) {
+func initTestBoard() (*TFPBoard, *mock.MockPlateform) {
 	configHandler := viper.New()
 	configHandler.Set("name", "test")
 	configHandler.Set("pin.relay.pond_pomp", 1)
@@ -25,7 +25,7 @@ func initTestBoard() (*TFPBoard, *helper.MockPlateform) {
 	stateTFP := &models.TFPState{}
 	eventer := gobot.NewEventer()
 	eventUsecaseMock := usecase.NewMockUsecasetBase()
-	mockBoard := helper.NewMockPlateform()
+	mockBoard := mock.NewMockPlateform()
 	usecaseTFPMock := usecase.NewMockUsecasetBase()
 
 	// Return the right type for drivers
