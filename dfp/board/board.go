@@ -2,11 +2,12 @@ package dfpboard
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
 	"github.com/disaster37/gobot-fat/dfp"
+	"github.com/disaster37/gobot-fat/helper"
+	"github.com/disaster37/gobot-fat/mail"
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/usecase"
 	log "github.com/sirupsen/logrus"
@@ -67,6 +68,7 @@ type DFPBoard struct {
 	eventUsecase            usecase.UsecaseCRUD
 	stateUsecase            usecase.UsecaseCRUD
 	configHandler           *viper.Viper
+	mailClient              mail.Mail
 	isOnline                bool
 	isInitialized           bool
 	relayDrum               *gpio.RelayDriver
@@ -89,23 +91,24 @@ type DFPBoard struct {
 	timeBetweenWash         *time.Ticker
 	waitTimeForceWash       *time.Ticker
 	waitTimeForceWashFrozen *time.Ticker
+	waitTimeUnsetSecurity   *time.Ticker
 	schedulingRoutines      []*time.Ticker
 	gobot.Eventer
 	sync.Mutex
 }
 
 // NewDFP create board to manage DFP
-func NewDFP(configHandler *viper.Viper, config *models.DFPConfig, state *models.DFPState, eventUsecase usecase.UsecaseCRUD, dfpStateUsecase usecase.UsecaseCRUD, eventer gobot.Eventer) (dfpBoard dfp.Board) {
+func NewDFP(configHandler *viper.Viper, config *models.DFPConfig, state *models.DFPState, eventUsecase usecase.UsecaseCRUD, dfpStateUsecase usecase.UsecaseCRUD, eventer gobot.Eventer, mailClient mail.Mail) (dfpBoard dfp.Board) {
 
 	//Create client
 	c := NewRaspiAdaptor()
 
-	return newDFP(c, configHandler, config, state, eventUsecase, dfpStateUsecase, eventer)
+	return newDFP(c, configHandler, config, state, eventUsecase, dfpStateUsecase, eventer, mailClient)
 
 }
 
 // newDFP create board to manage DFP
-func newDFP(board DFPAdaptor, configHandler *viper.Viper, config *models.DFPConfig, state *models.DFPState, eventUsecase usecase.UsecaseCRUD, dfpStateUsecase usecase.UsecaseCRUD, eventer gobot.Eventer) dfp.Board {
+func newDFP(board DFPAdaptor, configHandler *viper.Viper, config *models.DFPConfig, state *models.DFPState, eventUsecase usecase.UsecaseCRUD, dfpStateUsecase usecase.UsecaseCRUD, eventer gobot.Eventer, mailClient mail.Mail) dfp.Board {
 
 	buttonPollingDuration := configHandler.GetDuration("button_polling") * time.Millisecond
 
@@ -138,6 +141,7 @@ func newDFP(board DFPAdaptor, configHandler *viper.Viper, config *models.DFPConf
 		timeBetweenWash:     time.NewTicker(time.Duration(1 * time.Nanosecond)),
 		Eventer:             gobot.NewEventer(),
 		schedulingRoutines:  make([]*time.Ticker, 0),
+		mailClient:          mailClient,
 	}
 
 	// Create gobot robot
@@ -231,7 +235,7 @@ func (h *DFPBoard) Start(ctx context.Context) (err error) {
 
 	h.isOnline = true
 
-	h.sendEvent(ctx, fmt.Sprintf("start_%s", h.name), "board")
+	helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventStartBoard, h.name)
 
 	return nil
 
@@ -268,7 +272,7 @@ func (h *DFPBoard) Stop(ctx context.Context) (err error) {
 	h.isOnline = false
 	h.isInitialized = false
 
-	h.sendEvent(ctx, fmt.Sprintf("stop_%s", h.name), "board")
+	helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventStopBoard, h.name)
 
 	return nil
 }

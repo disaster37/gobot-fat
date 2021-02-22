@@ -2,6 +2,7 @@ package dfpboard
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/disaster37/gobot-fat/helper"
@@ -22,7 +23,8 @@ func (h *DFPBoard) StartDFP(ctx context.Context) (err error) {
 			return err
 		}
 
-		h.sendEvent(ctx, "board", "dfp_start")
+		// Send event
+		helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventStart, h.name)
 
 		// Publish internal event
 		h.Publish(EventStartDFP, nil)
@@ -50,7 +52,8 @@ func (h *DFPBoard) StopDFP(ctx context.Context) (err error) {
 			return err
 		}
 
-		h.sendEvent(ctx, "board", "dfp_stop")
+		// Send event
+		helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventStop, h.name)
 
 		// Publish internal event
 		h.Publish(EventStopDFP, nil)
@@ -80,7 +83,8 @@ func (h *DFPBoard) SetEmergencyStop(ctx context.Context) (err error) {
 			return err
 		}
 
-		h.sendEvent(ctx, "board", "dfp_set_emergency_stop")
+		// Send event
+		helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventSetEmergencyStop, h.name)
 
 		// Publish internal event
 		h.Publish(EventSetEmergencyStop, nil)
@@ -110,7 +114,8 @@ func (h *DFPBoard) UnsetEmergencyStop(ctx context.Context) (err error) {
 			return err
 		}
 
-		h.sendEvent(ctx, "board", "dfp_unset_emergency_stop")
+		// Send event
+		helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventUnsetEmergencyStop, h.name)
 
 		// Publish internal event
 		h.Publish(EventUnsetEmergencyStop, nil)
@@ -127,6 +132,10 @@ func (h *DFPBoard) UnsetEmergencyStop(ctx context.Context) (err error) {
 func (h *DFPBoard) SetSecurity(ctx context.Context) (err error) {
 
 	if !h.state.IsSecurity {
+
+		//  Start timer to avoid flapping
+		h.waitTimeUnsetSecurity = time.NewTicker(time.Duration(h.config.WaitTimeBeforeUnsetSecurity) * time.Minute)
+
 		h.state.IsSecurity = true
 
 		if err = h.ledRed.On(); err != nil {
@@ -137,7 +146,13 @@ func (h *DFPBoard) SetSecurity(ctx context.Context) (err error) {
 			return err
 		}
 
-		h.sendEvent(ctx, "board", "dfp_set_security")
+		// Send event
+		helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventSetSecurity, h.name)
+
+		// Send email
+		if err = h.mailClient.SendEmail("DFP set security mode", fmt.Sprintf("We enter on security mode at %s", time.Now())); err != nil {
+			log.Errorf("Error when send email: %s", err.Error())
+		}
 
 		// Publish internal event
 		h.Publish(EventSetSecurity, nil)
@@ -154,6 +169,7 @@ func (h *DFPBoard) SetSecurity(ctx context.Context) (err error) {
 func (h *DFPBoard) UnsetSecurity(ctx context.Context) (err error) {
 
 	if h.state.IsSecurity {
+
 		h.state.IsSecurity = false
 
 		if !h.state.IsEmergencyStopped {
@@ -168,13 +184,20 @@ func (h *DFPBoard) UnsetSecurity(ctx context.Context) (err error) {
 			return err
 		}
 
-		h.sendEvent(ctx, "board", "dfp_unset_security")
+		// Send event
+		helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventUnsetSecurity, h.name)
+
+		// Send email
+		if err = h.mailClient.SendEmail("DFP unset security mode", fmt.Sprintf("We exit on security mode at %s", time.Now())); err != nil {
+			log.Errorf("Error when send email: %s", err.Error())
+		}
 
 		// Publish internal event
 		h.Publish(EventUnsetSecurity, nil)
 
 		// Publish global event
 		h.globalEventer.Publish(helper.UnsetSecurity, nil)
+
 	}
 
 	return

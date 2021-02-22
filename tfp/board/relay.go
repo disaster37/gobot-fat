@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/disaster37/gobot-fat/helper"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -26,7 +27,8 @@ func (h *TFPBoard) StartPondPump(ctx context.Context) error {
 			return err
 		}
 
-		h.sendEvent(ctx, "start_pond_pump", "pump")
+		// Send event
+		helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventStart, "pond_pump")
 
 		// Save state only if state change
 		if !h.state.PondPumpRunning {
@@ -57,7 +59,8 @@ func (h *TFPBoard) StartUVC1(ctx context.Context) error {
 			return err
 		}
 
-		h.sendEvent(ctx, "start_uvc1", "uvc")
+		// Send event
+		helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventStart, "uvc1")
 
 		// Save state only if state change
 		if !h.state.UVC1Running {
@@ -87,7 +90,7 @@ func (h *TFPBoard) StartUVC2(ctx context.Context) error {
 			return err
 		}
 
-		h.sendEvent(ctx, "start_uvc2", "uvc")
+		helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventStart, "uvc2")
 
 		// Save state only if state change
 		if !h.state.UVC2Running {
@@ -144,7 +147,7 @@ func (h *TFPBoard) StopUVC1(ctx context.Context) error {
 		return err
 	}
 
-	h.sendEvent(ctx, "stop_uvc1", "uvc")
+	helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventStop, "uvc1")
 
 	// Save state only if state change
 	if h.state.UVC1Running {
@@ -171,7 +174,7 @@ func (h *TFPBoard) StopUVC2(ctx context.Context) error {
 		return err
 	}
 
-	h.sendEvent(ctx, "stop_uvc2", "uvc")
+	helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventStop, "uvc2")
 
 	// Save state only if state change
 	if h.state.UVC2Running {
@@ -207,7 +210,7 @@ func (h *TFPBoard) StopPondPump(ctx context.Context) error {
 		return err
 	}
 
-	h.sendEvent(ctx, "stop_pond_pump", "pump")
+	helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventStop, "pond_pump")
 
 	// Save state only if state change
 	if h.state.PondPumpRunning {
@@ -233,7 +236,7 @@ func (h *TFPBoard) StartWaterfallPump(ctx context.Context) error {
 			return err
 		}
 
-		h.sendEvent(ctx, "start_watterfall_pump", "pump")
+		helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventStart, "waterfall_pump")
 
 		// Save state only if state change
 		if !h.state.WaterfallPumpRunning {
@@ -264,7 +267,7 @@ func (h *TFPBoard) StopWaterfallPump(ctx context.Context) error {
 		return err
 	}
 
-	h.sendEvent(ctx, "stop_waterfall_pump", "pump")
+	helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventStop, "watefall_pump")
 
 	// Save state only if state change
 	if h.state.WaterfallPumpRunning {
@@ -290,7 +293,7 @@ func (h *TFPBoard) StartPondBubble(ctx context.Context) error {
 			return err
 		}
 
-		h.sendEvent(ctx, "start_pond_bubble", "bubble")
+		helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventStart, "pond_bubble")
 
 		// Save state only if state change
 		if !h.state.PondBubbleRunning {
@@ -321,7 +324,7 @@ func (h *TFPBoard) StopPondBubble(ctx context.Context) error {
 		return err
 	}
 
-	h.sendEvent(ctx, "stop_pond_bubble", "bubble")
+	helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventStop, "pond_bubble")
 
 	// Save state only if state change
 	if h.state.PondBubbleRunning {
@@ -347,7 +350,7 @@ func (h *TFPBoard) StartFilterBubble(ctx context.Context) error {
 			return err
 		}
 
-		h.sendEvent(ctx, "start_filter_bubble", "bubble")
+		helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventStart, "filter_bubble")
 
 		// Save state only if state change
 		if !h.state.FilterBubbleRunning {
@@ -378,7 +381,7 @@ func (h *TFPBoard) StopFilterBubble(ctx context.Context) error {
 		return err
 	}
 
-	h.sendEvent(ctx, "start_filter_bubble", "bubble")
+	helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventStop, "filter_bubble")
 
 	// Save state only if state change
 	if h.state.FilterBubbleRunning {

@@ -17,7 +17,7 @@ type Event struct {
 	Humidity                float64   `json:"humidity,omitempty"`
 	Duration                int64     `json:"duration,omitempty"`
 	DurationFromLastWashing int64     `json:"duration_from_last,omitempty"`
-	Distance                int64     `json:"distance,omitempty"`
+	Level                   int64     `json:"level,omitempty"`
 }
 
 func (h *Event) String() string {

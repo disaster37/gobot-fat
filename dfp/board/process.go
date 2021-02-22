@@ -2,13 +2,16 @@ package dfpboard
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
 	"github.com/disaster37/gobot-fat/dfpconfig"
 	"github.com/disaster37/gobot-fat/dfpstate"
+	"github.com/disaster37/gobot-fat/helper"
 	"github.com/disaster37/gobot-fat/models"
 	log "github.com/sirupsen/logrus"
+	"github.com/yryz/ds18b20"
 	"gobot.io/x/gobot"
 	"gobot.io/x/gobot/drivers/gpio"
 )
@@ -148,6 +151,9 @@ func (h *DFPBoard) wash() {
 		h.waitTimeForceWash = time.NewTicker(time.Duration(h.config.ForceWashingDuration) * time.Second)
 		h.waitTimeForceWashFrozen = time.NewTicker(time.Duration(h.config.ForceWashingDurationWhenFrozen) * time.Second)
 
+		// send event
+		helper.SendEvent(context.Background(), h.eventUsecase, h.name, helper.KindEventWash, h.name)
+
 		ledControl.Wait()
 		wg.Wait()
 
@@ -155,19 +161,6 @@ func (h *DFPBoard) wash() {
 		return
 	}()
 
-}
-
-func (h *DFPBoard) sendEvent(ctx context.Context, kind string, name string, args ...interface{}) {
-	event := &models.Event{
-		SourceID:   h.state.Name,
-		SourceName: h.state.Name,
-		Timestamp:  time.Now(),
-		EventType:  name,
-		EventKind:  kind,
-	}
-	if err := h.eventUsecase.Create(ctx, event); err != nil {
-		log.Errorf("Error when store new event: %s", err.Error())
-	}
 }
 
 func (h *DFPBoard) work() {
@@ -194,7 +187,6 @@ func (h *DFPBoard) work() {
 	// Handle state
 	h.on(h.globalEventer, dfpstate.NewDFPState, func(s interface{}) {
 
-		//panic("plop")
 		dfpState := s.(*models.DFPState)
 		log.Debugf("New state received for board %s, we update it", h.name)
 
@@ -339,14 +331,14 @@ func (h *DFPBoard) work() {
 			}
 		} else {
 
-			// Wait some time before auto unset security to avoid flapping
-			time.Sleep(time.Duration(h.config.WaitTimeBeforeUnsetSecurity) * time.Minute)
-
-			// Some time elapsed, we need to check the current state
-			if !h.captorSecurityUpper.Active && !h.captorSecurityUnder.Active {
+			select {
+			case <-h.waitTimeUnsetSecurity.C:
 				if err := h.UnsetSecurity(ctx); err != nil {
 					log.Errorf("When unset security for DFP: %s", err.Error())
 				}
+			default:
+				log.Infof("We need to wait some time before unset")
+				return
 			}
 		}
 
@@ -361,10 +353,8 @@ func (h *DFPBoard) work() {
 	 */
 
 	// Read temperature sensor
-	ticker := gobot.Every(30*time.Minute, func() {
-		//@TODO read sensors and update state.
-		//No need to save state for that.
-	})
+	h.readTemperatureSensor()
+	ticker := gobot.Every(30*time.Minute, h.readTemperatureSensor)
 	h.schedulingRoutines = append(h.schedulingRoutines, ticker)
 
 	// Force washing when inactivity
@@ -466,4 +456,35 @@ func (h *DFPBoard) on(driver gobot.Eventer, event string, f func(data interface{
 		}
 
 	}()
+}
+
+func (h *DFPBoard) readTemperatureSensor() {
+	ctx := context.Background()
+	sensors, err := ds18b20.Sensors()
+	if err != nil {
+		panic(err)
+	}
+
+	log.Debugf("sensor IDs: %v\n", sensors)
+
+	for i, sensor := range sensors {
+		t, err := ds18b20.Temperature(sensor)
+		if err == nil {
+			fmt.Printf("sensor: %s temperature: %.2f°C\n", sensor, t)
+		}
+
+		// No need to save state for that
+		if i == 0 {
+			h.state.WaterTemperature = t
+
+			// Send event
+			helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventTemperature, "water", t)
+		} else {
+			h.state.AmbientTemperature = t
+
+			// Send event
+			helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventTemperature, "ambient", t)
+		}
+
+	}
 }

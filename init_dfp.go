@@ -12,6 +12,7 @@ import (
 	dfpConfigHttpDeliver "github.com/disaster37/gobot-fat/dfpconfig/delivery/http"
 	"github.com/disaster37/gobot-fat/dfpstate"
 	dfpStateHttpDeliver "github.com/disaster37/gobot-fat/dfpstate/delivery/http"
+	"github.com/disaster37/gobot-fat/mail"
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/repository"
 	"github.com/disaster37/gobot-fat/usecase"
@@ -24,7 +25,7 @@ import (
 )
 
 // init DFP config, state and board usecase
-func initDFP(ctx context.Context, eventer gobot.Eventer, api *echo.Group, configHandler *viper.Viper, elacticConn *elasticsearch.Client, sqlConn *gorm.DB, eventUsecase usecase.UsecaseCRUD, boardUsecase board.Usecase) (err error) {
+func initDFP(ctx context.Context, eventer gobot.Eventer, api *echo.Group, configHandler *viper.Viper, elacticConn *elasticsearch.Client, sqlConn *gorm.DB, eventUsecase usecase.UsecaseCRUD, boardUsecase board.Usecase, mailClient mail.Mail) (err error) {
 
 	timeout := time.Duration(configHandler.GetInt("context.timeout")) * time.Second
 
@@ -85,7 +86,7 @@ func initDFP(ctx context.Context, eventer gobot.Eventer, api *echo.Group, config
 
 	// DFP board
 	if configHandler.GetBool("dfp.enable") {
-		dfpBoard := dfpboard.NewDFP(configHandler.Sub("dfp"), dfpConfig, dfpState, eventUsecase, dfpStateUsecase, eventer)
+		dfpBoard := dfpboard.NewDFP(configHandler.Sub("dfp"), dfpConfig, dfpState, eventUsecase, dfpStateUsecase, eventer, mailClient)
 		boardUsecase.AddBoard(dfpBoard)
 		dfpUsecase := dfpusecase.NewDFPUsecase(dfpBoard, timeout)
 		dfpHttpDeliver.NewDFPHandler(api, dfpUsecase)

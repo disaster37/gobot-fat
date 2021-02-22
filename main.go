@@ -15,6 +15,7 @@ import (
 	"github.com/disaster37/gobot-fat/helper"
 	loginHttpDeliver "github.com/disaster37/gobot-fat/login/delivery/http"
 	loginUsecase "github.com/disaster37/gobot-fat/login/usecase"
+	"github.com/disaster37/gobot-fat/mail/smtp"
 	dfpMiddleware "github.com/disaster37/gobot-fat/middleware"
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/repository"
@@ -107,7 +108,6 @@ func main() {
 	api.Use(middL.IsAdmin)
 
 	// Init global resources
-
 	timeoutContext := time.Duration(configHandler.GetInt("context.timeout")) * time.Second
 	eventRepoES := repository.NewElasticsearchRepository(es, configHandler.GetString("elasticsearch.index.event"))
 	eventUsecase := usecase.NewEventUsecase(eventRepoES, timeoutContext)
@@ -118,6 +118,7 @@ func main() {
 	eventer.AddEvent(helper.UnsetEmergencyStop)
 	eventer.AddEvent(helper.SetSecurity)
 	eventer.AddEvent(helper.UnsetSecurity)
+	mailClient := smtp.NewSMTPClient(configHandler.GetString("mail.server"), configHandler.GetInt("mail.port"), configHandler.GetString("mail.user"), configHandler.GetString("mail.password"), configHandler.GetString("mail.to"))
 	loginHttpDeliver.NewLoginHandler(e, loginU)
 
 	// Init global events
@@ -150,7 +151,7 @@ func main() {
 	/*****************************
 	 * INIT DFP
 	 */
-	if err := initDFP(ctx, eventer, api, configHandler, es, db, eventUsecase, boardU); err != nil {
+	if err := initDFP(ctx, eventer, api, configHandler, es, db, eventUsecase, boardU, mailClient); err != nil {
 		panic(err)
 	}
 

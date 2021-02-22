@@ -2,7 +2,6 @@ package tfpboard
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/disaster37/gobot-fat/helper"
@@ -62,8 +61,8 @@ func (h *TFPBoard) work() {
 				log.Errorf("Error when acknoledge reboot on board %s: %s", h.name, err.Error())
 			}
 
-			// Send rebooted event
-			h.sendEvent(ctx, fmt.Sprintf("reboot_%s", h.name), "board")
+			// Send event
+			helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventRebootBoard, h.name)
 
 			h.isOnline = true
 
@@ -79,8 +78,8 @@ func (h *TFPBoard) work() {
 		err := s.(error)
 		log.Errorf("Board %s is offline: %s", h.name, err.Error())
 
-		// Send offline event
-		h.sendEvent(ctx, fmt.Sprintf("offline_%s", h.name), "board")
+		// Send event
+		helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventOfflineBoard, h.name)
 
 		// Publish internal event
 		h.Publish(EventBoardOffline, nil)
@@ -121,6 +120,9 @@ func (h *TFPBoard) work() {
 			log.Errorf("Error when stop waterfall pump: %s", err.Error())
 		}
 
+		// Send event
+		helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventSetEmergencyStop, h.name)
+
 		// Publish internal event
 		h.Publish(EventSetEmergencyStop, nil)
 	})
@@ -131,6 +133,9 @@ func (h *TFPBoard) work() {
 		h.state.IsEmergencyStopped = false
 
 		h.handleUnsetSecurityOrEmergencyStop()
+
+		// Send event
+		helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventUnsetEmergencyStop, h.name)
 
 		// Publish internal event
 		h.Publish(EventUnsetEmergencyStop, nil)
@@ -160,6 +165,9 @@ func (h *TFPBoard) work() {
 			log.Errorf("Error when stop waterfall pond pump: %s", err.Error())
 		}
 
+		// Send event
+		helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventSetSecurity, h.name)
+
 		// Publish internal event
 		h.Publish(EventSetSecurity, nil)
 	})
@@ -170,6 +178,9 @@ func (h *TFPBoard) work() {
 		h.state.IsSecurity = false
 
 		h.handleUnsetSecurityOrEmergencyStop()
+
+		// Send event
+		helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventUnsetSecurity, h.name)
 
 		// Publish internal event
 		h.Publish(EventUnsetSecurity, nil)
@@ -295,20 +306,6 @@ func (h *TFPBoard) handleWaterfallAuto() {
 		return
 	}
 
-}
-
-func (h *TFPBoard) sendEvent(ctx context.Context, eventType string, eventKind string) {
-	event := &models.Event{
-		SourceID:   h.name,
-		SourceName: h.name,
-		Timestamp:  time.Now(),
-		EventType:  eventType,
-		EventKind:  eventKind,
-	}
-	err := h.eventUsecase.Create(ctx, event)
-	if err != nil {
-		log.Errorf("Error when store new event: %s", err.Error())
-	}
 }
 
 // Use on instead gobot.Eventer.On because of it not close routine at board is stopped.

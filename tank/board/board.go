@@ -2,11 +2,11 @@ package tankboard
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/disaster37/gobot-arest/drivers/extra"
 	"github.com/disaster37/gobot-arest/plateforms/arest"
+	"github.com/disaster37/gobot-fat/helper"
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/tank"
 	"github.com/disaster37/gobot-fat/usecase"
@@ -139,7 +139,7 @@ func (h *TankBoard) Start(ctx context.Context) (err error) {
 	}
 	h.isOnline = true
 
-	h.sendEvent(ctx, fmt.Sprintf("start_%s", h.name), "board", 0)
+	helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventStartBoard, h.name)
 
 	return nil
 }
@@ -158,7 +158,7 @@ func (h *TankBoard) Stop(ctx context.Context) (err error) {
 	h.isOnline = false
 	h.isInitialized = false
 
-	h.sendEvent(ctx, fmt.Sprintf("stop_%s", h.name), "board", 0)
+	helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventStopBoard, h.name)
 
 	return nil
 

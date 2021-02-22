@@ -2,10 +2,9 @@ package tankboard
 
 import (
 	"context"
-	"fmt"
-	"time"
 
 	"github.com/disaster37/gobot-arest/drivers/extra"
+	"github.com/disaster37/gobot-fat/helper"
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/tankconfig"
 	log "github.com/sirupsen/logrus"
@@ -48,7 +47,7 @@ func (h *TankBoard) work() {
 			}
 
 			// Send rebooted event
-			h.sendEvent(ctx, fmt.Sprintf("reboot_%s", h.name), "board", 0)
+			helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventRebootBoard, h.name)
 
 			h.isOnline = true
 
@@ -65,7 +64,7 @@ func (h *TankBoard) work() {
 		log.Errorf("Board %s is offline: %s", h.name, err.Error())
 
 		// Send offline event
-		h.sendEvent(ctx, fmt.Sprintf("offline_%s", h.name), "board", 0)
+		helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventOfflineBoard, h.name)
 
 		// Publish internal event
 		h.Publish(EventBoardOffline, nil)
@@ -84,7 +83,7 @@ func (h *TankBoard) work() {
 		h.data.Percent = float64(h.data.Level) / float64(h.config.Depth) * 100
 
 		// Send event
-		h.sendEvent(ctx, "read_distance", "sensor", h.data.Level)
+		helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventTankLevel, "level", int64(h.data.Level))
 
 		// Publish internal event
 		h.Publish(EventNewDistance, distance)
@@ -97,34 +96,6 @@ func (h *TankBoard) work() {
 	})
 
 	h.isInitialized = true
-}
-
-func (h *TankBoard) sendEvent(ctx context.Context, eventType string, eventKind string, distance int) {
-
-	var event *models.Event
-	if eventType == "read_distance" {
-		event = &models.Event{
-			SourceID:   fmt.Sprintf("%d", h.config.ID),
-			SourceName: h.name,
-			Timestamp:  time.Now(),
-			EventType:  eventType,
-			EventKind:  eventKind,
-			Distance:   int64(distance),
-		}
-	} else {
-		event = &models.Event{
-			SourceID:   fmt.Sprintf("%d", h.config.ID),
-			SourceName: h.name,
-			Timestamp:  time.Now(),
-			EventType:  eventType,
-			EventKind:  eventKind,
-		}
-	}
-
-	err := h.eventUsecase.Create(ctx, event)
-	if err != nil {
-		log.Errorf("Error when store new event: %s", err.Error())
-	}
 }
 
 // Use on instead gobot.Eventer.On because of it not close routine at board is stopped.
