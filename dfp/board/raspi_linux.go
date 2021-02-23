@@ -40,6 +40,6 @@ func (h *RaspiAdaptor) SetInputPullup(listPins []*gpio.ButtonDriver) (err error)
 		button.DefaultState = 1
 	}
 
-	log.Infof("RPIO initialized")
+	log.Infof("GPIO initialized")
 	return
 }

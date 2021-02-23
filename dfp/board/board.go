@@ -300,6 +300,7 @@ func (h *DFPBoard) State() (state models.DFPState) {
 	return *h.state
 }
 
+// IO return current IO state
 func (h *DFPBoard) IO() models.DFPIO {
 	io := models.DFPIO{}
 

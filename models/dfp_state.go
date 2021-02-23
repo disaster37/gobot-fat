@@ -15,8 +15,8 @@ type DFPState struct {
 	IsEmergencyStopped bool      `json:"is_emmergency_stopped" gorm:"column:is_emmergency_stopped" validate:"required"`
 	IsDisableSecurity  bool      `json:"is_disable_security" gorm:"column:is_disable_security" validate:"required"`
 	LastWashing        time.Time `json:"last_washing" gorm:"column:last_washing" validate:"required"`
-	WaterTemperature   float64   `json:"water_tempareture" gorm:"column:last_washing" validate:"required"`
-	AmbientTemperature float64   `json:"ambient_tempareture" gorm:"column:last_washing" validate:"required"`
+	WaterTemperature   float64   `json:"water_tempareture" gorm:"column:water_tempareture" validate:"required"`
+	AmbientTemperature float64   `json:"ambient_tempareture" gorm:"column:ambient_tempareture" validate:"required"`
 }
 
 func (h DFPState) TableName() string {
