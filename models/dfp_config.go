@@ -31,6 +31,9 @@ type DFPConfig struct {
 
 	// WaitTimeBeforeUnsetSecurity is the time in seconds before auto unset security to avoid flapping
 	WaitTimeBeforeUnsetSecurity int `json:"wait_time_before_unset_security" gorm:"column:wait_time_before_unset_security;type:bigint" validate:"required"`
+
+	//TemperatureSensorPolling is the time to wait before read sensor temperature in seconds
+	TemperatureSensorPolling int `json:"temperature_sensor_polling" gorm:"column:temperature_sensor_polling;type:bigint" validate:"required"`
 }
 
 func (h *DFPConfig) String() string {

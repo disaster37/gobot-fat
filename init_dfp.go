@@ -42,6 +42,7 @@ func initDFP(ctx context.Context, eventer gobot.Eventer, api *echo.Group, config
 		WashingDuration:                8,
 		StartWashingPumpBeforeWashing:  2,
 		WaitTimeBeforeUnsetSecurity:    7200,
+		TemperatureSensorPolling:       60,
 	}
 	dfpConfig.ID = dfpconfig.ID
 	err = dfpConfigUsecase.Init(ctx, dfpConfig)

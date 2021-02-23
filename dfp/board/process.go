@@ -2,7 +2,6 @@ package dfpboard
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -354,7 +353,7 @@ func (h *DFPBoard) work() {
 
 	// Read temperature sensor
 	h.readTemperatureSensor()
-	ticker := gobot.Every(30*time.Minute, h.readTemperatureSensor)
+	ticker := gobot.Every(time.Duration(h.config.TemperatureSensorPolling)*time.Second, h.readTemperatureSensor)
 	h.schedulingRoutines = append(h.schedulingRoutines, ticker)
 
 	// Force washing when inactivity
@@ -465,15 +464,19 @@ func (h *DFPBoard) readTemperatureSensor() {
 	sensors, err := ds18b20.Sensors()
 	if err != nil {
 		log.Errorf("Error when read 1-wire: %s", err.Error())
+		return
 	}
 
 	log.Debugf("sensor IDs: %v\n", sensors)
 
 	for i, sensor := range sensors {
 		t, err := ds18b20.Temperature(sensor)
-		if err == nil {
-			fmt.Printf("sensor: %s temperature: %.2f°C\n", sensor, t)
+		if err != nil {
+			log.Errorf("Error when read temperature on %s: %s", sensor, err.Error())
+			return
 		}
+
+		log.Debugf("sensor: %s temperature: %.2f°C\n", sensor, t)
 
 		// No need to save state for that
 		if i == 0 {
