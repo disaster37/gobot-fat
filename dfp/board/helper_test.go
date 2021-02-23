@@ -37,6 +37,7 @@ func initTestBoard() (*DFPBoard, *mock.MockPlateform) {
 		WaitTimeBetweenWashing:         1,
 		WashingDuration:                1,
 		WaitTimeBeforeUnsetSecurity:    1,
+		TemperatureSensorPolling:       1,
 	}
 	dfpState := &models.DFPState{
 		IsRunning: true,

@@ -72,6 +72,7 @@ func (s *DFPBoardTestSuite) SetupTest() {
 		WaitTimeBetweenWashing:         1,
 		WashingDuration:                1,
 		WaitTimeBeforeUnsetSecurity:    1,
+		TemperatureSensorPolling:       1,
 	}
 }
 
