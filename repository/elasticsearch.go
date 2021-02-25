@@ -12,6 +12,7 @@ import (
 
 	"github.com/disaster37/gobot-fat/models"
 	elastic "github.com/elastic/go-elasticsearch/v7"
+	"github.com/elastic/go-elasticsearch/v7/esapi"
 	olivere "github.com/olivere/elastic/v7"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -19,16 +20,27 @@ import (
 
 // ElasticsearchRepositoryGen represent generic repository to request Elasticsearch
 type ElasticsearchRepositoryGen struct {
-	Conn  *elastic.Client
-	Index string
+	Conn       *elastic.Client
+	Index      string
+	IsManageID bool
 }
 
 // NewElasticsearchRepository create new Elasticsearch repository
-func NewElasticsearchRepository(conn *elastic.Client, index string) Repository {
-	return &ElasticsearchRepositoryGen{
-		Conn:  conn,
-		Index: index,
+func NewElasticsearchRepository(conn *elastic.Client, index string, args ...interface{}) Repository {
+	repo := &ElasticsearchRepositoryGen{
+		Conn:       conn,
+		Index:      index,
+		IsManageID: true,
 	}
+
+	for _, arg := range args {
+		switch arg.(type) {
+		case bool:
+			repo.IsManageID = arg.(bool)
+		}
+	}
+
+	return repo
 }
 
 // Get return one document from Elasticsearch with ID
@@ -168,13 +180,24 @@ func (h *ElasticsearchRepositoryGen) Update(ctx context.Context, data interface{
 	}
 	b := bytes.NewBuffer(sdata)
 
-	res, err := h.Conn.Index(
-		h.Index,
-		b,
-		h.Conn.Index.WithDocumentID(fmt.Sprintf("%d", dataModel.GetModel().ID)),
-		h.Conn.Index.WithContext(ctx),
-		h.Conn.Index.WithPretty(),
-	)
+	var res *esapi.Response
+	if h.IsManageID {
+		res, err = h.Conn.Index(
+			h.Index,
+			b,
+			h.Conn.Index.WithDocumentID(fmt.Sprintf("%d", dataModel.GetModel().ID)),
+			h.Conn.Index.WithContext(ctx),
+			h.Conn.Index.WithPretty(),
+		)
+	} else {
+		res, err = h.Conn.Index(
+			h.Index,
+			b,
+			h.Conn.Index.WithContext(ctx),
+			h.Conn.Index.WithPretty(),
+		)
+	}
+
 	if err != nil {
 		return err
 	}
