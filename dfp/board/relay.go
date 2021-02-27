@@ -225,6 +225,9 @@ func (h *DFPBoard) StartManualDrum(ctx context.Context) (err error) {
 			return err
 		}
 
+		// No need to save on DB
+		h.state.IsForceDrum = true
+
 	}
 	return
 }
@@ -239,6 +242,9 @@ func (h *DFPBoard) StopManualDrum(ctx context.Context) (err error) {
 		if err = h.relayDrum.Off(); err != nil {
 			return err
 		}
+
+		// No need to save on DB
+		h.state.IsForceDrum = false
 	}
 	return
 }
@@ -253,6 +259,9 @@ func (h *DFPBoard) StartManualPump(ctx context.Context) (err error) {
 		if err = h.relayPump.On(); err != nil {
 			return err
 		}
+
+		// No need to save on DB
+		h.state.IsForcePump = true
 	}
 
 	return
@@ -269,6 +278,9 @@ func (h *DFPBoard) StopManualPump(ctx context.Context) (err error) {
 		if err = h.relayPump.Off(); err != nil {
 			return err
 		}
+
+		// No need to save on DB
+		h.state.IsForcePump = false
 	}
 
 	return

@@ -14,6 +14,8 @@ type DFPState struct {
 	IsSecurity         bool      `json:"is_security" gorm:"column:is_security" validate:"required"`
 	IsEmergencyStopped bool      `json:"is_emmergency_stopped" gorm:"column:is_emmergency_stopped" validate:"required"`
 	IsDisableSecurity  bool      `json:"is_disable_security" gorm:"column:is_disable_security" validate:"required"`
+	IsForceDrum        bool      `json:"is_force_drum" gorm:"column:is_force_drum" validate:"required"`
+	IsForcePump        bool      `json:"is_force_pump" gorm:"column:is_force_pump" validate:"required"`
 	LastWashing        time.Time `json:"last_washing" gorm:"column:last_washing" validate:"required"`
 	WaterTemperature   float64   `json:"water_tempareture" gorm:"column:last_washing" validate:"required"`
 	AmbientTemperature float64   `json:"ambient_tempareture" gorm:"column:last_washing" validate:"required"`
