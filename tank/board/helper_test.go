@@ -3,14 +3,14 @@ package tankboard
 import (
 	"time"
 
-	"github.com/disaster37/gobot-fat/helper"
+	"github.com/disaster37/gobot-fat/mock"
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/usecase"
 	"github.com/spf13/viper"
 	"gobot.io/x/gobot"
 )
 
-func initTestBoard() (*TankBoard, *helper.MockPlateform) {
+func initTestBoard() (*TankBoard, *mock.MockPlateform) {
 	configHandler := viper.New()
 	configHandler.Set("name", "test")
 	configTank := &models.TankConfig{
@@ -20,7 +20,7 @@ func initTestBoard() (*TankBoard, *helper.MockPlateform) {
 	}
 	eventer := gobot.NewEventer()
 	eventUsecaseMock := usecase.NewMockUsecasetBase()
-	mockBoard := helper.NewMockPlateform()
+	mockBoard := mock.NewMockPlateform()
 
 	// Return the right type for drivers
 	mockBoard.SetValueReadState("isRebooted", false)

@@ -31,5 +31,7 @@ type Board interface {
 
 	State() models.DFPState
 
+	IO() models.DFPIO
+
 	board.Board
 }

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/disaster37/gobot-fat/helper"
+	"github.com/disaster37/gobot-fat/mock"
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -15,7 +15,7 @@ import (
 type DFPBoardTestSuite struct {
 	suite.Suite
 	board   *DFPBoard
-	adaptor *helper.MockPlateform
+	adaptor *mock.MockPlateform
 }
 
 func TestDFPBoardTestSuite(t *testing.T) {
@@ -71,6 +71,8 @@ func (s *DFPBoardTestSuite) SetupTest() {
 		StartWashingPumpBeforeWashing:  1,
 		WaitTimeBetweenWashing:         1,
 		WashingDuration:                1,
+		WaitTimeBeforeUnsetSecurity:    1,
+		TemperatureSensorPolling:       1,
 	}
 }
 
@@ -123,14 +125,14 @@ func (s *DFPBoardTestSuite) TestStartStopIsOnline() {
 	// Start with wash and running)
 	board, adaptor = initTestBoard()
 	board.state.IsWashed = true
-	status := helper.WaitEvent(board.Eventer, EventWash, 5*time.Second)
+	status := mock.WaitEvent(board.Eventer, EventWash, 5*time.Second)
 	err = board.Start(context.Background())
 	assert.NoError(s.T(), err)
 	assert.True(s.T(), <-status)
 
 	// Stop
 	// It emit event
-	status = helper.WaitEvent(board.Eventer, EventBoardStop, 1*time.Second)
+	status = mock.WaitEvent(board.Eventer, EventBoardStop, 1*time.Second)
 	err = board.Stop(context.Background())
 	assert.NoError(s.T(), err)
 	assert.True(s.T(), <-status)

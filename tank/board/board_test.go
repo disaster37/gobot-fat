@@ -5,8 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/disaster37/gobot-fat/helper"
-
+	"github.com/disaster37/gobot-fat/mock"
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -15,7 +14,7 @@ import (
 type TankBoardTestSuite struct {
 	suite.Suite
 	board   *TankBoard
-	adaptor *helper.MockPlateform
+	adaptor *mock.MockPlateform
 }
 
 func TestTankBoardTestSuite(t *testing.T) {

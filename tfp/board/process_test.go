@@ -7,6 +7,7 @@ import (
 
 	"github.com/disaster37/gobot-arest/drivers/extra"
 	"github.com/disaster37/gobot-fat/helper"
+	"github.com/disaster37/gobot-fat/mock"
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/tfpconfig"
 	"github.com/disaster37/gobot-fat/tfpstate"
@@ -20,7 +21,7 @@ func (s *TFPBoardTestSuite) TestWork() {
 	newConfig := &models.TFPConfig{
 		UVC1BlisterMaxTime: 1000,
 	}
-	status := helper.WaitEvent(s.board.Eventer, EventNewConfig, waitDuration)
+	status := mock.WaitEvent(s.board.Eventer, EventNewConfig, waitDuration)
 	s.board.globalEventer.Publish(tfpconfig.NewTFPConfig, newConfig)
 	assert.True(s.T(), <-status)
 
@@ -31,7 +32,7 @@ func (s *TFPBoardTestSuite) TestWork() {
 		UVC2BlisterNbHour:  300,
 		IsEmergencyStopped: true,
 	}
-	status = helper.WaitEvent(s.board.Eventer, EventNewState, waitDuration)
+	status = mock.WaitEvent(s.board.Eventer, EventNewState, waitDuration)
 	s.board.globalEventer.Publish(tfpstate.NewTFPState, newState)
 	assert.True(s.T(), <-status)
 	assert.NotEqual(s.T(), newState, s.board.state)
@@ -45,13 +46,13 @@ func (s *TFPBoardTestSuite) TestWork() {
 		isReconnectCalled = true
 		return nil
 	})
-	status = helper.WaitEvent(s.board.Eventer, EventBoardReboot, waitDuration)
+	status = mock.WaitEvent(s.board.Eventer, EventBoardReboot, waitDuration)
 	s.adaptor.SetValueReadState("isRebooted", true)
 	assert.True(s.T(), <-status)
 	assert.True(s.T(), isReconnectCalled)
 
 	// Check offline
-	status = helper.WaitEvent(s.board.Eventer, EventBoardOffline, waitDuration)
+	status = mock.WaitEvent(s.board.Eventer, EventBoardOffline, waitDuration)
 	s.board.valueRebooted.Publish(extra.Error, errors.New("test"))
 	assert.True(s.T(), <-status)
 	assert.False(s.T(), s.board.IsOnline())
@@ -143,7 +144,7 @@ func (s *TFPBoardTestSuite) TestHandleSetUnsetEmergencyStop() {
 	s.board.StartFilterBubble(context.Background())
 	s.board.StartPondBubble(context.Background())
 	s.board.StartWaterfallPump(context.Background())
-	status := helper.WaitEvent(s.board, EventSetEmergencyStop, waitDuration)
+	status := mock.WaitEvent(s.board, EventSetEmergencyStop, waitDuration)
 	s.board.globalEventer.Publish(helper.SetEmergencyStop, nil)
 	assert.True(s.T(), <-status)
 	assert.Equal(s.T(), 1, s.adaptor.GetDigitalPinState(s.board.relayPompPond.Pin()))
@@ -154,7 +155,7 @@ func (s *TFPBoardTestSuite) TestHandleSetUnsetEmergencyStop() {
 	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.relayPompWaterfall.Pin()))
 
 	// Unset emergency stop
-	status = helper.WaitEvent(s.board, EventUnsetEmergencyStop, waitDuration)
+	status = mock.WaitEvent(s.board, EventUnsetEmergencyStop, waitDuration)
 	s.board.globalEventer.Publish(helper.UnsetEmergencyStop, nil)
 	assert.True(s.T(), <-status)
 	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.relayPompPond.Pin()))
@@ -175,7 +176,7 @@ func (s *TFPBoardTestSuite) TestHandleSetUnsetSecurity() {
 	s.board.StartFilterBubble(context.Background())
 	s.board.StartPondBubble(context.Background())
 	s.board.StartWaterfallPump(context.Background())
-	status := helper.WaitEvent(s.board, EventSetSecurity, waitDuration)
+	status := mock.WaitEvent(s.board, EventSetSecurity, waitDuration)
 	s.board.globalEventer.Publish(helper.SetSecurity, nil)
 	assert.True(s.T(), <-status)
 	assert.Equal(s.T(), 1, s.adaptor.GetDigitalPinState(s.board.relayPompPond.Pin()))
@@ -186,7 +187,7 @@ func (s *TFPBoardTestSuite) TestHandleSetUnsetSecurity() {
 	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.relayPompWaterfall.Pin()))
 
 	// Unset security
-	status = helper.WaitEvent(s.board, EventUnsetSecurity, waitDuration)
+	status = mock.WaitEvent(s.board, EventUnsetSecurity, waitDuration)
 	s.board.globalEventer.Publish(helper.UnsetSecurity, nil)
 	assert.True(s.T(), <-status)
 	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.relayPompPond.Pin()))

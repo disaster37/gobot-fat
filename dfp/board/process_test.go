@@ -6,7 +6,7 @@ import (
 
 	"github.com/disaster37/gobot-fat/dfpconfig"
 	"github.com/disaster37/gobot-fat/dfpstate"
-	"github.com/disaster37/gobot-fat/helper"
+	"github.com/disaster37/gobot-fat/mock"
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/stretchr/testify/assert"
 )
@@ -15,14 +15,14 @@ func (s *DFPBoardTestSuite) TestButtonStart() {
 
 	// When DFP  stopped
 	s.board.state.IsRunning = false
-	status := helper.WaitEvent(s.board.Eventer, EventStartDFP, 1*time.Second)
+	status := mock.WaitEvent(s.board.Eventer, EventStartDFP, 1*time.Second)
 	s.adaptor.SetDigitalPinState(s.board.buttonStart.Pin(), 0)
 	assert.True(s.T(), <-status)
 	assert.True(s.T(), s.board.state.IsRunning)
 	s.adaptor.SetDigitalPinState(s.board.buttonStart.Pin(), 1)
 
 	// When DFP alreay running
-	status = helper.WaitEvent(s.board.Eventer, EventStartDFP, 1*time.Second)
+	status = mock.WaitEvent(s.board.Eventer, EventStartDFP, 1*time.Second)
 	s.adaptor.SetDigitalPinState(s.board.buttonStart.Pin(), 0)
 	assert.False(s.T(), <-status)
 	assert.True(s.T(), s.board.state.IsRunning)
@@ -32,14 +32,14 @@ func (s *DFPBoardTestSuite) TestButtonStart() {
 func (s *DFPBoardTestSuite) TestButtonStop() {
 
 	// When DFP running
-	status := helper.WaitEvent(s.board.Eventer, EventStopDFP, 1*time.Second)
+	status := mock.WaitEvent(s.board.Eventer, EventStopDFP, 1*time.Second)
 	s.adaptor.SetDigitalPinState(s.board.buttonStop.Pin(), 0)
 	assert.True(s.T(), <-status)
 	assert.False(s.T(), s.board.state.IsRunning)
 	s.adaptor.SetDigitalPinState(s.board.buttonStop.Pin(), 1)
 
 	// When DFP already stopped
-	status = helper.WaitEvent(s.board.Eventer, EventStopDFP, 1*time.Second)
+	status = mock.WaitEvent(s.board.Eventer, EventStopDFP, 1*time.Second)
 	s.adaptor.SetDigitalPinState(s.board.buttonStop.Pin(), 0)
 	assert.False(s.T(), <-status)
 	assert.False(s.T(), s.board.state.IsRunning)
@@ -47,13 +47,13 @@ func (s *DFPBoardTestSuite) TestButtonStop() {
 
 func (s *DFPBoardTestSuite) TestButtonForceDrum() {
 	// Test button Force drum ON
-	status := helper.WaitEvent(s.board.Eventer, EventNewInput, 1*time.Second)
+	status := mock.WaitEvent(s.board.Eventer, EventNewInput, 1*time.Second)
 	s.adaptor.SetDigitalPinState(s.board.buttonForceDrum.Pin(), 0)
 	assert.True(s.T(), <-status)
 	assert.Equal(s.T(), 1, s.adaptor.GetDigitalPinState(s.board.relayDrum.Pin()))
 
 	// Test button Force drum OFF
-	status = helper.WaitEvent(s.board.Eventer, EventNewInput, 1*time.Second)
+	status = mock.WaitEvent(s.board.Eventer, EventNewInput, 1*time.Second)
 	s.adaptor.SetDigitalPinState(s.board.buttonForceDrum.Pin(), 1)
 	assert.True(s.T(), <-status)
 	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.relayDrum.Pin()))
@@ -61,13 +61,13 @@ func (s *DFPBoardTestSuite) TestButtonForceDrum() {
 
 func (s *DFPBoardTestSuite) TestButtonForcePump() {
 	// Test button Force pump ON
-	status := helper.WaitEvent(s.board.Eventer, EventNewInput, 1*time.Second)
+	status := mock.WaitEvent(s.board.Eventer, EventNewInput, 1*time.Second)
 	s.adaptor.SetDigitalPinState(s.board.buttonForcePump.Pin(), 0)
 	assert.True(s.T(), <-status)
 	assert.Equal(s.T(), 1, s.adaptor.GetDigitalPinState(s.board.relayPump.Pin()))
 
 	// Test button Force pump OFF
-	status = helper.WaitEvent(s.board.Eventer, EventNewInput, 1*time.Second)
+	status = mock.WaitEvent(s.board.Eventer, EventNewInput, 1*time.Second)
 	s.adaptor.SetDigitalPinState(s.board.buttonForcePump.Pin(), 1)
 	assert.True(s.T(), <-status)
 	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.relayPump.Pin()))
@@ -75,7 +75,7 @@ func (s *DFPBoardTestSuite) TestButtonForcePump() {
 
 func (s *DFPBoardTestSuite) TestButtonForceWash() {
 
-	status := helper.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
+	status := mock.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
 	s.adaptor.SetDigitalPinState(s.board.buttonWash.Pin(), 0)
 	assert.True(s.T(), <-status)
 }
@@ -83,14 +83,14 @@ func (s *DFPBoardTestSuite) TestButtonForceWash() {
 func (s *DFPBoardTestSuite) TestButtonEmergencyStop() {
 
 	// Set emergency stop
-	status := helper.WaitEvent(s.board.Eventer, EventSetEmergencyStop, 1*time.Second)
+	status := mock.WaitEvent(s.board.Eventer, EventSetEmergencyStop, 1*time.Second)
 	s.adaptor.SetDigitalPinState(s.board.buttonEmergencyStop.Pin(), 0)
 	assert.True(s.T(), <-status)
 	assert.True(s.T(), s.board.state.IsEmergencyStopped)
 	assert.Equal(s.T(), 1, s.adaptor.GetDigitalPinState(s.board.ledRed.Pin()))
 
 	// Unset emergency stop
-	status = helper.WaitEvent(s.board.Eventer, EventUnsetEmergencyStop, 1*time.Second)
+	status = mock.WaitEvent(s.board.Eventer, EventUnsetEmergencyStop, 1*time.Second)
 	s.adaptor.SetDigitalPinState(s.board.buttonEmergencyStop.Pin(), 1)
 	assert.True(s.T(), <-status)
 	assert.False(s.T(), s.board.state.IsEmergencyStopped)
@@ -99,28 +99,30 @@ func (s *DFPBoardTestSuite) TestButtonEmergencyStop() {
 
 func (s *DFPBoardTestSuite) TestSecurityCaptor() {
 	// Test secruity upper captor ON
-	status := helper.WaitEvent(s.board.Eventer, EventSetSecurity, 1*time.Second)
+	status := mock.WaitEvent(s.board.Eventer, EventSetSecurity, 1*time.Second)
 	s.adaptor.SetDigitalPinState(s.board.captorSecurityUpper.Pin(), 1)
 	assert.True(s.T(), <-status)
 	assert.True(s.T(), s.board.state.IsSecurity)
 	assert.Equal(s.T(), 1, s.adaptor.GetDigitalPinState(s.board.ledRed.Pin()))
 
 	// Test secruity upper captor OFF
-	status = helper.WaitEvent(s.board.Eventer, EventUnsetSecurity, 1*time.Second)
+	time.Sleep(1 * time.Second)
+	status = mock.WaitEvent(s.board.Eventer, EventUnsetSecurity, 1*time.Second)
 	s.adaptor.SetDigitalPinState(s.board.captorSecurityUpper.Pin(), 0)
 	assert.True(s.T(), <-status)
 	assert.False(s.T(), s.board.state.IsSecurity)
 	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.ledRed.Pin()))
 
 	// Test secruity under captor ON
-	status = helper.WaitEvent(s.board.Eventer, EventSetSecurity, 1*time.Second)
+	status = mock.WaitEvent(s.board.Eventer, EventSetSecurity, 1*time.Second)
 	s.adaptor.SetDigitalPinState(s.board.captorSecurityUnder.Pin(), 0)
 	assert.True(s.T(), <-status)
 	assert.True(s.T(), s.board.state.IsSecurity)
 	assert.Equal(s.T(), 1, s.adaptor.GetDigitalPinState(s.board.ledRed.Pin()))
 
 	// Test secruity under captor OFF
-	status = helper.WaitEvent(s.board.Eventer, EventUnsetSecurity, 1*time.Second)
+	time.Sleep(1 * time.Second)
+	status = mock.WaitEvent(s.board.Eventer, EventUnsetSecurity, 1*time.Second)
 	s.adaptor.SetDigitalPinState(s.board.captorSecurityUnder.Pin(), 1)
 	assert.True(s.T(), <-status)
 	assert.False(s.T(), s.board.state.IsSecurity)
@@ -129,13 +131,13 @@ func (s *DFPBoardTestSuite) TestSecurityCaptor() {
 
 func (s *DFPBoardTestSuite) TestWaterCaptor() {
 	// Test water upper captor ON
-	status := helper.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
+	status := mock.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
 	s.adaptor.SetDigitalPinState(s.board.captorWaterUpper.Pin(), 1)
 	assert.True(s.T(), <-status)
 	s.adaptor.SetDigitalPinState(s.board.captorWaterUpper.Pin(), 0)
 
 	// Test water under captor ON
-	status = helper.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
+	status = mock.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
 	s.adaptor.SetDigitalPinState(s.board.captorWaterUnder.Pin(), 0)
 	assert.True(s.T(), <-status)
 
@@ -143,11 +145,11 @@ func (s *DFPBoardTestSuite) TestWaterCaptor() {
 	// First, run wash to update timer
 	// Then control other wash not run
 	s.board.config.WaitTimeBetweenWashing = 60
-	status = helper.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
+	status = mock.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
 	s.adaptor.SetDigitalPinState(s.board.captorWaterUpper.Pin(), 1)
 	assert.True(s.T(), <-status)
 	s.adaptor.SetDigitalPinState(s.board.captorWaterUpper.Pin(), 0)
-	status = helper.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
+	status = mock.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
 	s.adaptor.SetDigitalPinState(s.board.captorWaterUpper.Pin(), 1)
 	assert.False(s.T(), <-status)
 
@@ -164,7 +166,7 @@ func (s *DFPBoardTestSuite) TestWorkUpdateConfig() {
 		ForceWashingDuration:           120,
 		ForceWashingDurationWhenFrozen: 180,
 	}
-	status := helper.WaitEvent(s.board.Eventer, EventNewConfig, 1*time.Second)
+	status := mock.WaitEvent(s.board.Eventer, EventNewConfig, 1*time.Second)
 	s.board.globalEventer.Publish(dfpconfig.NewDFPConfig, newConfig)
 	assert.True(s.T(), <-status)
 	assert.Equal(s.T(), newConfig, s.board.config)
@@ -176,7 +178,7 @@ func (s *DFPBoardTestSuite) TestWorkUpdateState() {
 	newState := &models.DFPState{
 		IsDisableSecurity: true,
 	}
-	status := helper.WaitEvent(s.board.Eventer, EventNewState, 1*time.Second)
+	status := mock.WaitEvent(s.board.Eventer, EventNewState, 1*time.Second)
 	s.board.globalEventer.Publish(dfpstate.NewDFPState, newState)
 	assert.True(s.T(), <-status)
 	assert.Equal(s.T(), newState.IsDisableSecurity, s.board.state.IsDisableSecurity)
@@ -188,7 +190,7 @@ func (s *DFPBoardTestSuite) TestWash() {
 	s.board.config.WashingDuration = 2
 
 	// Wash
-	status := helper.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
+	status := mock.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
 	s.board.wash()
 	time.Sleep(500 * time.Millisecond)
 	assert.Equal(s.T(), 1, s.adaptor.GetDigitalPinState(s.board.relayPump.Pin()))
@@ -202,7 +204,7 @@ func (s *DFPBoardTestSuite) TestWash() {
 	assert.Equal(s.T(), 1, s.adaptor.GetDigitalPinState(s.board.ledGreen.Pin()))
 
 	// When stop during process
-	status = helper.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
+	status = mock.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
 	s.board.wash()
 	time.Sleep(1 * time.Second)
 	err := s.board.StopDFP(context.Background())
@@ -214,7 +216,7 @@ func (s *DFPBoardTestSuite) TestWash() {
 	s.board.state.IsRunning = true
 
 	// When emergency stop during process
-	status = helper.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
+	status = mock.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
 	s.board.wash()
 	time.Sleep(1 * time.Second)
 	err = s.board.SetEmergencyStop(context.Background())
@@ -226,7 +228,7 @@ func (s *DFPBoardTestSuite) TestWash() {
 	s.board.state.IsEmergencyStopped = false
 
 	// When security during process
-	status = helper.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
+	status = mock.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
 	s.board.wash()
 	time.Sleep(1 * time.Second)
 	err = s.board.SetSecurity(context.Background())

@@ -299,3 +299,34 @@ func (h *DFPBoard) IsOnline() bool {
 func (h *DFPBoard) State() (state models.DFPState) {
 	return *h.state
 }
+
+// IO return current IO state
+func (h *DFPBoard) IO() models.DFPIO {
+	io := models.DFPIO{}
+
+	// Led state
+	if h.ledGreen.State() {
+		io.GreenLed = "on"
+	} else {
+		io.GreenLed = "off"
+	}
+	if h.ledRed.State() {
+		io.RedLed = "on"
+	} else {
+		io.RedLed = "off"
+	}
+
+	// Relais state
+	if h.relayDrum.State() {
+		io.DrumRelay = "on"
+	} else {
+		io.DrumRelay = "off"
+	}
+	if h.relayPump.State() {
+		io.PumpRelay = "on"
+	} else {
+		io.PumpRelay = "off"
+	}
+
+	return io
+}

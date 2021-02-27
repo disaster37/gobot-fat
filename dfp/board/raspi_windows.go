@@ -1,11 +1,9 @@
 package dfpboard
 
-import (
-	"github.com/disaster37/gobot-fat/helper"
-)
+import "github.com/disaster37/gobot-fat/mock"
 
 type RaspiAdaptor struct {
-	helper.MockPlateform
+	mock.MockPlateform
 }
 
 func NewRaspiAdaptor() *RaspiAdaptor {

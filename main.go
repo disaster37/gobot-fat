@@ -109,7 +109,7 @@ func main() {
 
 	// Init global resources
 	timeoutContext := time.Duration(configHandler.GetInt("context.timeout")) * time.Second
-	eventRepoES := repository.NewElasticsearchRepository(es, configHandler.GetString("elasticsearch.index.event"))
+	eventRepoES := repository.NewElasticsearchRepository(es, configHandler.GetString("elasticsearch.index.event"), false)
 	eventUsecase := usecase.NewEventUsecase(eventRepoES, timeoutContext)
 	loginU := loginUsecase.NewLoginUsecase(configHandler)
 	ctx := context.Background()

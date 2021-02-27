@@ -2,17 +2,17 @@ package dfpboard
 
 import (
 	"github.com/disaster37/gobot-fat/dfpstate"
+	"github.com/disaster37/gobot-fat/mock"
 
 	"github.com/disaster37/gobot-fat/dfpconfig"
 
-	"github.com/disaster37/gobot-fat/helper"
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/usecase"
 	"github.com/spf13/viper"
 	"gobot.io/x/gobot"
 )
 
-func initTestBoard() (*DFPBoard, *helper.MockPlateform) {
+func initTestBoard() (*DFPBoard, *mock.MockPlateform) {
 	configHandler := viper.New()
 	configHandler.Set("name", "test")
 	configHandler.Set("button_polling", 10)
@@ -36,15 +36,17 @@ func initTestBoard() (*DFPBoard, *helper.MockPlateform) {
 		StartWashingPumpBeforeWashing:  1,
 		WaitTimeBetweenWashing:         1,
 		WashingDuration:                1,
+		WaitTimeBeforeUnsetSecurity:    1,
+		TemperatureSensorPolling:       1,
 	}
 	dfpState := &models.DFPState{
 		IsRunning: true,
 	}
 	eventer := gobot.NewEventer()
 	eventUsecaseMock := usecase.NewMockUsecasetBase()
-	mockBoard := helper.NewMockPlateform()
+	mockBoard := mock.NewMockPlateform()
 	usecaseDFPMock := usecase.NewMockUsecasetBase()
-	mockMail := helper.NewMockMail()
+	mockMail := mock.NewMockMail()
 
 	mockBoard.SetInvertInitialPinState(configHandler.GetString("pin.captor.security_upper"))
 	mockBoard.SetInvertInitialPinState(configHandler.GetString("pin.captor.water_upper"))
