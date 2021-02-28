@@ -328,5 +328,17 @@ func (h *DFPBoard) IO() models.DFPIO {
 		io.PumpRelay = "off"
 	}
 
+	// Captor
+	if h.captorSecurityUnder.Active {
+		io.SecurityCaptorUnder = "active"
+	} else {
+		io.SecurityCaptorUnder = "inactive"
+	}
+	if h.captorSecurityUpper.Active {
+		io.SecurityCaptorUpper = "active"
+	} else {
+		io.SecurityCaptorUpper = "inactive"
+	}
+
 	return io
 }

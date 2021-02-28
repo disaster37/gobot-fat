@@ -359,7 +359,7 @@ func (h *DFPBoard) work() {
 	// Force washing when inactivity
 	h.runWashInactivity()
 
-	log.Debugf("DFP IO:\n %s", h.IO())
+	log.Debugf("DFP IO:\n %s", h.IO().String())
 
 	h.isInitialized = true
 
