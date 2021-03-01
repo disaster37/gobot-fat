@@ -360,6 +360,7 @@ func (h *DFPBoard) work() {
 	h.runWashInactivity()
 
 	log.Debugf("DFP IO:\n %s", h.IO().String())
+	log.Debugf("DFP state: %s", h.state.String())
 
 	h.isInitialized = true
 

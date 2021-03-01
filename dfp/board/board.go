@@ -213,14 +213,16 @@ func (h *DFPBoard) Start(ctx context.Context) (err error) {
 	h.captorWaterUnder.DefaultState = 0
 
 	// Init state
-	if h.state.IsRunning && !h.state.IsSecurity && !h.state.IsEmergencyStopped {
-		h.turnOnGreenLed()
-		h.turnOffRedLed()
-	} else {
-		// It stopped or security
-		h.forceStopRelais()
+	if h.state.IsRunning {
 		h.turnOffGreenLed()
+	} else {
+		h.turnOffGreenLed()
+	}
+	if h.state.IsSecurity || h.state.IsEmergencyStopped {
 		h.turnOnRedLed()
+		h.forceStopRelais()
+	} else {
+		h.turnOffRedLed()
 	}
 
 	// If on current wash
