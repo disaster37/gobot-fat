@@ -212,7 +212,10 @@ func (h *DFPBoard) Start(ctx context.Context) (err error) {
 	h.captorSecurityUnder.DefaultState = 0
 	h.captorWaterUnder.DefaultState = 0
 
-	// Init state
+	/****
+	 * Init state
+	 */
+	// Led and relay
 	if h.state.IsRunning {
 		h.turnOffGreenLed()
 	} else {

@@ -68,7 +68,7 @@ func (h *ElasticsearchRepositoryGen) Get(ctx context.Context, id uint, data inte
 	defer res.Body.Close()
 
 	// Check if query found
-	if res.IsError() {
+	if res.IsError() && res.StatusCode != 404 {
 		return errors.Errorf("Error when read response: %s", res.String())
 	}
 
