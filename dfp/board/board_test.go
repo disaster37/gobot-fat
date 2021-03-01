@@ -120,7 +120,7 @@ func (s *DFPBoardTestSuite) TestStartStopIsOnline() {
 	assert.Equal(s.T(), 0, adaptor.GetDigitalPinState(board.relayDrum.Pin()))
 	assert.Equal(s.T(), 0, adaptor.GetDigitalPinState(board.relayPump.Pin()))
 	assert.Equal(s.T(), 0, adaptor.GetDigitalPinState(board.ledGreen.Pin()))
-	assert.Equal(s.T(), 1, adaptor.GetDigitalPinState(board.ledRed.Pin()))
+	assert.Equal(s.T(), 0, adaptor.GetDigitalPinState(board.ledRed.Pin()))
 	board.Stop(context.Background())
 
 	// Start with wash and running)

@@ -149,6 +149,7 @@ func (s *DFPBoardTestSuite) TestWaterCaptor() {
 	s.adaptor.SetDigitalPinState(s.board.captorWaterUpper.Pin(), 0)
 	assert.True(s.T(), <-status)
 	s.adaptor.SetDigitalPinState(s.board.captorWaterUpper.Pin(), 1)
+	time.Sleep(1 * time.Second)
 	status = mock.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
 	s.adaptor.SetDigitalPinState(s.board.captorWaterUpper.Pin(), 0)
 	assert.False(s.T(), <-status)
