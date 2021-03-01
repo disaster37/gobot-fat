@@ -81,6 +81,34 @@ func (h *dfpUsecase) ManualPump(c context.Context, status bool) error {
 	return h.dfp.StopManualPump(ctx)
 }
 
+// Security will set / unset security
+func (h *dfpUsecase) Security(c context.Context, status bool) error {
+	ctx, cancel := context.WithTimeout(c, h.contextTimeout)
+	defer cancel()
+
+	if status {
+		log.Debugf("Set security")
+		return h.dfp.SetSecurity(ctx)
+
+	}
+	log.Debugf("Unset security")
+	return h.dfp.UnsetSecurity(ctx)
+}
+
+// EmergencySTop will set / unset security
+func (h *dfpUsecase) EmergencyStop(c context.Context, status bool) error {
+	ctx, cancel := context.WithTimeout(c, h.contextTimeout)
+	defer cancel()
+
+	if status {
+		log.Debugf("Set emergency stop")
+		return h.dfp.SetEmergencyStop(ctx)
+
+	}
+	log.Debugf("Unset emergency stop")
+	return h.dfp.UnsetEmergencyStop(ctx)
+}
+
 // GetState return the current state of DFP
 func (h *dfpUsecase) GetState(ctx context.Context) (models.DFPState, error) {
 	return h.dfp.State(), nil

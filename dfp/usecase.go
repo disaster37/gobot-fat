@@ -13,5 +13,7 @@ type Usecase interface {
 	Start(ctx context.Context) error
 	ManualDrum(ctx context.Context, status bool) error
 	ManualPump(ctx context.Context, status bool) error
+	Security(ctx context.Context, status bool) error
+	EmergencyStop(ctx context.Context, status bool) error
 	GetState(ctx context.Context) (models.DFPState, error)
 }

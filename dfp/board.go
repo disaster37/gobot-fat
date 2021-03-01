@@ -29,6 +29,18 @@ type Board interface {
 	// StopManualPump force stop pump
 	StopManualPump(ctx context.Context) error
 
+	// Force Set security
+	SetSecurity(ctx context.Context) error
+
+	// Force unset security
+	UnsetSecurity(ctx context.Context) error
+
+	// SetEmergencyStop set DFP on emergency
+	SetEmergencyStop(ctx context.Context) error
+
+	// UnsetEmergencyStop unset emergency on DFP
+	UnsetEmergencyStop(ctx context.Context) error
+
 	State() models.DFPState
 
 	IO() models.DFPIO

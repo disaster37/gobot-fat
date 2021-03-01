@@ -27,6 +27,10 @@ func NewDFPHandler(e *echo.Group, us dfp.Usecase) {
 	e.POST("/dfps/action/manual_stop_drum", handler.ManualStopDrum)
 	e.POST("/dfps/action/manual_start_pump", handler.ManualStartPump)
 	e.POST("/dfps/action/manual_stop_pump", handler.ManualStopPump)
+	e.POST("/dfps/action/set_security", handler.SetSecurity)
+	e.POST("/dfps/action/unset_security", handler.UnsetSecurity)
+	e.POST("/dfps/action/set_emergency_stop", handler.SetEmergencyStop)
+	e.POST("/dfps/action/unset_emergency_stop", handler.UnsetEmergencyStop)
 	e.GET("/dfps", handler.GetState)
 
 }
@@ -59,7 +63,7 @@ func (h DFPHandler) GetState(c echo.Context) error {
 	})
 }
 
-// Auto put DFP on auto mode
+// Start put DFP on auto mode
 func (h DFPHandler) Start(c echo.Context) error {
 	ctx := c.Request().Context()
 	if ctx == nil {
@@ -192,7 +196,7 @@ func (h DFPHandler) ManualStartPump(c echo.Context) error {
 	return c.NoContent(http.StatusNoContent)
 }
 
-// ManualStopPump
+// ManualStopPump stop pump
 func (h DFPHandler) ManualStopPump(c echo.Context) error {
 	ctx := c.Request().Context()
 	if ctx == nil {
@@ -206,6 +210,94 @@ func (h DFPHandler) ManualStopPump(c echo.Context) error {
 		return c.JSON(500, models.NewJSONAPIerror(
 			"500",
 			"Error when stop pump",
+			err.Error(),
+			nil,
+		))
+	}
+
+	return c.NoContent(http.StatusNoContent)
+}
+
+// SetSecurity permit to set security
+func (h DFPHandler) SetSecurity(c echo.Context) error {
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	err := h.dUsecase.Security(ctx, true)
+
+	if err != nil {
+		log.Errorf("Error when post set_security: %s", err.Error())
+		return c.JSON(500, models.NewJSONAPIerror(
+			"500",
+			"Error when set security",
+			err.Error(),
+			nil,
+		))
+	}
+
+	return c.NoContent(http.StatusNoContent)
+}
+
+// UnsetSecurity permit to remove security
+func (h DFPHandler) UnsetSecurity(c echo.Context) error {
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	err := h.dUsecase.Security(ctx, false)
+
+	if err != nil {
+		log.Errorf("Error when post unset_security: %s", err.Error())
+		return c.JSON(500, models.NewJSONAPIerror(
+			"500",
+			"Error when unset security",
+			err.Error(),
+			nil,
+		))
+	}
+
+	return c.NoContent(http.StatusNoContent)
+}
+
+// SetEmergencyStop permit to set emergency
+func (h DFPHandler) SetEmergencyStop(c echo.Context) error {
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	err := h.dUsecase.EmergencyStop(ctx, true)
+
+	if err != nil {
+		log.Errorf("Error when post set_emergency_stop: %s", err.Error())
+		return c.JSON(500, models.NewJSONAPIerror(
+			"500",
+			"Error when set emergency stop",
+			err.Error(),
+			nil,
+		))
+	}
+
+	return c.NoContent(http.StatusNoContent)
+}
+
+// UnsetEmergencyStop permit to set emergency
+func (h DFPHandler) UnsetEmergencyStop(c echo.Context) error {
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	err := h.dUsecase.EmergencyStop(ctx, false)
+
+	if err != nil {
+		log.Errorf("Error when post unset_emergency_stop: %s", err.Error())
+		return c.JSON(500, models.NewJSONAPIerror(
+			"500",
+			"Error when unset emergency stop",
 			err.Error(),
 			nil,
 		))
