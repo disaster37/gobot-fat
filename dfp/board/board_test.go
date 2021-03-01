@@ -46,10 +46,10 @@ func (s *DFPBoardTestSuite) SetupTest() {
 	s.adaptor.SetDigitalPinState(s.board.buttonForcePump.Pin(), 1)
 
 	// Captor
-	s.adaptor.SetDigitalPinState(s.board.captorSecurityUpper.Pin(), 0)
-	s.adaptor.SetDigitalPinState(s.board.captorSecurityUnder.Pin(), 1)
-	s.adaptor.SetDigitalPinState(s.board.captorWaterUpper.Pin(), 0)
-	s.adaptor.SetDigitalPinState(s.board.captorWaterUnder.Pin(), 1)
+	s.adaptor.SetDigitalPinState(s.board.captorSecurityUpper.Pin(), 1)
+	s.adaptor.SetDigitalPinState(s.board.captorSecurityUnder.Pin(), 0)
+	s.adaptor.SetDigitalPinState(s.board.captorWaterUpper.Pin(), 1)
+	s.adaptor.SetDigitalPinState(s.board.captorWaterUnder.Pin(), 0)
 
 	// Relay
 	s.board.relayDrum.Off()
@@ -74,6 +74,7 @@ func (s *DFPBoardTestSuite) SetupTest() {
 		WaitTimeBeforeUnsetSecurity:    1,
 		TemperatureSensorPolling:       1,
 	}
+
 }
 
 func (s *DFPBoardTestSuite) TestStartStopIsOnline() {
@@ -87,10 +88,10 @@ func (s *DFPBoardTestSuite) TestStartStopIsOnline() {
 	assert.Equal(s.T(), 1, s.board.buttonStop.DefaultState)
 	assert.Equal(s.T(), 1, s.board.buttonWash.DefaultState)
 
-	assert.Equal(s.T(), 1, s.board.captorSecurityUnder.DefaultState)
-	assert.Equal(s.T(), 0, s.board.captorSecurityUpper.DefaultState)
-	assert.Equal(s.T(), 1, s.board.captorWaterUnder.DefaultState)
-	assert.Equal(s.T(), 0, s.board.captorWaterUpper.DefaultState)
+	assert.Equal(s.T(), 0, s.board.captorSecurityUnder.DefaultState)
+	assert.Equal(s.T(), 1, s.board.captorSecurityUpper.DefaultState)
+	assert.Equal(s.T(), 0, s.board.captorWaterUnder.DefaultState)
+	assert.Equal(s.T(), 1, s.board.captorWaterUpper.DefaultState)
 
 	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.relayDrum.Pin()))
 	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.relayPump.Pin()))
@@ -111,10 +112,10 @@ func (s *DFPBoardTestSuite) TestStartStopIsOnline() {
 	assert.Equal(s.T(), 1, board.buttonStop.DefaultState)
 	assert.Equal(s.T(), 1, board.buttonWash.DefaultState)
 
-	assert.Equal(s.T(), 1, board.captorSecurityUnder.DefaultState)
-	assert.Equal(s.T(), 0, board.captorSecurityUpper.DefaultState)
-	assert.Equal(s.T(), 1, board.captorWaterUnder.DefaultState)
-	assert.Equal(s.T(), 0, board.captorWaterUpper.DefaultState)
+	assert.Equal(s.T(), 0, board.captorSecurityUnder.DefaultState)
+	assert.Equal(s.T(), 1, board.captorSecurityUpper.DefaultState)
+	assert.Equal(s.T(), 0, board.captorWaterUnder.DefaultState)
+	assert.Equal(s.T(), 1, board.captorWaterUpper.DefaultState)
 
 	assert.Equal(s.T(), 0, adaptor.GetDigitalPinState(board.relayDrum.Pin()))
 	assert.Equal(s.T(), 0, adaptor.GetDigitalPinState(board.relayPump.Pin()))
