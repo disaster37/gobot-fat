@@ -2,7 +2,7 @@ package smtp
 
 import (
 	"github.com/disaster37/gobot-fat/mail"
-	"google.golang.org/appengine/log"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/gomail.v2"
 )
 
