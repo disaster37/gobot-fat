@@ -15,7 +15,7 @@ type SMTPClient struct {
 func NewSMTPClient(server string, port int, user string, password string, to string) mail.Mail {
 
 	return &SMTPClient{
-		client: gomail.NewDialer(user, port, user, password),
+		client: gomail.NewDialer(server, port, user, password),
 		from:   user,
 		to:     to,
 	}
