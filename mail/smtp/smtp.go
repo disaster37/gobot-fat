@@ -2,6 +2,7 @@ package smtp
 
 import (
 	"github.com/disaster37/gobot-fat/mail"
+	"google.golang.org/appengine/log"
 	"gopkg.in/gomail.v2"
 )
 
@@ -22,13 +23,18 @@ func NewSMTPClient(server string, port int, user string, password string, to str
 }
 
 // SendEmail permit to send email
-func (h *SMTPClient) SendEmail(title string, contend string) (err error) {
+// I run on goroutine
+func (h *SMTPClient) SendEmail(title string, contend string) {
 
-	m := gomail.NewMessage()
-	m.SetHeader("From", h.from)
-	m.SetHeader("To", h.to)
-	m.SetHeader("Subject", title)
-	m.SetBody("text/html", contend)
+	go func() {
+		m := gomail.NewMessage()
+		m.SetHeader("From", h.from)
+		m.SetHeader("To", h.to)
+		m.SetHeader("Subject", title)
+		m.SetBody("text/html", contend)
 
-	return h.client.DialAndSend(m)
+		if err := h.client.DialAndSend(m); err != nil {
+			log.Errorf("Error appear when sen email: %s", err.Error())
+		}
+	}()
 }

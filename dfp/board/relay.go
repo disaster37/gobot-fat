@@ -150,9 +150,7 @@ func (h *DFPBoard) SetSecurity(ctx context.Context) (err error) {
 		helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventSetSecurity, h.name)
 
 		// Send email
-		if err = h.mailClient.SendEmail("DFP set security mode", fmt.Sprintf("We enter on security mode at %s", time.Now())); err != nil {
-			log.Errorf("Error when send email: %s", err.Error())
-		}
+		h.mailClient.SendEmail("DFP set security mode", fmt.Sprintf("We enter on security mode at %s", time.Now()))
 
 		// Publish internal event
 		h.Publish(EventSetSecurity, nil)
@@ -188,9 +186,7 @@ func (h *DFPBoard) UnsetSecurity(ctx context.Context) (err error) {
 		helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventUnsetSecurity, h.name)
 
 		// Send email
-		if err = h.mailClient.SendEmail("DFP unset security mode", fmt.Sprintf("We exit on security mode at %s", time.Now())); err != nil {
-			log.Errorf("Error when send email: %s", err.Error())
-		}
+		h.mailClient.SendEmail("DFP unset security mode", fmt.Sprintf("We exit on security mode at %s", time.Now()))
 
 		// Publish internal event
 		h.Publish(EventUnsetSecurity, nil)
