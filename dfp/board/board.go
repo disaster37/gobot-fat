@@ -215,6 +215,9 @@ func (h *DFPBoard) Start(ctx context.Context) (err error) {
 	/****
 	 * Init state
 	 */
+	// Stop relais
+	h.forceStopRelais()
+
 	// Led and relay
 	if h.state.IsRunning {
 		h.turnOffGreenLed()
@@ -223,7 +226,6 @@ func (h *DFPBoard) Start(ctx context.Context) (err error) {
 	}
 	if h.state.IsSecurity || h.state.IsEmergencyStopped {
 		h.turnOnRedLed()
-		h.forceStopRelais()
 	} else {
 		h.turnOffRedLed()
 	}
@@ -351,9 +353,9 @@ func (h *DFPBoard) IO() models.DFPIO {
 		io.WaterCaptorUpper = "inactive"
 	}
 	if h.captorWaterUnder.Active {
-		io.WaterCaptorUpper = "active"
+		io.WaterCaptorUnder = "active"
 	} else {
-		io.WaterCaptorUpper = "inactive"
+		io.WaterCaptorUnder = "inactive"
 	}
 
 	// Button
