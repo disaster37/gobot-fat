@@ -113,3 +113,8 @@ func (h *dfpUsecase) EmergencyStop(c context.Context, status bool) error {
 func (h *dfpUsecase) GetState(ctx context.Context) (models.DFPState, error) {
 	return h.dfp.State(), nil
 }
+
+// GetIO return the current IO of DFP
+func (h *dfpUsecase) GetIO(ctx context.Context) (models.DFPIO, error) {
+	return h.dfp.IO(), nil
+}

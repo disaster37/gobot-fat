@@ -32,10 +32,11 @@ func NewDFPHandler(e *echo.Group, us dfp.Usecase) {
 	e.POST("/dfps/action/set_emergency_stop", handler.SetEmergencyStop)
 	e.POST("/dfps/action/unset_emergency_stop", handler.UnsetEmergencyStop)
 	e.GET("/dfps", handler.GetState)
+	e.GET("/dfps/io", handler.GetIO)
 
 }
 
-// GetState return the current state of TFP
+// GetState return the current state of DFP
 func (h DFPHandler) GetState(c echo.Context) error {
 	ctx := c.Request().Context()
 	if ctx == nil {
@@ -59,6 +60,34 @@ func (h DFPHandler) GetState(c echo.Context) error {
 			Type:       "dfps",
 			Id:         "state",
 			Attributes: state,
+		},
+	})
+}
+
+// GetIO return the current IO of DFP
+func (h DFPHandler) GetIO(c echo.Context) error {
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	io, err := h.dUsecase.GetIO(ctx)
+
+	if err != nil {
+		log.Errorf("Error when get DFP IO: %s", err.Error())
+		return c.JSON(http.StatusInternalServerError, models.NewJSONAPIerror(
+			"500",
+			"Error when get DFP IO",
+			err.Error(),
+			nil,
+		))
+	}
+
+	return c.JSON(http.StatusOK, models.JSONAPI{
+		Data: models.JSONAPIData{
+			Type:       "dfps",
+			Id:         "io",
+			Attributes: io,
 		},
 	})
 }
