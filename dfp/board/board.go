@@ -345,6 +345,48 @@ func (h *DFPBoard) IO() models.DFPIO {
 	} else {
 		io.SecurityCaptorUpper = "inactive"
 	}
+	if h.captorWaterUpper.Active {
+		io.WaterCaptorUpper = "active"
+	} else {
+		io.WaterCaptorUpper = "inactive"
+	}
+	if h.captorWaterUnder.Active {
+		io.WaterCaptorUpper = "active"
+	} else {
+		io.WaterCaptorUpper = "inactive"
+	}
+
+	// Button
+	if h.buttonEmergencyStop.Active {
+		io.EmergencyButton = "active"
+	} else {
+		io.EmergencyButton = "inactive"
+	}
+	if h.buttonForceDrum.Active {
+		io.ForceDrumButton = "active"
+	} else {
+		io.ForceDrumButton = "inactive"
+	}
+	if h.buttonForcePump.Active {
+		io.ForcePumpButton = "active"
+	} else {
+		io.ForcePumpButton = "inactive"
+	}
+	if h.buttonStart.Active {
+		io.StartButton = "active"
+	} else {
+		io.StartButton = "inactive"
+	}
+	if h.buttonStop.Active {
+		io.StopButton = "active"
+	} else {
+		io.StopButton = "inactive"
+	}
+	if h.buttonWash.Active {
+		io.WashButton = "active"
+	} else {
+		io.WashButton = "inactive"
+	}
 
 	return io
 }
