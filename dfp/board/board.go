@@ -313,82 +313,26 @@ func (h *DFPBoard) IO() models.DFPIO {
 	io := models.DFPIO{}
 
 	// Led state
-	if h.ledGreen.State() {
-		io.GreenLed = "on"
-	} else {
-		io.GreenLed = "off"
-	}
-	if h.ledRed.State() {
-		io.RedLed = "on"
-	} else {
-		io.RedLed = "off"
-	}
+	io.GreenLed = h.ledGreen.State()
+	io.RedLed = h.ledRed.State()
 
 	// Relais state
-	if h.relayDrum.State() {
-		io.DrumRelay = "on"
-	} else {
-		io.DrumRelay = "off"
-	}
-	if h.relayPump.State() {
-		io.PumpRelay = "on"
-	} else {
-		io.PumpRelay = "off"
-	}
+	io.DrumRelay = h.relayDrum.State()
+	io.PumpRelay = h.relayPump.State()
 
 	// Captor
-	if h.captorSecurityUnder.Active {
-		io.SecurityCaptorUnder = "active"
-	} else {
-		io.SecurityCaptorUnder = "inactive"
-	}
-	if h.captorSecurityUpper.Active {
-		io.SecurityCaptorUpper = "active"
-	} else {
-		io.SecurityCaptorUpper = "inactive"
-	}
-	if h.captorWaterUpper.Active {
-		io.WaterCaptorUpper = "active"
-	} else {
-		io.WaterCaptorUpper = "inactive"
-	}
-	if h.captorWaterUnder.Active {
-		io.WaterCaptorUnder = "active"
-	} else {
-		io.WaterCaptorUnder = "inactive"
-	}
+	io.SecurityCaptorUnder = h.captorSecurityUnder.Active
+	io.SecurityCaptorUpper = h.captorSecurityUpper.Active
+	io.WaterCaptorUpper = h.captorWaterUpper.Active
+	io.WaterCaptorUnder = h.captorWaterUnder.Active
 
 	// Button
-	if h.buttonEmergencyStop.Active {
-		io.EmergencyButton = "active"
-	} else {
-		io.EmergencyButton = "inactive"
-	}
-	if h.buttonForceDrum.Active {
-		io.ForceDrumButton = "active"
-	} else {
-		io.ForceDrumButton = "inactive"
-	}
-	if h.buttonForcePump.Active {
-		io.ForcePumpButton = "active"
-	} else {
-		io.ForcePumpButton = "inactive"
-	}
-	if h.buttonStart.Active {
-		io.StartButton = "active"
-	} else {
-		io.StartButton = "inactive"
-	}
-	if h.buttonStop.Active {
-		io.StopButton = "active"
-	} else {
-		io.StopButton = "inactive"
-	}
-	if h.buttonWash.Active {
-		io.WashButton = "active"
-	} else {
-		io.WashButton = "inactive"
-	}
+	io.EmergencyButton = h.buttonEmergencyStop.Active
+	io.ForceDrumButton = io.ForceDrumButton = "active"
+	io.ForcePumpButton = h.buttonForcePump.Active
+	io.StartButton = h.buttonStart.Active
+	io.StopButton = h.buttonStop.Active
+	io.WashButton = h.buttonWash.Active
 
 	return io
 }
