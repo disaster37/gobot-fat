@@ -328,7 +328,7 @@ func (h *DFPBoard) IO() models.DFPIO {
 
 	// Button
 	io.EmergencyButton = h.buttonEmergencyStop.Active
-	io.ForceDrumButton = io.ForceDrumButton = "active"
+	io.ForceDrumButton = h.buttonForceDrum.Active
 	io.ForcePumpButton = h.buttonForcePump.Active
 	io.StartButton = h.buttonStart.Active
 	io.StopButton = h.buttonStop.Active
