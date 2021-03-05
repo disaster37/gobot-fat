@@ -41,9 +41,20 @@ type Board interface {
 	// UnsetEmergencyStop unset emergency on DFP
 	UnsetEmergencyStop(ctx context.Context) error
 
+	// Set disable security
+	SetDisableSecurity(ctx context.Context) error
+
+	// Unset disable security
+	UnsetDisableSecurity(ctx context.Context) error
+
+	// State return the current state
 	State() models.DFPState
 
+	// IO return the current IO state
 	IO() models.DFPIO
+
+	// Config return the current config
+	Config() models.DFPConfig
 
 	board.Board
 }

@@ -199,6 +199,57 @@ func (h *DFPBoard) UnsetSecurity(ctx context.Context) (err error) {
 	return
 }
 
+// SetDisableSecurity disable the security
+// It send a global event to inform antoher board
+func (h *DFPBoard) SetDisableSecurity(ctx context.Context) (err error) {
+
+	if !h.state.IsDisableSecurity {
+
+		h.state.IsDisableSecurity = true
+
+		if err = h.stateUsecase.Update(ctx, h.state); err != nil {
+			return err
+		}
+
+		// Send event
+		helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventSetDisableSecurity, h.name)
+
+		// Publish internal event
+		h.Publish(EventSetDisableSecurity, nil)
+
+		// Publish global event
+		h.globalEventer.Publish(helper.SetDisableSecurity, nil)
+	}
+
+	return
+}
+
+// UnsetDisableSecurity enable the security
+// It send global event to inform another board
+func (h *DFPBoard) UnsetDisableSecurity(ctx context.Context) (err error) {
+
+	if h.state.IsDisableSecurity {
+
+		h.state.IsDisableSecurity = false
+
+		if err = h.stateUsecase.Update(ctx, h.state); err != nil {
+			return err
+		}
+
+		// Send event
+		helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventUnsetDisableSecurity, h.name)
+
+		// Publish internal event
+		h.Publish(EventUnsetDisableSecurity, nil)
+
+		// Publish global event
+		h.globalEventer.Publish(helper.UnsetDisableSecurity, nil)
+
+	}
+
+	return
+}
+
 // ForceWashing start a washing cycle
 func (h *DFPBoard) ForceWashing(ctx context.Context) (err error) {
 	if !h.state.IsWashed && !h.state.IsEmergencyStopped {

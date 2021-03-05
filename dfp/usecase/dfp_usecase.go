@@ -95,6 +95,19 @@ func (h *dfpUsecase) Security(c context.Context, status bool) error {
 	return h.dfp.UnsetSecurity(ctx)
 }
 
+// Security will set / unset security
+func (h *dfpUsecase) DisableSecurity(c context.Context, status bool) error {
+	ctx, cancel := context.WithTimeout(c, h.contextTimeout)
+	defer cancel()
+
+	if status {
+		log.Debug("Set disable security")
+		return h.dfp.SetDisableSecurity(ctx)
+	}
+	log.Debug("Unset disable security")
+	return h.dfp.UnsetDisableSecurity(ctx)
+}
+
 // EmergencySTop will set / unset security
 func (h *dfpUsecase) EmergencyStop(c context.Context, status bool) error {
 	ctx, cancel := context.WithTimeout(c, h.contextTimeout)

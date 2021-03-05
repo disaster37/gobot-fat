@@ -14,6 +14,7 @@ type Usecase interface {
 	ManualDrum(ctx context.Context, status bool) error
 	ManualPump(ctx context.Context, status bool) error
 	Security(ctx context.Context, status bool) error
+	DisableSecurity(ctx context.Context, status bool) error
 	EmergencyStop(ctx context.Context, status bool) error
 	GetState(ctx context.Context) (models.DFPState, error)
 	GetIO(ctx context.Context) (models.DFPIO, error)

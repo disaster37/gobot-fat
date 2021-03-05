@@ -41,6 +41,12 @@ const (
 	// EventUnsetSecurity unset security
 	EventUnsetSecurity = "dfp-unset-security"
 
+	// EventSetDisableSecurity disable security
+	EventSetDisableSecurity = "dfp-set-disable-security"
+
+	// EventUnsetDisableSecurity enable security
+	EventUnsetDisableSecurity = "dfp-unset-disable-security"
+
 	// EventSetEmergencyStop set emergency stop
 	EventSetEmergencyStop = "dfp-set-emergency-stop"
 
@@ -176,6 +182,8 @@ func newDFP(board DFPAdaptor, configHandler *viper.Viper, config *models.DFPConf
 	dfpBoard.AddEvent(EventStartDFP)
 	dfpBoard.AddEvent(EventSetSecurity)
 	dfpBoard.AddEvent(EventUnsetSecurity)
+	dfpBoard.AddEvent(EventSetDisableSecurity)
+	dfpBoard.AddEvent(EventUnsetDisableSecurity)
 	dfpBoard.AddEvent(EventSetEmergencyStop)
 	dfpBoard.AddEvent(EventUnsetEmergencyStop)
 	dfpBoard.AddEvent(EventBoardStop)
@@ -306,6 +314,11 @@ func (h *DFPBoard) IsOnline() bool {
 // State return copy of current state
 func (h *DFPBoard) State() (state models.DFPState) {
 	return *h.state
+}
+
+// Config return copy of current config
+func (h *DFPBoard) Config() (state models.DFPConfig) {
+	return *h.config
 }
 
 // IO return current IO state

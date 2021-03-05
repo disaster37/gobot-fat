@@ -29,6 +29,8 @@ func NewDFPHandler(e *echo.Group, us dfp.Usecase) {
 	e.POST("/dfps/action/manual_stop_pump", handler.ManualStopPump)
 	e.POST("/dfps/action/set_security", handler.SetSecurity)
 	e.POST("/dfps/action/unset_security", handler.UnsetSecurity)
+	e.POST("/dfps/action/set_disable_security", handler.SetDisableSecurity)
+	e.POST("/dfps/action/unset_disable_security", handler.UnsetDisableSecurity)
 	e.POST("/dfps/action/set_emergency_stop", handler.SetEmergencyStop)
 	e.POST("/dfps/action/unset_emergency_stop", handler.UnsetEmergencyStop)
 	e.GET("/dfps", handler.GetState)
@@ -327,6 +329,50 @@ func (h DFPHandler) UnsetEmergencyStop(c echo.Context) error {
 		return c.JSON(500, models.NewJSONAPIerror(
 			"500",
 			"Error when unset emergency stop",
+			err.Error(),
+			nil,
+		))
+	}
+
+	return c.NoContent(http.StatusNoContent)
+}
+
+// SetDisableSecurity permit to disable security
+func (h DFPHandler) SetDisableSecurity(c echo.Context) error {
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	err := h.dUsecase.DisableSecurity(ctx, true)
+
+	if err != nil {
+		log.Errorf("Error when post set_disable_security: %s", err.Error())
+		return c.JSON(500, models.NewJSONAPIerror(
+			"500",
+			"Error when disable security",
+			err.Error(),
+			nil,
+		))
+	}
+
+	return c.NoContent(http.StatusNoContent)
+}
+
+// UnsetDisableSecurity permit to remove security
+func (h DFPHandler) UnsetDisableSecurity(c echo.Context) error {
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	err := h.dUsecase.DisableSecurity(ctx, false)
+
+	if err != nil {
+		log.Errorf("Error when post unset_disable_security: %s", err.Error())
+		return c.JSON(500, models.NewJSONAPIerror(
+			"500",
+			"Error when enable security",
 			err.Error(),
 			nil,
 		))

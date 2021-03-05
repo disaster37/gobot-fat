@@ -187,6 +187,32 @@ func (h *TFPBoard) work() {
 
 	})
 
+	// Handle set disable secrutity
+	h.on(h.globalEventer, helper.SetDisableSecurity, func(s interface{}) {
+		h.state.IsDisableSecurity = true
+
+		// Send event
+		helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventSetDisableSecurity, h.name)
+
+		// Publish internal event
+		h.Publish(EventSetDisableSecurity, nil)
+	})
+
+	// Handler unset disable security
+	h.on(h.globalEventer, helper.UnsetSecurity, func(data interface{}) {
+
+		h.state.IsDisableSecurity = false
+
+		h.handleUnsetSecurityOrEmergencyStop()
+
+		// Send event
+		helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventUnsetDisableSecurity, h.name)
+
+		// Publish internal event
+		h.Publish(EventUnsetDisableSecurity, nil)
+
+	})
+
 	// Handle blister time
 	h.schedulingRoutines = append(h.schedulingRoutines, gobot.Every(1*time.Hour, h.handleBlisterTime))
 

@@ -17,15 +17,17 @@ import (
 )
 
 const (
-	EventBoardStop          = "board-stop"
-	EventBoardReboot        = "board-reboot"
-	EventBoardOffline       = "board-offline"
-	EventNewState           = "new-state"
-	EventNewConfig          = "new-config"
-	EventSetSecurity        = "set-security"
-	EventUnsetSecurity      = "unset-security"
-	EventSetEmergencyStop   = "set-emergency-stop"
-	EventUnsetEmergencyStop = "unset-emergency-stop"
+	EventBoardStop            = "board-stop"
+	EventBoardReboot          = "board-reboot"
+	EventBoardOffline         = "board-offline"
+	EventNewState             = "new-state"
+	EventNewConfig            = "new-config"
+	EventSetSecurity          = "set-security"
+	EventUnsetSecurity        = "unset-security"
+	EventSetDisableSecurity   = "set-disable-security"
+	EventUnsetDisableSecurity = "unset-disable-security"
+	EventSetEmergencyStop     = "set-emergency-stop"
+	EventUnsetEmergencyStop   = "unset-emergency-stop"
 )
 
 // TFPAdaptor is TFP board interface
@@ -119,6 +121,14 @@ func newTFP(board TFPAdaptor, configHandler *viper.Viper, config *models.TFPConf
 	tfpBoard.AddEvent(EventBoardReboot)
 	tfpBoard.AddEvent(EventBoardOffline)
 	tfpBoard.AddEvent(EventBoardStop)
+	tfpBoard.AddEvent(EventNewConfig)
+	tfpBoard.AddEvent(EventNewState)
+	tfpBoard.AddEvent(EventSetDisableSecurity)
+	tfpBoard.AddEvent(EventSetEmergencyStop)
+	tfpBoard.AddEvent(EventSetSecurity)
+	tfpBoard.AddEvent(EventUnsetDisableSecurity)
+	tfpBoard.AddEvent(EventUnsetEmergencyStop)
+	tfpBoard.AddEvent(EventUnsetSecurity)
 
 	log.Infof("Board %s initialized successfully", tfpBoard.Name())
 

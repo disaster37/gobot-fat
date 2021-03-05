@@ -10,20 +10,22 @@ import (
 )
 
 const (
-	KindEventTemperature        = "temperature"
-	KindEventHumidity           = "humidity"
-	KindEventStartBoard         = "start_board"
-	KindEventStopBoard          = "stop_board"
-	KindEventRebootBoard        = "reboot_board"
-	KindEventOfflineBoard       = "offline_board"
-	KindEventWash               = "wash"
-	KindEventSetEmergencyStop   = "set_emergency_stop"
-	KindEventUnsetEmergencyStop = "unset_emergency_stop"
-	KindEventSetSecurity        = "set_security"
-	KindEventUnsetSecurity      = "unset_security"
-	KindEventTankLevel          = "tank_level"
-	KindEventStart              = "start"
-	KindEventStop               = "stop"
+	KindEventTemperature          = "temperature"
+	KindEventHumidity             = "humidity"
+	KindEventStartBoard           = "start_board"
+	KindEventStopBoard            = "stop_board"
+	KindEventRebootBoard          = "reboot_board"
+	KindEventOfflineBoard         = "offline_board"
+	KindEventWash                 = "wash"
+	KindEventSetEmergencyStop     = "set_emergency_stop"
+	KindEventUnsetEmergencyStop   = "unset_emergency_stop"
+	KindEventSetSecurity          = "set_security"
+	KindEventUnsetSecurity        = "unset_security"
+	KindEventSetDisableSecurity   = "set_disable_security"
+	KindEventUnsetDisableSecurity = "unset_disable_security"
+	KindEventTankLevel            = "tank_level"
+	KindEventStart                = "start"
+	KindEventStop                 = "stop"
 )
 
 // SendEvent permit to send event on Elasticsearch
