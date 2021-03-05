@@ -193,6 +193,9 @@ func (h *TFPBoard) work() {
 	// Handle waterfall auto
 	h.schedulingRoutines = append(h.schedulingRoutines, gobot.Every(1*time.Minute, h.handleWaterfallAuto))
 
+	log.Debugf("TFP IO:\n %s", h.IO().String())
+	log.Debugf("TFP state: %s", h.state.String())
+
 	h.isInitialized = true
 }
 

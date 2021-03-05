@@ -261,3 +261,18 @@ func (h *TFPBoard) Stop(ctx context.Context) (err error) {
 func (h *TFPBoard) State() models.TFPState {
 	return *h.state
 }
+
+// IO return current IO state
+func (h *TFPBoard) IO() models.TFPIO {
+	io := models.TFPIO{}
+
+	// Relais state
+	io.PondPumpRelay = h.relayPompPond.State()
+	io.WaterfallPumpRelay = h.relayPompWaterfall.State()
+	io.UVC1Relay = h.relayUVC1.State()
+	io.UVC2Relay = h.relayUVC2.State()
+	io.FilterBubble = h.relayBubbleFilter.State()
+	io.PondBubble = h.relayBubblePond.State()
+
+	return io
+}

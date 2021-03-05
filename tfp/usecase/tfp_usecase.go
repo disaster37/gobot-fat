@@ -233,3 +233,8 @@ func (h *tfpUsecase) blisterNew(ctx context.Context, blisterName string) error {
 
 	return nil
 }
+
+// GetIO return the current IO of DFP
+func (h *tfpUsecase) GetIO(ctx context.Context) (models.TFPIO, error) {
+	return h.tfp.IO(), nil
+}

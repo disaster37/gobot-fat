@@ -36,6 +36,7 @@ func NewTFPHandler(e *echo.Group, us tfp.Usecase) {
 	e.POST("/tfps/action/change_uvc1_blister", handler.ChangeUVC1Blister)
 	e.POST("/tfps/action/change_uvc2_blister", handler.ChangeUVC2Blister)
 	e.POST("/tfps/action/change_ozone_blister", handler.ChangeOzoneBlister)
+	e.GET("/tfps/io", handler.GetIO)
 	e.GET("/tfps", handler.GetState)
 
 }
@@ -64,6 +65,34 @@ func (h TFPHandler) GetState(c echo.Context) error {
 			Type:       "tfps",
 			Id:         "state",
 			Attributes: state,
+		},
+	})
+}
+
+// GetIO return the current IO of DFP
+func (h TFPHandler) GetIO(c echo.Context) error {
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	io, err := h.dUsecase.GetIO(ctx)
+
+	if err != nil {
+		log.Errorf("Error when get TFP IO: %s", err.Error())
+		return c.JSON(http.StatusInternalServerError, models.NewJSONAPIerror(
+			"500",
+			"Error when get TFP IO",
+			err.Error(),
+			nil,
+		))
+	}
+
+	return c.JSON(http.StatusOK, models.JSONAPI{
+		Data: models.JSONAPIData{
+			Type:       "tfps",
+			Id:         "io",
+			Attributes: io,
 		},
 	})
 }

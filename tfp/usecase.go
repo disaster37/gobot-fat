@@ -14,8 +14,9 @@ type Usecase interface {
 	UVC2(ctx context.Context, status bool) error
 	PondBubble(ctx context.Context, status bool) error
 	FilterBubble(ctx context.Context, status bool) error
-	GetState(ctx context.Context) (models.TFPState, error)
 	UVC1BlisterNew(ctx context.Context) error
 	UVC2BlisterNew(ctx context.Context) error
 	OzoneBlisterNew(ctx context.Context) error
+	GetState(ctx context.Context) (models.TFPState, error)
+	GetIO(ctx context.Context) (models.TFPIO, error)
 }

@@ -23,5 +23,6 @@ type Board interface {
 	StopFilterBubble(ctx context.Context) error
 	StopRelais(ctx context.Context) error
 	State() models.TFPState
+	IO() models.TFPIO
 	board.Board
 }
