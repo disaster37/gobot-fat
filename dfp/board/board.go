@@ -217,8 +217,8 @@ func (h *DFPBoard) Start(ctx context.Context) (err error) {
 	if err = h.board.SetInputPullup(listPins); err != nil {
 		return err
 	}
-	h.captorSecurityUnder.DefaultState = 0
-	h.captorWaterUnder.DefaultState = 0
+	h.captorSecurityUpper.DefaultState = 0
+	h.captorWaterUpper.DefaultState = 0
 
 	/****
 	 * Init state

@@ -48,8 +48,8 @@ func initTestBoard() (*DFPBoard, *mock.MockPlateform) {
 	usecaseDFPMock := usecase.NewMockUsecasetBase()
 	mockMail := mock.NewMockMail()
 
-	mockBoard.SetInvertInitialPinState(configHandler.GetString("pin.captor.security_under"))
-	mockBoard.SetInvertInitialPinState(configHandler.GetString("pin.captor.water_under"))
+	mockBoard.SetInvertInitialPinState(configHandler.GetString("pin.captor.security_upper"))
+	mockBoard.SetInvertInitialPinState(configHandler.GetString("pin.captor.water_upper"))
 
 	eventer.AddEvent(dfpconfig.NewDFPConfig)
 	eventer.AddEvent(dfpstate.NewDFPState)

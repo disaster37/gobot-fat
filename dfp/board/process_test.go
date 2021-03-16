@@ -100,7 +100,7 @@ func (s *DFPBoardTestSuite) TestButtonEmergencyStop() {
 func (s *DFPBoardTestSuite) TestSecurityCaptor() {
 	// Test secuity upper captor ON
 	status := mock.WaitEvent(s.board.Eventer, EventSetSecurity, 2*time.Second)
-	s.adaptor.SetDigitalPinState(s.board.captorSecurityUpper.Pin(), 0)
+	s.adaptor.SetDigitalPinState(s.board.captorSecurityUpper.Pin(), 1)
 	assert.True(s.T(), <-status)
 	assert.True(s.T(), s.board.state.IsSecurity)
 	assert.Equal(s.T(), 1, s.adaptor.GetDigitalPinState(s.board.ledRed.Pin()))
@@ -108,14 +108,14 @@ func (s *DFPBoardTestSuite) TestSecurityCaptor() {
 	// Test secruity upper captor OFF
 	time.Sleep(1 * time.Second)
 	status = mock.WaitEvent(s.board.Eventer, EventUnsetSecurity, 2*time.Second)
-	s.adaptor.SetDigitalPinState(s.board.captorSecurityUpper.Pin(), 1)
+	s.adaptor.SetDigitalPinState(s.board.captorSecurityUpper.Pin(), 0)
 	assert.True(s.T(), <-status)
 	assert.False(s.T(), s.board.state.IsSecurity)
 	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.ledRed.Pin()))
 
 	// Test secruity under captor ON
 	status = mock.WaitEvent(s.board.Eventer, EventSetSecurity, 2*time.Second)
-	s.adaptor.SetDigitalPinState(s.board.captorSecurityUnder.Pin(), 1)
+	s.adaptor.SetDigitalPinState(s.board.captorSecurityUnder.Pin(), 0)
 	assert.True(s.T(), <-status)
 	assert.True(s.T(), s.board.state.IsSecurity)
 	assert.Equal(s.T(), 1, s.adaptor.GetDigitalPinState(s.board.ledRed.Pin()))
@@ -123,7 +123,7 @@ func (s *DFPBoardTestSuite) TestSecurityCaptor() {
 	// Test secruity under captor OFF
 	time.Sleep(1 * time.Second)
 	status = mock.WaitEvent(s.board.Eventer, EventUnsetSecurity, 2*time.Second)
-	s.adaptor.SetDigitalPinState(s.board.captorSecurityUnder.Pin(), 0)
+	s.adaptor.SetDigitalPinState(s.board.captorSecurityUnder.Pin(), 1)
 	assert.True(s.T(), <-status)
 	assert.False(s.T(), s.board.state.IsSecurity)
 	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.ledRed.Pin()))
@@ -132,13 +132,13 @@ func (s *DFPBoardTestSuite) TestSecurityCaptor() {
 func (s *DFPBoardTestSuite) TestWaterCaptor() {
 	// Test water upper captor ON
 	status := mock.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
-	s.adaptor.SetDigitalPinState(s.board.captorWaterUpper.Pin(), 0)
-	assert.True(s.T(), <-status)
 	s.adaptor.SetDigitalPinState(s.board.captorWaterUpper.Pin(), 1)
+	assert.True(s.T(), <-status)
+	s.adaptor.SetDigitalPinState(s.board.captorWaterUpper.Pin(), 0)
 
 	// Test water under captor ON
 	status = mock.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
-	s.adaptor.SetDigitalPinState(s.board.captorWaterUnder.Pin(), 1)
+	s.adaptor.SetDigitalPinState(s.board.captorWaterUnder.Pin(), 0)
 	assert.True(s.T(), <-status)
 
 	// Don't run more wash after some time
@@ -146,12 +146,12 @@ func (s *DFPBoardTestSuite) TestWaterCaptor() {
 	// Then control other wash not run
 	s.board.config.WaitTimeBetweenWashing = 60
 	status = mock.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
-	s.adaptor.SetDigitalPinState(s.board.captorWaterUpper.Pin(), 0)
-	assert.True(s.T(), <-status)
 	s.adaptor.SetDigitalPinState(s.board.captorWaterUpper.Pin(), 1)
-	time.Sleep(1 * time.Second)
-	status = mock.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
+	assert.True(s.T(), <-status)
 	s.adaptor.SetDigitalPinState(s.board.captorWaterUpper.Pin(), 0)
+	time.Sleep(5 * time.Second)
+	status = mock.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
+	s.adaptor.SetDigitalPinState(s.board.captorWaterUpper.Pin(), 1)
 	assert.False(s.T(), <-status)
 
 	// Sorry for that, it's just to be sure is not broke other tests.
