@@ -323,6 +323,11 @@ func (h *DFPBoard) work() {
 	// When water captor ask security
 	security := func(s interface{}) {
 
+		// Skip if current washing to avoid flapping
+		if h.state.IsWashed {
+			return
+		}
+
 		if h.captorSecurityUpper.Active || h.captorSecurityUnder.Active {
 
 			if err := h.SetSecurity(ctx); err != nil {
