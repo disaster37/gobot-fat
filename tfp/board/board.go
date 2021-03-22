@@ -272,6 +272,11 @@ func (h *TFPBoard) State() models.TFPState {
 	return *h.state
 }
 
+// State return the current state
+func (h *TFPBoard) Config() models.TFPConfig {
+	return *h.config
+}
+
 // IO return current IO state
 func (h *TFPBoard) IO() models.TFPIO {
 	io := models.TFPIO{}

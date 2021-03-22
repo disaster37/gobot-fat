@@ -176,7 +176,13 @@ func (h *tfpUsecase) FilterBubble(c context.Context, status bool) error {
 
 // GetState return the current state of TFP
 func (h *tfpUsecase) GetState(c context.Context) (models.TFPState, error) {
-	return h.tfp.State(), nil
+
+	state := h.tfp.State()
+
+	// Reflect waterfall auto on state for hass usecase
+	state.IsWaterfallAuto = h.tfp.Config().IsWaterfallAuto
+
+	return state, nil
 }
 
 // UVC1BlisterNew update the date when blister changed

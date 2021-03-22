@@ -51,6 +51,10 @@ type TFPState struct {
 	BacteriumTime time.Time `json:"bacterium_time" gorm:"column:bacterium_time" validate:"required"`
 
 	AcknoledgeWaterfallAuto bool `json:"acknoledge_waterfall_auto" gorm:"column:acknoledge_waterfall_auto" validate:"required"`
+
+	// IsWaterfallAuto is managed by tfpConfig
+	// It's here only to reflect state
+	IsWaterfallAuto bool `json:"is_waterfall_auto" gorm:"column:is_waterfall_auto" validate:"required"`
 }
 
 func (h TFPState) TableName() string {

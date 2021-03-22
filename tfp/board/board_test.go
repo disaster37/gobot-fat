@@ -113,3 +113,7 @@ func (s *TFPBoardTestSuite) TestName() {
 func (s *TFPBoardTestSuite) TestState() {
 	assert.True(s.T(), reflect.DeepEqual(models.TFPState{}, s.board.State()))
 }
+
+func (s *TFPBoardTestSuite) TestConfig() {
+	assert.True(s.T(), reflect.DeepEqual(models.TFPConfig{IsWaterfallAuto: false}, s.board.Config()))
+}

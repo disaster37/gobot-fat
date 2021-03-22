@@ -24,5 +24,6 @@ type Board interface {
 	StopRelais(ctx context.Context) error
 	State() models.TFPState
 	IO() models.TFPIO
+	Config() models.TFPConfig
 	board.Board
 }
