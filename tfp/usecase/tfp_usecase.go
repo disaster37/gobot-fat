@@ -194,6 +194,22 @@ func (h *tfpUsecase) OzoneBlisterNew(ctx context.Context) error {
 	return h.blisterNew(ctx, blisterOzone)
 }
 
+// WaterfallAuto permit to enable or disable the waterfall auto
+func (h *tfpUsecase) WaterfallAuto(c context.Context, status bool) error {
+	ctx, cancel := context.WithTimeout(c, h.contextTimeout)
+	defer cancel()
+
+	if status {
+		log.Debugf("Enable waterfall auto is required by API")
+		return h.waterfallAuto(ctx, status)
+	} else {
+		log.Debugf("Disable waterfall auto required by API")
+		return h.waterfallAuto(ctx, status)
+	}
+
+	return nil
+}
+
 func (h *tfpUsecase) blisterNew(ctx context.Context, blisterName string) error {
 	state := &models.TFPState{}
 	if err := h.state.Get(ctx, tfpstate.ID, state); err != nil {
@@ -237,4 +253,22 @@ func (h *tfpUsecase) blisterNew(ctx context.Context, blisterName string) error {
 // GetIO return the current IO of DFP
 func (h *tfpUsecase) GetIO(ctx context.Context) (models.TFPIO, error) {
 	return h.tfp.IO(), nil
+}
+
+func (h *tfpUsecase) waterfallAuto(ctx context.Context, state bool) error {
+
+	config := &models.TFPConfig{}
+	if err := h.config.Get(ctx, tfpconfig.ID, config); err != nil {
+		return err
+	}
+
+	if config.IsWaterfallAuto != state {
+		config.IsWaterfallAuto = state
+		if err := h.config.Update(ctx, config); err != nil {
+			return err
+		}
+
+	}
+
+	return nil
 }

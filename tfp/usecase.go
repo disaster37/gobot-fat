@@ -17,6 +17,7 @@ type Usecase interface {
 	UVC1BlisterNew(ctx context.Context) error
 	UVC2BlisterNew(ctx context.Context) error
 	OzoneBlisterNew(ctx context.Context) error
+	WaterfallAuto(ctx context.Context, status bool) error
 	GetState(ctx context.Context) (models.TFPState, error)
 	GetIO(ctx context.Context) (models.TFPIO, error)
 }

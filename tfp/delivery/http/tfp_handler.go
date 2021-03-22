@@ -36,6 +36,8 @@ func NewTFPHandler(e *echo.Group, us tfp.Usecase) {
 	e.POST("/tfps/action/change_uvc1_blister", handler.ChangeUVC1Blister)
 	e.POST("/tfps/action/change_uvc2_blister", handler.ChangeUVC2Blister)
 	e.POST("/tfps/action/change_ozone_blister", handler.ChangeOzoneBlister)
+	e.POST("/tfps/action/enable_waterfall_auto", handler.EnableWaterfallAuto)
+	e.POST("/tfps/action/disable_waterfall_auto", handler.DisableWaterfallAuto)
 	e.GET("/tfps/io", handler.GetIO)
 	e.GET("/tfps", handler.GetState)
 
@@ -464,6 +466,50 @@ func (h TFPHandler) ChangeOzoneBlister(c echo.Context) error {
 		return c.JSON(500, models.NewJSONAPIerror(
 			"500",
 			"Error when change ozone blister",
+			err.Error(),
+			nil,
+		))
+	}
+
+	return c.NoContent(http.StatusNoContent)
+}
+
+// EnableWaterfallAuto enable waterfall auto
+func (h TFPHandler) EnableWaterfallAuto(c echo.Context) error {
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	err := h.dUsecase.PondBubble(ctx, true)
+
+	if err != nil {
+		log.Errorf("Error when post enable_waterfall_auto: %s", err.Error())
+		return c.JSON(500, models.NewJSONAPIerror(
+			"500",
+			"Error when enable waterfall auto",
+			err.Error(),
+			nil,
+		))
+	}
+
+	return c.NoContent(http.StatusNoContent)
+}
+
+// DisableWaterfallAuto disable waterfall auto
+func (h TFPHandler) DisableWaterfallAuto(c echo.Context) error {
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	err := h.dUsecase.PondBubble(ctx, false)
+
+	if err != nil {
+		log.Errorf("Error when post disable_waterfall_auto: %s", err.Error())
+		return c.JSON(500, models.NewJSONAPIerror(
+			"500",
+			"Error when disable waterfall auto",
 			err.Error(),
 			nil,
 		))
