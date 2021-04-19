@@ -99,7 +99,9 @@ func main() {
 	e := echo.New()
 	middL := dfpMiddleware.InitMiddleware()
 	e.Use(middL.CORS)
-	e.Use(middleware.Logger())
+	if configHandler.GetBool("log.access") {
+		e.Use(middleware.Logger())
+	}
 	e.Use(middleware.Recover())
 	api := e.Group("/api")
 	api.Use(middleware.JWTWithConfig(middleware.JWTConfig{
