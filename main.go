@@ -41,9 +41,9 @@ func main() {
 	formatter := new(prefixed.TextFormatter)
 	formatter.FullTimestamp = true
 	formatter.ForceFormatting = true
-	log.SetFormatter(formatter)
-	log.SetOutput(os.Stdout)
-	log.SetLevel(log.InfoLevel)
+	logrus.SetFormatter(formatter)
+	logrus.SetOutput(os.Stdout)
+	logrus.SetLevel(log.InfoLevel)
 
 	// Read config file
 	configHandler := viper.New()
