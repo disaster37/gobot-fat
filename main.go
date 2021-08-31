@@ -28,6 +28,7 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
@@ -57,7 +58,7 @@ func main() {
 		panic(err)
 	}
 	log.Infof("Set log level to %s", level.String())
-	log.SetLevel(level)
+	logrus.SetLevel(level)
 
 	// Init backend connexion
 	isConnected := false
