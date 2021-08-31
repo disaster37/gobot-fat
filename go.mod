@@ -8,7 +8,7 @@ require (
 	github.com/disaster37/gobot-arest v1.0.9
 	github.com/elastic/go-elasticsearch/v7 v7.9.0
 	github.com/jinzhu/gorm v1.9.16
-	github.com/labstack/echo/v4 v4.5.0
+	github.com/labstack/echo/v4  v4.1.17
 	github.com/labstack/gommon v0.3.0
 	github.com/olivere/elastic/v7 v7.0.22
 	github.com/onsi/gomega v1.16.0 // indirect
