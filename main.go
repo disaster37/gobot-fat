@@ -28,22 +28,23 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 	"gobot.io/x/gobot"
 )
 
-func main() {
-
+func init() {
 	// Logger setting
 	formatter := new(prefixed.TextFormatter)
 	formatter.FullTimestamp = true
 	formatter.ForceFormatting = true
-	logrus.SetFormatter(formatter)
-	logrus.SetOutput(os.Stdout)
-	logrus.SetLevel(log.InfoLevel)
+	log.SetFormatter(formatter)
+	log.SetOutput(os.Stdout)
+	log.SetLevel(log.InfoLevel)
+}
+
+func main() {
 
 	// Read config file
 	configHandler := viper.New()
@@ -58,7 +59,7 @@ func main() {
 		panic(err)
 	}
 	log.Infof("Set log level to %s", level.String())
-	logrus.SetLevel(level)
+	log.SetLevel(level)
 
 	// Init backend connexion
 	isConnected := false
