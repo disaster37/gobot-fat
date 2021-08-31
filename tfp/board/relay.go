@@ -286,7 +286,7 @@ func (h *TFPBoard) StopWaterfallPump(ctx context.Context) error {
 // StartPondBubble permit to start pond bubble
 // The motor start only if not emmergency and no security
 func (h *TFPBoard) StartPondBubble(ctx context.Context) error {
-	if h.canStartRelay() {
+	if !h.state.IsEmergencyStopped {
 		log.Debug("Start pond bubble")
 		err := h.relayBubblePond.On()
 		if err != nil {
@@ -343,7 +343,7 @@ func (h *TFPBoard) StopPondBubble(ctx context.Context) error {
 // StartFilterBubble permit to start filter bubble
 // The motor start only if not emmergency and no security
 func (h *TFPBoard) StartFilterBubble(ctx context.Context) error {
-	if h.canStartRelay() {
+	if !h.state.IsEmergencyStopped {
 		log.Debug("Start filter bubble")
 		err := h.relayBubbleFilter.On()
 		if err != nil {

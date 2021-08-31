@@ -303,15 +303,15 @@ func (s *TFPBoardTestSuite) TestStartStopPondBubble() {
 	assert.Error(s.T(), err)
 	assert.Equal(s.T(), 1, s.adaptor.GetDigitalPinState(s.board.relayBubblePond.Pin()))
 
-	// Can't start pond bubble when security
+	// Can start pond bubble when security
 	s.board.state.IsEmergencyStopped = false
 	s.board.state.IsSecurity = true
 	s.adaptor.SetDigitalPinState(s.board.relayBubblePond.Pin(), 1)
 	err = s.board.StartPondBubble(context.Background())
-	assert.Error(s.T(), err)
-	assert.Equal(s.T(), 1, s.adaptor.GetDigitalPinState(s.board.relayBubblePond.Pin()))
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.relayBubblePond.Pin()))
 
-	// Can start  pond pomp when security and disable security
+	// Can start pond bubble when security and disable security
 	s.board.state.IsEmergencyStopped = false
 	s.board.state.IsSecurity = true
 	s.board.state.IsDisableSecurity = true
@@ -366,13 +366,13 @@ func (s *TFPBoardTestSuite) TestStartStopFilterBubble() {
 	assert.Error(s.T(), err)
 	assert.Equal(s.T(), 1, s.adaptor.GetDigitalPinState(s.board.relayBubbleFilter.Pin()))
 
-	// Can't start filter bubble when security
+	// Can start filter bubble when security
 	s.board.state.IsEmergencyStopped = false
 	s.board.state.IsSecurity = true
 	s.adaptor.SetDigitalPinState(s.board.relayBubbleFilter.Pin(), 1)
 	err = s.board.StartFilterBubble(context.Background())
-	assert.Error(s.T(), err)
-	assert.Equal(s.T(), 1, s.adaptor.GetDigitalPinState(s.board.relayBubbleFilter.Pin()))
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.relayBubbleFilter.Pin()))
 
 	// Can start  filter bubble when security and disable security
 	s.board.state.IsEmergencyStopped = false

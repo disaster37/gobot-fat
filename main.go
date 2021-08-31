@@ -56,6 +56,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	log.Infof("Set log level to %s", level.String())
 	log.SetLevel(level)
 
 	// Init backend connexion
