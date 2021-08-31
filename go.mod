@@ -6,7 +6,7 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/disaster37/gobot-arest v1.0.9
 	github.com/elastic/go-elasticsearch/v7 v7.9.0
-	github.com/golang-jwt/jwt/v4 v4.0.0
+	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/jinzhu/gorm v1.9.16
 	github.com/labstack/echo/v4 v4.5.0
 	github.com/labstack/gommon v0.3.0
