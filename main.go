@@ -107,6 +107,7 @@ func main() {
 	e.Use(middleware.Recover())
 	api := e.Group("/api")
 	api.Use(middleware.JWTWithConfig(middleware.JWTConfig{
+		Claims:     &loginUsecase.JwtCustomClaims{},
 		SigningKey: []byte(configHandler.GetString("jwt.secret")),
 	}))
 	api.Use(middL.IsAdmin)

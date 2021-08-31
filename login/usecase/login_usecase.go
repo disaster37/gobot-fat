@@ -14,6 +14,14 @@ type loginUsecase struct {
 	configHandler *viper.Viper
 }
 
+// JwtCustomClaims are custom claims extending default ones.
+// See https://github.com/golang-jwt/jwt for more examples
+type JwtCustomClaims struct {
+	Name  string `json:"name"`
+	Admin bool   `json:"admin"`
+	jwt.StandardClaims
+}
+
 // NewLoginUsecase will create new loginUsecase object of login.Usecase interface
 func NewLoginUsecase(configHandler *viper.Viper) login.Usecase {
 	return &loginUsecase{
@@ -30,14 +38,17 @@ func (h *loginUsecase) Login(c context.Context, user string, password string) (s
 		return "", nil
 	}
 
-	// Create token
-	token := jwt.New(jwt.SigningMethodHS256)
+	// Set custom claims
+	claims := &JwtCustomClaims{
+		user,
+		true,
+		jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(time.Hour * 72).Unix(),
+		},
+	}
 
-	// Set claims
-	claims := token.Claims.(jwt.MapClaims)
-	claims["name"] = user
-	claims["admin"] = true
-	claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
+	// Create token with claims
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	// Generate encoded token and send it as response.
 	t, err := token.SignedString([]byte(h.configHandler.GetString("jwt.secret")))
