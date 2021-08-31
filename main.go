@@ -34,7 +34,8 @@ import (
 	"gobot.io/x/gobot"
 )
 
-func init() {
+func main() {
+
 	// Logger setting
 	formatter := new(prefixed.TextFormatter)
 	formatter.FullTimestamp = true
@@ -42,9 +43,6 @@ func init() {
 	log.SetFormatter(formatter)
 	log.SetOutput(os.Stdout)
 	log.SetLevel(log.InfoLevel)
-}
-
-func main() {
 
 	// Read config file
 	configHandler := viper.New()

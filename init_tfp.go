@@ -18,7 +18,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/jinzhu/gorm"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/gommon/log"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"gobot.io/x/gobot"
 )

@@ -8,7 +8,7 @@ import (
 
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/repository"
-	"github.com/labstack/gommon/log"
+	log "github.com/sirupsen/logrus"
 	"gobot.io/x/gobot"
 )
 

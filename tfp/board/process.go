@@ -11,7 +11,7 @@ import (
 	"github.com/disaster37/gobot-arest/drivers/extra"
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/tfpconfig"
-	"github.com/labstack/gommon/log"
+	log "github.com/sirupsen/logrus"
 )
 
 func (h *TFPBoard) work() {

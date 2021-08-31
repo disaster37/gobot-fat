@@ -6,7 +6,7 @@ import (
 
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/usecase"
-	"github.com/labstack/gommon/log"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
