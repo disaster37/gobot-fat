@@ -228,7 +228,7 @@ func (h *DFPBoard) Start(ctx context.Context) (err error) {
 
 	// Led and relay
 	if h.state.IsRunning {
-		h.turnOffGreenLed()
+		h.turnOnGreenLed()
 	} else {
 		h.turnOffGreenLed()
 	}
