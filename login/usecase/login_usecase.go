@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
-	"github.com/spf13/viper"
 	"github.com/disaster37/gobot-fat/login"
+	"github.com/golang-jwt/jwt/v4"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 type loginUsecase struct {
@@ -22,7 +22,7 @@ func NewLoginUsecase(configHandler *viper.Viper) login.Usecase {
 }
 
 func (h *loginUsecase) Login(c context.Context, user string, password string) (string, error) {
-	
+
 	log.Debugf("Login: %s", user)
 	log.Debugf("Password: XXX")
 
@@ -44,7 +44,6 @@ func (h *loginUsecase) Login(c context.Context, user string, password string) (s
 	if err != nil {
 		return "", err
 	}
-	
 
 	return t, nil
 }
