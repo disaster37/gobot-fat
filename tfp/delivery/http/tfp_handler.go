@@ -481,7 +481,7 @@ func (h TFPHandler) EnableWaterfallAuto(c echo.Context) error {
 		ctx = context.Background()
 	}
 
-	err := h.dUsecase.PondBubble(ctx, true)
+	err := h.dUsecase.WaterfallAuto(ctx, true)
 
 	if err != nil {
 		log.Errorf("Error when post enable_waterfall_auto: %s", err.Error())
@@ -503,7 +503,7 @@ func (h TFPHandler) DisableWaterfallAuto(c echo.Context) error {
 		ctx = context.Background()
 	}
 
-	err := h.dUsecase.PondBubble(ctx, false)
+	err := h.dUsecase.WaterfallAuto(ctx, false)
 
 	if err != nil {
 		log.Errorf("Error when post disable_waterfall_auto: %s", err.Error())
