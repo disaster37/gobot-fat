@@ -29,23 +29,15 @@ jobs:
         with:
           go-version: "1.18" # The Go version to download (if necessary) and use.
 
-      # Install all the dependencies
-      - name: Install dependencies
+      # Run vet
+      - name: Run vet
         run: |
-          go version
-          go install golang.org/x/lint/golint
+          go vet .
 
       # Run build of the application
       - name: Run build
         run: |
-          go env -w GOFLAGS=-mod=mod
           go build .
-
-      # Run vet & lint on the code
-      - name: Run vet & lint
-        run: |
-          go vet .
-          golint .
 
       # Run testing on the code
       - name: Run testing
