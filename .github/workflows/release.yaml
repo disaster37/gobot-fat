@@ -5,12 +5,12 @@ on:
     branches:
       - master
       - gobot-dfp
-    pull_request:
-      branches:
-        - master
-        - gobot-dfp
     tags:
       - "*"
+  pull_request:
+    branches:
+      - master
+      - gobot-dfp
 
 jobs:
   # The "build" workflow
