@@ -19,6 +19,7 @@ func TestGetElasticsearch(t *testing.T) {
 		Response: &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       mock.Fixture("get_config.json"),
+			Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
 		},
 	}
 	mocktrans.RoundTripFn = func(req *http.Request) (*http.Response, error) { return mocktrans.Response, nil }
@@ -45,6 +46,7 @@ func TestGetElasticsearch(t *testing.T) {
 		Response: &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       mock.Fixture("get_not_found.json"),
+			Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
 		},
 	}
 	mocktrans.RoundTripFn = func(req *http.Request) (*http.Response, error) { return mocktrans.Response, nil }
@@ -69,6 +71,7 @@ func TestListElasticsearch(t *testing.T) {
 		Response: &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       mock.Fixture("search_config.json"),
+			Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
 		},
 	}
 	mocktrans.RoundTripFn = func(req *http.Request) (*http.Response, error) { return mocktrans.Response, nil }
@@ -98,6 +101,7 @@ func TestListElasticsearch(t *testing.T) {
 		Response: &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       mock.Fixture("search_config.json"),
+			Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
 		},
 	}
 	mocktrans.RoundTripFn = func(req *http.Request) (*http.Response, error) { return mocktrans.Response, nil }
@@ -125,6 +129,7 @@ func TestListElasticsearch(t *testing.T) {
 		Response: &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       mock.Fixture("search_not_found.json"),
+			Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
 		},
 	}
 	mocktrans.RoundTripFn = func(req *http.Request) (*http.Response, error) { return mocktrans.Response, nil }
@@ -148,6 +153,7 @@ func TestUpdateElasticsearch(t *testing.T) {
 		Response: &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       mock.Fixture("update_config.json"),
+			Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
 		},
 	}
 	mocktrans.RoundTripFn = func(req *http.Request) (*http.Response, error) { return mocktrans.Response, nil }
@@ -187,6 +193,7 @@ func TestCreateElasticsearch(t *testing.T) {
 		Response: &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       mock.Fixture("update_config.json"),
+			Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
 		},
 	}
 	mocktrans.RoundTripFn = func(req *http.Request) (*http.Response, error) { return mocktrans.Response, nil }
