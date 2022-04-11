@@ -1,4 +1,4 @@
-./gobot-fat
+gobot-fat
 *.exe
 config.yml
 config/

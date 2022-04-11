@@ -1,12 +1,13 @@
-FROM golang:1.16-alpine as builder
+FROM golang:1.18-alpine as builder
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
+RUN apk add --update git
 WORKDIR /go/src/app
 COPY . .
 RUN \
   CGO_ENABLED=0 go build
 
 
-FROM alpine:3.12
+FROM alpine:3.15
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 COPY --from=builder /go/src/app/gobot-fat /opt/dfp/bin/dfp
 RUN \
