@@ -8,6 +8,8 @@ import (
 // DFPState  describe the current state of drum filter pond
 type DFPState struct {
 	ModelGeneric
+
+	ID                 uint      `jsonapi:"primary,dfp-states" gorm:"primary_key"`
 	Name               string    `json:"name"`
 	IsWashed           bool      `json:"is_washed" gorm:"column:is_washed" validate:"required"`
 	IsRunning          bool      `json:"is_running" gorm:"column:is_running" validate:"required"`
@@ -59,4 +61,12 @@ func (h *DFPState) Security() bool {
 	}
 
 	return false
+}
+
+func (h *DFPState) SetID(id uint) {
+	h.ID = id
+}
+
+func (h *DFPState) GetID() uint {
+	return h.ID
 }

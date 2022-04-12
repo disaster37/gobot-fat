@@ -8,6 +8,8 @@ import (
 type TankConfig struct {
 	ModelGeneric
 
+	ID uint `jsonapi:"primary,tank-configs" gorm:"primary_key"`
+
 	// Enable is set to true if board is enabled
 	Enable bool `json:"enable" gorm:"column:enable" validate:"required"`
 
@@ -34,4 +36,12 @@ func (h *TankConfig) String() string {
 		panic(err)
 	}
 	return string(data)
+}
+
+func (h *TankConfig) SetID(id uint) {
+	h.ID = id
+}
+
+func (h *TankConfig) GetID() uint {
+	return h.ID
 }

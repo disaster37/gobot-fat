@@ -89,7 +89,7 @@ func (h *ElasticsearchRepositoryGen) Get(ctx context.Context, id uint, data inte
 	if err != nil {
 		return err
 	}
-	dataModel.GetModel().ID = uint(idDoc)
+	dataModel.SetID(uint(idDoc))
 
 	log.Debugf("Data: %+v", data)
 
@@ -148,7 +148,7 @@ func (h *ElasticsearchRepositoryGen) List(ctx context.Context, listData interfac
 			data = tmp.Interface().(models.Model)
 		}
 
-		data.GetModel().ID = uint(idDoc)
+		data.SetID(uint(idDoc))
 
 		ld.Set(reflect.Append(ld, tmp.Elem()))
 
@@ -185,7 +185,7 @@ func (h *ElasticsearchRepositoryGen) Update(ctx context.Context, data interface{
 		res, err = h.Conn.Index(
 			h.Index,
 			b,
-			h.Conn.Index.WithDocumentID(fmt.Sprintf("%d", dataModel.GetModel().ID)),
+			h.Conn.Index.WithDocumentID(fmt.Sprintf("%d", dataModel.GetID())),
 			h.Conn.Index.WithContext(ctx),
 			h.Conn.Index.WithPretty(),
 		)

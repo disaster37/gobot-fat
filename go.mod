@@ -28,6 +28,7 @@ require (
 	github.com/go-resty/resty/v2 v2.3.0 // indirect
 	github.com/gobuffalo/uuid v2.0.5+incompatible // indirect
 	github.com/gofrs/uuid v3.3.0+incompatible // indirect
+	github.com/google/jsonapi v1.0.0 // indirect
 	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect

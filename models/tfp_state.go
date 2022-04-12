@@ -9,6 +9,8 @@ import (
 type TFPState struct {
 	ModelGeneric
 
+	ID uint `jsonapi:"primary,tfp-states" gorm:"primary_key"`
+
 	Name string `json:"name"`
 
 	// UVC1Running is true if UVC1 running
@@ -67,4 +69,12 @@ func (h *TFPState) String() string {
 		panic(err)
 	}
 	return string(data)
+}
+
+func (h *TFPState) SetID(id uint) {
+	h.ID = id
+}
+
+func (h *TFPState) GetID() uint {
+	return h.ID
 }

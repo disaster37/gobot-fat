@@ -2,12 +2,13 @@ package http
 
 import (
 	"context"
+	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/disaster37/gobot-fat/dfpconfig"
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/usecase"
+	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
 )
@@ -32,63 +33,62 @@ func (h *DFPConfigHandler) Get(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	data := &models.DFPConfig{}
-
 	err := h.us.Get(ctx, dfpconfig.ID, data)
 
 	if err != nil {
 		log.Errorf("Error when get dfp_config: %s", err.Error())
-		return c.JSON(500, models.JSONAPI{
-			Errors: []models.JSONAPIError{
-				models.JSONAPIError{
-					Status: "500",
-					Title:  "Error when get dfp_config",
-					Detail: err.Error(),
-				},
+		c.Response().WriteHeader(http.StatusInternalServerError)
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			&jsonapi.ErrorObject{
+				Status: fmt.Sprintf("%d", http.StatusInternalServerError),
+				Title:  "Error when get dfp_config",
+				Detail: err.Error(),
 			},
 		})
 	}
 
-	return c.JSON(http.StatusOK, models.JSONAPI{
-		Data: models.JSONAPIData{
-			Type:       "dfp-configs",
-			Id:         strconv.Itoa(int(data.ID)),
-			Attributes: data,
-		},
-	})
+	c.Response().WriteHeader(http.StatusOK)
+	return jsonapi.MarshalOnePayloadEmbedded(c.Response(), data)
 }
 
 // Update permit to update DFP config
 func (h *DFPConfigHandler) Update(c echo.Context) error {
-	jsonData := models.NewJSONAPIData(&models.DFPConfig{})
-	err := c.Bind(jsonData)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, err.Error())
-	}
-
-	log.Debugf("Data: %+v", jsonData)
-
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
-	config := jsonData.Data.(*models.JSONAPIData).Attributes.(*models.DFPConfig)
-	config.ID = dfpconfig.ID
-
-	err = h.us.Update(ctx, config)
-
-	if err != nil {
-		log.Errorf("Error when update dfp_config: %s", err.Error())
-		return c.JSON(500, models.ResponseError{Code: http.StatusInternalServerError, Message: err.Error()})
+	config := &models.DFPConfig{}
+	if err := jsonapi.UnmarshalPayload(c.Request().Body, config); err != nil {
+		c.Response().WriteHeader(http.StatusBadRequest)
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			&jsonapi.ErrorObject{
+				Status: fmt.Sprintf("%d", http.StatusBadRequest),
+				Title:  "Error when update dfp_config",
+				Detail: err.Error(),
+			},
+		})
 	}
 
-	return c.JSON(http.StatusCreated, models.JSONAPI{
-		Data: models.JSONAPIData{
-			Type:       "dfp-configs",
-			Id:         strconv.Itoa(int(config.ID)),
-			Attributes: config,
-		},
-	})
+	log.Debugf("Data: %+v", config)
+
+	err := h.us.Update(ctx, config)
+	if err != nil {
+		log.Errorf("Error when update dfp_config: %s", err.Error())
+		c.Response().WriteHeader(http.StatusInternalServerError)
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			&jsonapi.ErrorObject{
+				Status: fmt.Sprintf("%d", http.StatusInternalServerError),
+				Title:  "Error when update dfp_config",
+				Detail: err.Error(),
+			},
+		})
+	}
+
+	c.Response().WriteHeader(http.StatusCreated)
+	return jsonapi.MarshalOnePayloadEmbedded(c.Response(), config)
 }

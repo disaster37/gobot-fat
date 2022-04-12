@@ -9,6 +9,8 @@ import (
 type TFPConfig struct {
 	ModelGeneric
 
+	ID uint `jsonapi:"primary,tfp-configs" gorm:"primary_key"`
+
 	// Enable is set to true if board is enabled
 	Enable bool `json:"enable" gorm:"column:enable" validate:"required"`
 
@@ -55,4 +57,12 @@ func (h *TFPConfig) String() string {
 // TableName permit to return the current table name
 func (h TFPConfig) TableName() string {
 	return "tfpconfig"
+}
+
+func (h *TFPConfig) SetID(id uint) {
+	h.ID = id
+}
+
+func (h *TFPConfig) GetID() uint {
+	return h.ID
 }

@@ -131,12 +131,12 @@ func (h *UsecaseCRUDGeneric) Init(ctx context.Context, data interface{}) error {
 	ctx, cancel := context.WithTimeout(ctx, h.contextTimeout)
 	defer cancel()
 
-	dataModel := data.(models.Model).GetModel()
+	dataModel := data.(models.Model)
 	sqlData := reflect.New(reflect.TypeOf(data).Elem()).Interface().(models.Model)
 	esData := reflect.New(reflect.TypeOf(data).Elem()).Interface().(models.Model)
 	isElasticError := false
 
-	err := h.SQLRepo.Get(ctx, dataModel.ID, sqlData)
+	err := h.SQLRepo.Get(ctx, dataModel.GetID(), sqlData)
 	if err != nil {
 		if repository.IsRecordNotFoundError(err) {
 			sqlData = nil
@@ -146,7 +146,7 @@ func (h *UsecaseCRUDGeneric) Init(ctx context.Context, data interface{}) error {
 		}
 
 	}
-	err = h.ElasticRepo.Get(ctx, dataModel.ID, esData)
+	err = h.ElasticRepo.Get(ctx, dataModel.GetID(), esData)
 	if err != nil {
 
 		if !repository.IsRecordNotFoundError(err) {
@@ -192,10 +192,10 @@ func (h *UsecaseCRUDGeneric) Init(ctx context.Context, data interface{}) error {
 		}
 
 	} else if sqlData != nil && esData != nil {
-		sqlDataModel := sqlData.(models.Model).GetModel()
-		esDataModel := esData.(models.Model).GetModel()
+		sqlDataModel := sqlData.(models.Model)
+		esDataModel := esData.(models.Model)
 
-		if sqlDataModel.Version < esDataModel.Version {
+		if sqlDataModel.GetVersion() < esDataModel.GetVersion() {
 			// Config found and last version found on Elastic
 			err = h.SQLRepo.Update(ctx, esData)
 			if err != nil {
@@ -204,7 +204,7 @@ func (h *UsecaseCRUDGeneric) Init(ctx context.Context, data interface{}) error {
 				return err
 			}
 			log.Info("Update data on SQL from elastic data")
-		} else if sqlDataModel.Version > esDataModel.Version {
+		} else if sqlDataModel.GetVersion() > esDataModel.GetVersion() {
 			// Config found and last version found on SQL
 			err = h.ElasticRepo.Update(ctx, sqlData)
 			if err != nil {
