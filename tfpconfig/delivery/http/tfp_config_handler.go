@@ -2,12 +2,14 @@ package http
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/tfpconfig"
 	"github.com/disaster37/gobot-fat/usecase"
+	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
 )
@@ -23,7 +25,7 @@ func NewTFPConfigHandler(e *echo.Group, us usecase.UsecaseCRUD) {
 		us: us,
 	}
 	e.GET("/tfp-configs", handler.Get)
-	e.POST("/tfp-configs", handler.Update)
+	e.POST("/tfp-configs/:id", handler.Update)
 
 }
 
@@ -33,64 +35,72 @@ func (h *TFPConfigHandler) Get(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	data := &models.TFPConfig{}
-
-	err := h.us.Get(ctx, tfpconfig.ID, data)
-
-	if err != nil {
+	if err := h.us.Get(ctx, tfpconfig.ID, data); err != nil {
 		log.Errorf("Error when get tfp_config: %s", err.Error())
-
-		return c.JSON(500, models.JSONAPI{
-			Errors: []models.JSONAPIError{
-				{
-					Status: "500",
-					Title:  "Error when get tfp_config",
-					Detail: err.Error(),
-				},
+		c.Response().WriteHeader(http.StatusInternalServerError)
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusInternalServerError),
+				Title:  "Error when get tfp_config",
+				Detail: err.Error(),
 			},
 		})
 	}
 
-	return c.JSON(http.StatusOK, models.JSONAPI{
-		Data: models.JSONAPIData{
-			Type:       "tfp-configs",
-			Id:         strconv.Itoa(int(data.ID)),
-			Attributes: data,
-		},
-	})
+	c.Response().WriteHeader(http.StatusOK)
+	return jsonapi.MarshalOnePayloadEmbedded(c.Response(), data)
 }
 
 // Update permit to update the current TFP config
 func (h *TFPConfigHandler) Update(c echo.Context) error {
-	jsonData := models.NewJSONAPIData(&models.TFPConfig{})
-	err := c.Bind(jsonData)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, err.Error())
-	}
-
-	log.Debugf("Data: %+v", jsonData)
-
+	var err error
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
-	data := jsonData.Data.(*models.JSONAPIData).Attributes.(*models.TFPConfig)
-	data.ID = tfpconfig.ID
-
-	err = h.us.Update(ctx, data)
-
+	config := &models.TFPConfig{}
+	if err = jsonapi.UnmarshalPayload(c.Request().Body, config); err != nil {
+		c.Response().WriteHeader(http.StatusBadRequest)
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusBadRequest),
+				Title:  "Error when update tfp_config",
+				Detail: err.Error(),
+			},
+		})
+	}
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
+		c.Response().WriteHeader(http.StatusBadRequest)
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusBadRequest),
+				Title:  "Error when update tfp_config",
+				Detail: err.Error(),
+			},
+		})
+	}
+	config.ID = uint(id)
+
+	log.Debugf("Data: %+v", config)
+
+	if err = h.us.Update(ctx, config); err != nil {
 		log.Errorf("Error when update tfp_config: %s", err.Error())
-		return c.JSON(500, models.ResponseError{Code: http.StatusInternalServerError, Message: err.Error()})
+		c.Response().WriteHeader(http.StatusInternalServerError)
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusInternalServerError),
+				Title:  "Error when update tfp_config",
+				Detail: err.Error(),
+			},
+		})
 	}
 
-	return c.JSON(http.StatusCreated, models.JSONAPI{
-		Data: models.JSONAPIData{
-			Type:       "tfp-configs",
-			Id:         strconv.Itoa(int(data.ID)),
-			Attributes: data,
-		},
-	})
+	c.Response().WriteHeader(http.StatusCreated)
+	return jsonapi.MarshalOnePayloadEmbedded(c.Response(), config)
 }

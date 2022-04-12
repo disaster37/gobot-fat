@@ -37,9 +37,7 @@ func (h *DFPConfigHandler) Get(c echo.Context) error {
 	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	data := &models.DFPConfig{}
-	err := h.us.Get(ctx, dfpconfig.ID, data)
-
-	if err != nil {
+	if err := h.us.Get(ctx, dfpconfig.ID, data); err != nil {
 		log.Errorf("Error when get dfp_config: %s", err.Error())
 		c.Response().WriteHeader(http.StatusInternalServerError)
 		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
@@ -75,7 +73,7 @@ func (h *DFPConfigHandler) Update(c echo.Context) error {
 			},
 		})
 	}
-	id, err := strconv.ParseUint(c.Param("id"), 0, 64)
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
 		c.Response().WriteHeader(http.StatusBadRequest)
 		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
@@ -90,8 +88,7 @@ func (h *DFPConfigHandler) Update(c echo.Context) error {
 
 	log.Debugf("Data: %+v", config)
 
-	err = h.us.Update(ctx, config)
-	if err != nil {
+	if err = h.us.Update(ctx, config); err != nil {
 		log.Errorf("Error when update dfp_config: %s", err.Error())
 		c.Response().WriteHeader(http.StatusInternalServerError)
 		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
