@@ -11,19 +11,19 @@ type TankConfig struct {
 	ID uint `jsonapi:"primary,tank-configs" gorm:"primary_key"`
 
 	// Enable is set to true if board is enabled
-	Enable bool `json:"enable" gorm:"column:enable" validate:"required"`
+	Enable bool `json:"enable" jsonapi:"attr,enable" gorm:"column:enable" validate:"required"`
 
 	// The board name
-	Name string `json:"name" gorm:"unique,column:name"`
+	Name string `json:"name" jsonapi:"attr,name" gorm:"unique,column:name"`
 
 	// The tank depth in cm
-	Depth int64 `json:"depth" gorm:"column:depth" validate:"required"`
+	Depth int64 `json:"depth" jsonapi:"attr,depth" gorm:"column:depth" validate:"required"`
 
 	// The sensor heigh in cm
-	SensorHeight int64 `json:"sensor_height" gorm:"column:sensor_height" validate:"required"`
+	SensorHeight int64 `json:"sensor_height" jsonapi:"attr,sensor_height" gorm:"column:sensor_height" validate:"required"`
 
 	// The liter per cm
-	LiterPerCm int64 `json:"liter_per_cm" gorm:"column:liter_per_cm" validate:"required"`
+	LiterPerCm int64 `json:"liter_per_cm" jsonapi:"attr,liter_per_cm" gorm:"column:liter_per_cm" validate:"required"`
 }
 
 func (h TankConfig) TableName() string {
