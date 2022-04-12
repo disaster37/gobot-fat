@@ -25,7 +25,7 @@ func NewTFPConfigHandler(e *echo.Group, us usecase.UsecaseCRUD) {
 		us: us,
 	}
 	e.GET("/tfp-configs", handler.Get)
-	e.POST("/tfp-configs/:id", handler.Update)
+	e.PATCH("/tfp-configs/:id", handler.Update)
 
 }
 

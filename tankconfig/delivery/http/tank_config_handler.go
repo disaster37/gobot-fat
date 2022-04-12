@@ -25,7 +25,7 @@ func NewTankConfigHandler(e *echo.Group, us usecase.UsecaseCRUD) {
 	}
 	e.GET("/tank-configs", handler.List)
 	e.GET("/tank-configs/:id", handler.Get)
-	e.POST("/tank-configs/:id", handler.Update)
+	e.PATCH("/tank-configs/:id", handler.Update)
 }
 
 // Get will get the tank_config
