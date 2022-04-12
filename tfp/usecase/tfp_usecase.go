@@ -213,7 +213,6 @@ func (h *tfpUsecase) WaterfallAuto(c context.Context, status bool) error {
 		return h.waterfallAuto(ctx, status)
 	}
 
-	return nil
 }
 
 func (h *tfpUsecase) blisterNew(ctx context.Context, blisterName string) error {
