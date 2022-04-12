@@ -25,7 +25,7 @@ func NewDFPConfigHandler(e *echo.Group, us usecase.UsecaseCRUD) {
 		us: us,
 	}
 	e.GET("/dfp-configs", handler.Get)
-	e.POST("/dfp-configs/:id", handler.Update)
+	e.PATCH("/dfp-configs/:id", handler.Update)
 }
 
 // Get will get the dfp_config
