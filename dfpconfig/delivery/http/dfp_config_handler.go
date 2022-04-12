@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/disaster37/gobot-fat/dfpconfig"
 	"github.com/disaster37/gobot-fat/models"
@@ -24,7 +25,7 @@ func NewDFPConfigHandler(e *echo.Group, us usecase.UsecaseCRUD) {
 		us: us,
 	}
 	e.GET("/dfp-configs", handler.Get)
-	e.POST("/dfp-configs", handler.Update)
+	e.POST("/dfp-configs/:id", handler.Update)
 }
 
 // Get will get the dfp_config
@@ -42,7 +43,7 @@ func (h *DFPConfigHandler) Get(c echo.Context) error {
 		log.Errorf("Error when get dfp_config: %s", err.Error())
 		c.Response().WriteHeader(http.StatusInternalServerError)
 		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
-			&jsonapi.ErrorObject{
+			{
 				Status: fmt.Sprintf("%d", http.StatusInternalServerError),
 				Title:  "Error when get dfp_config",
 				Detail: err.Error(),
@@ -56,6 +57,7 @@ func (h *DFPConfigHandler) Get(c echo.Context) error {
 
 // Update permit to update DFP config
 func (h *DFPConfigHandler) Update(c echo.Context) error {
+	var err error
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
@@ -63,25 +65,37 @@ func (h *DFPConfigHandler) Update(c echo.Context) error {
 	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	config := &models.DFPConfig{}
-	if err := jsonapi.UnmarshalPayload(c.Request().Body, config); err != nil {
+	if err = jsonapi.UnmarshalPayload(c.Request().Body, config); err != nil {
 		c.Response().WriteHeader(http.StatusBadRequest)
 		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
-			&jsonapi.ErrorObject{
+			{
 				Status: fmt.Sprintf("%d", http.StatusBadRequest),
 				Title:  "Error when update dfp_config",
 				Detail: err.Error(),
 			},
 		})
 	}
+	id, err := strconv.ParseUint(c.Param("id"), 0, 64)
+	if err != nil {
+		c.Response().WriteHeader(http.StatusBadRequest)
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusBadRequest),
+				Title:  "Error when update dfp_config",
+				Detail: err.Error(),
+			},
+		})
+	}
+	config.ID = uint(id)
 
 	log.Debugf("Data: %+v", config)
 
-	err := h.us.Update(ctx, config)
+	err = h.us.Update(ctx, config)
 	if err != nil {
 		log.Errorf("Error when update dfp_config: %s", err.Error())
 		c.Response().WriteHeader(http.StatusInternalServerError)
 		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
-			&jsonapi.ErrorObject{
+			{
 				Status: fmt.Sprintf("%d", http.StatusInternalServerError),
 				Title:  "Error when update dfp_config",
 				Detail: err.Error(),
