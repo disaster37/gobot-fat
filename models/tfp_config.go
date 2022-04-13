@@ -36,13 +36,13 @@ type TFPConfig struct {
 	Mode string `json:"mode" gorm:"column:mode" jsonapi:"attr,mode" validate:"required"`
 
 	// UVC1BlisterTime is the date when replace UVC1 blister
-	UVC1BlisterTime time.Time `json:"uvc1_blister_time" jsonapi:"attr,uvc1_blister_time" gorm:"column:uvc1_blister_time" validate:"required"`
+	UVC1BlisterTime time.Time `json:"uvc1_blister_time" jsonapi:"attr,uvc1_blister_time,iso8601" gorm:"column:uvc1_blister_time" validate:"required"`
 
 	// UVC2BlisterTime is the date when replace UVC2 blister
-	UVC2BlisterTime time.Time `json:"uvc2_blister_time" jsonapi:"attr,uvc2_blister_time" gorm:"column:uvc2_blister_time" validate:"required"`
+	UVC2BlisterTime time.Time `json:"uvc2_blister_time" jsonapi:"attr,uvc2_blister_time,iso8601" gorm:"column:uvc2_blister_time" validate:"required"`
 
 	// OzoneBlisterTime is the date when replace Ozone blister
-	OzoneBlisterTime time.Time `json:"ozone_blister_time" jsonapi:"attr,ozone_blister_time" gorm:"column:ozone_blister_time" validate:"required"`
+	OzoneBlisterTime time.Time `json:"ozone_blister_time" jsonapi:"attr,ozone_blister_time,iso8601" gorm:"column:ozone_blister_time" validate:"required"`
 }
 
 // String print the current object as json
