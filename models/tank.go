@@ -2,6 +2,10 @@ package models
 
 // Tank store values measured per distance sensor
 type Tank struct {
+
+	// The tank name
+	ID string `jsonapi:"primary,tanks"`
+
 	// The current level of water in cm
 	Level int `json:"level" jsonapi:"attr,level"`
 

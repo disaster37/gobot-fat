@@ -63,12 +63,14 @@ func newTank(board TankAdaptor, configHandler *viper.Viper, config *models.TankC
 
 	// Create struct
 	tankBoard := &TankBoard{
-		board:            board,
-		eventUsecase:     eventUsecase,
-		configHandler:    configHandler,
-		name:             configHandler.GetString("name"),
-		config:           config,
-		data:             &models.Tank{},
+		board:         board,
+		eventUsecase:  eventUsecase,
+		configHandler: configHandler,
+		name:          configHandler.GetString("name"),
+		config:        config,
+		data: &models.Tank{
+			ID: configHandler.GetString("name"),
+		},
 		isOnline:         false,
 		isInitialized:    false,
 		globalEventer:    eventer,
