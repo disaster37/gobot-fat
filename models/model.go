@@ -6,8 +6,8 @@ import (
 
 // ModelGeneric is generic type
 type ModelGeneric struct {
-	CreatedAt time.Time  `json:"created_at" jsonapi:"attr,created_at_time,iso8601"`
-	UpdatedAt time.Time  `json:"updated_at" jsonapi:"attr,updated_at_time,iso8601"`
+	CreatedAt time.Time  `json:"CreatedAt" jsonapi:"attr,created_at_time,iso8601"`
+	UpdatedAt time.Time  `json:"UpdatedAt" jsonapi:"attr,updated_at_time,iso8601"`
 	DeletedAt *time.Time `sql:"index"`
 
 	// Version of configuration
