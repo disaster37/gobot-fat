@@ -26,6 +26,7 @@ func NewDFPConfigHandler(e *echo.Group, us usecase.UsecaseCRUD) {
 	}
 	e.GET("/dfp-configs", handler.Get)
 	e.PATCH("/dfp-configs/:id", handler.Update)
+	e.POST("/dfp-configs", handler.UpdateOld)
 }
 
 // Get will get the dfp_config
@@ -51,6 +52,46 @@ func (h *DFPConfigHandler) Get(c echo.Context) error {
 
 	c.Response().WriteHeader(http.StatusOK)
 	return jsonapi.MarshalOnePayloadEmbedded(c.Response(), data)
+}
+
+// UpdateOld permit to update DFP config without set ID
+func (h *DFPConfigHandler) UpdateOld(c echo.Context) error {
+	var err error
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
+
+	config := &models.DFPConfig{}
+	if err = jsonapi.UnmarshalPayload(c.Request().Body, config); err != nil {
+		c.Response().WriteHeader(http.StatusBadRequest)
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusBadRequest),
+				Title:  "Error when update dfp_config",
+				Detail: err.Error(),
+			},
+		})
+	}
+	config.ID = dfpconfig.ID
+
+	log.Debugf("Data: %+v", config)
+
+	if err = h.us.Update(ctx, config); err != nil {
+		log.Errorf("Error when update dfp_config: %s", err.Error())
+		c.Response().WriteHeader(http.StatusInternalServerError)
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusInternalServerError),
+				Title:  "Error when update dfp_config",
+				Detail: err.Error(),
+			},
+		})
+	}
+
+	c.Response().WriteHeader(http.StatusCreated)
+	return jsonapi.MarshalOnePayloadEmbedded(c.Response(), config)
 }
 
 // Update permit to update DFP config

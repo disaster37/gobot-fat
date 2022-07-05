@@ -26,7 +26,7 @@ func NewTFPConfigHandler(e *echo.Group, us usecase.UsecaseCRUD) {
 	}
 	e.GET("/tfp-configs", handler.Get)
 	e.PATCH("/tfp-configs/:id", handler.Update)
-
+	e.POST("")
 }
 
 // Get will get the tfp_config
@@ -52,6 +52,47 @@ func (h *TFPConfigHandler) Get(c echo.Context) error {
 
 	c.Response().WriteHeader(http.StatusOK)
 	return jsonapi.MarshalOnePayloadEmbedded(c.Response(), data)
+}
+
+// UpdateOld permit to update the current TFP config without set ID
+func (h *TFPConfigHandler) UpdateOld(c echo.Context) error {
+	var err error
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
+
+	config := &models.TFPConfig{}
+	if err = jsonapi.UnmarshalPayload(c.Request().Body, config); err != nil {
+		c.Response().WriteHeader(http.StatusBadRequest)
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusBadRequest),
+				Title:  "Error when update tfp_config",
+				Detail: err.Error(),
+			},
+		})
+	}
+
+	config.ID = tfpconfig.ID
+
+	log.Debugf("Data: %+v", config)
+
+	if err = h.us.Update(ctx, config); err != nil {
+		log.Errorf("Error when update tfp_config: %s", err.Error())
+		c.Response().WriteHeader(http.StatusInternalServerError)
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusInternalServerError),
+				Title:  "Error when update tfp_config",
+				Detail: err.Error(),
+			},
+		})
+	}
+
+	c.Response().WriteHeader(http.StatusCreated)
+	return jsonapi.MarshalOnePayloadEmbedded(c.Response(), config)
 }
 
 // Update permit to update the current TFP config
