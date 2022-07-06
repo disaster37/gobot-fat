@@ -84,7 +84,7 @@ func (h DFPHandler) GetIO(c echo.Context) error {
 	}
 
 	c.Response().WriteHeader(http.StatusOK)
-	return jsonapi.MarshalOnePayloadEmbedded(c.Response(), io)
+	return jsonapi.MarshalOnePayloadEmbedded(c.Response(), &io)
 }
 
 // Start put DFP on auto mode
