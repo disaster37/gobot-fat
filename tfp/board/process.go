@@ -47,6 +47,7 @@ func (h *TFPBoard) work() {
 		log.Debug("New value fired for isRebooted")
 
 		isRebooted := s.(bool)
+		h.isOnline = true
 		if isRebooted {
 			// Board rebooted
 			log.Infof("Detect board %s is rebooted", h.name)
@@ -63,8 +64,6 @@ func (h *TFPBoard) work() {
 
 			// Send event
 			helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventRebootBoard, h.name)
-
-			h.isOnline = true
 
 			// Publish internal event
 			h.Publish(EventBoardReboot, nil)

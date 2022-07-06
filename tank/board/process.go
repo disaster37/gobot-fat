@@ -33,6 +33,7 @@ func (h *TankBoard) work() {
 	// Handle board reboot
 	h.on(h.valueRebooted, extra.NewValue, func(s interface{}) {
 		log.Debug("New value fired for isRebooted")
+		h.isOnline = true
 
 		isRebooted := s.(bool)
 		if isRebooted {
@@ -51,8 +52,6 @@ func (h *TankBoard) work() {
 
 			// Send rebooted event
 			helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventRebootBoard, h.name)
-
-			h.isOnline = true
 
 			// Publish internal event
 			h.Publish(EventBoardReboot, nil)
