@@ -24,6 +24,9 @@ func (h *TankBoard) work() {
 
 			// Publish internal event
 			h.Publish(EventNewConfig, tankConfig)
+
+			// Compute new values
+			h.computeTankLevel(float64(h.data.Distance))
 		}
 	})
 
@@ -76,17 +79,13 @@ func (h *TankBoard) work() {
 		log.Debugf("Distance change: %d", s)
 
 		// Update distance
-		distance := int64(s.(float64))
-		log.Debugf("Distance on board %s: %d", h.name, distance)
-		h.data.Level = int(h.config.Depth - (distance - h.config.SensorHeight))
-		h.data.Volume = h.data.Level * int(h.config.LiterPerCm)
-		h.data.Percent = float64(h.data.Level) / float64(h.config.Depth) * 100
+		h.computeTankLevel(s.(float64))
 
 		// Send event
 		helper.SendEvent(ctx, h.eventUsecase, h.name, helper.KindEventTankLevel, "level", int64(h.data.Level))
 
 		// Publish internal event
-		h.Publish(EventNewDistance, distance)
+		h.Publish(EventNewDistance, int64(s.(float64)))
 	})
 
 	// Handle error when read distance
@@ -136,4 +135,15 @@ func (h *TankBoard) on(driver gobot.Eventer, event string, f func(data interface
 		}
 
 	}()
+}
+
+func (h *TankBoard) computeTankLevel(d float64) {
+
+	distance := int64(d)
+
+	log.Debugf("Distance on board %s: %d", h.name, distance)
+	h.data.Distance = int(distance)
+	h.data.Level = int(h.config.Depth - (distance - h.config.SensorHeight))
+	h.data.Volume = h.data.Level * int(h.config.LiterPerCm)
+	h.data.Percent = float64(h.data.Level) / float64(h.config.Depth) * 100
 }

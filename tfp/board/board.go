@@ -279,7 +279,9 @@ func (h *TFPBoard) Config() models.TFPConfig {
 
 // IO return current IO state
 func (h *TFPBoard) IO() models.TFPIO {
-	io := models.TFPIO{}
+	io := models.TFPIO{
+		ID: h.name,
+	}
 
 	// Relais state
 	io.PondPumpRelay = h.relayPompPond.State()

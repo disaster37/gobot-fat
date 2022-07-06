@@ -136,9 +136,9 @@ func TestUpdateSQL(t *testing.T) {
 		WaitTimeBetweenWashing:         300,
 		WashingDuration:                10,
 		StartWashingPumpBeforeWashing:  5,
+		ID:                             1,
 	}
 	dfpConfig.Version = 1
-	dfpConfig.ID = 1
 
 	err = repository.Update(context.Background(), dfpConfig)
 	assert.NoError(t, err)
@@ -174,9 +174,9 @@ func TestCreateSQL(t *testing.T) {
 		WaitTimeBetweenWashing:         300,
 		WashingDuration:                10,
 		StartWashingPumpBeforeWashing:  5,
+		ID:                             1,
 	}
 	dfpConfig.Version = 1
-	dfpConfig.ID = 1
 
 	err = repository.Create(context.Background(), dfpConfig)
 	assert.NoError(t, err)

@@ -2,12 +2,13 @@ package http
 
 import (
 	"context"
+	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/disaster37/gobot-fat/dfpstate"
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/usecase"
+	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
 )
@@ -23,7 +24,7 @@ func NewDFPStateHandler(e *echo.Group, us usecase.UsecaseCRUD) {
 		us: us,
 	}
 	e.GET("/dfp-states", handler.Get)
-	e.POST("/dfp-states", handler.Update)
+	e.POST("/dfp-states", handler.UpdateOld)
 
 }
 
@@ -33,64 +34,61 @@ func (h *DFPStateHandler) Get(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	state := &models.DFPState{}
-
-	err := h.us.Get(ctx, dfpstate.ID, state)
-
-	if err != nil {
+	if err := h.us.Get(ctx, dfpstate.ID, state); err != nil {
 		log.Errorf("Error when get dfp_state: %s", err.Error())
-
-		return c.JSON(500, models.JSONAPI{
-			Errors: []models.JSONAPIError{
-				{
-					Status: "500",
-					Title:  "Error when get dfp_state",
-					Detail: err.Error(),
-				},
+		c.Response().WriteHeader(http.StatusInternalServerError)
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusInternalServerError),
+				Title:  "Error when get dfp_state",
+				Detail: err.Error(),
 			},
 		})
 	}
 
-	return c.JSON(http.StatusOK, models.JSONAPI{
-		Data: models.JSONAPIData{
-			Type:       "dfp-states",
-			Id:         strconv.Itoa(int(state.ID)),
-			Attributes: state,
-		},
-	})
+	c.Response().WriteHeader(http.StatusOK)
+	return jsonapi.MarshalOnePayloadEmbedded(c.Response(), state)
 }
 
 // Update permit to update the current DFP state
-func (h *DFPStateHandler) Update(c echo.Context) error {
-	jsonData := models.NewJSONAPIData(&models.DFPState{})
-	err := c.Bind(jsonData)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, err.Error())
-	}
-
-	log.Debugf("Data: %+v", jsonData)
-
+func (h *DFPStateHandler) UpdateOld(c echo.Context) error {
+	var err error
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
-	state := jsonData.Data.(*models.JSONAPIData).Attributes.(*models.DFPState)
+	state := &models.DFPState{}
+	if err = jsonapi.UnmarshalPayload(c.Request().Body, state); err != nil {
+		c.Response().WriteHeader(http.StatusBadRequest)
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusBadRequest),
+				Title:  "Error when update dfp_state",
+				Detail: err.Error(),
+			},
+		})
+	}
 	state.ID = dfpstate.ID
 
-	err = h.us.Update(ctx, state)
+	log.Debugf("Data: %+v", state)
 
-	if err != nil {
+	if err = h.us.Update(ctx, state); err != nil {
 		log.Errorf("Error when update dfp_state: %s", err.Error())
-		return c.JSON(500, models.ResponseError{Code: http.StatusInternalServerError, Message: err.Error()})
+		c.Response().WriteHeader(http.StatusInternalServerError)
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusInternalServerError),
+				Title:  "Error when update dfp_state",
+				Detail: err.Error(),
+			},
+		})
 	}
 
-	return c.JSON(http.StatusCreated, models.JSONAPI{
-		Data: models.JSONAPIData{
-			Type:       "dfp-states",
-			Id:         strconv.Itoa(int(state.ID)),
-			Attributes: state,
-		},
-	})
+	c.Response().WriteHeader(http.StatusCreated)
+	return jsonapi.MarshalOnePayloadEmbedded(c.Response(), state)
 }

@@ -2,12 +2,13 @@ package http
 
 import (
 	"context"
+	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/tfpstate"
 	"github.com/disaster37/gobot-fat/usecase"
+	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
 )
@@ -23,7 +24,7 @@ func NewTFPStateHandler(e *echo.Group, us usecase.UsecaseCRUD) {
 		us: us,
 	}
 	e.GET("/tfp-states", handler.Get)
-	e.POST("/tfp-states", handler.Update)
+	e.POST("/tfp-states", handler.UpdateOld)
 
 }
 
@@ -33,64 +34,61 @@ func (h *TFPStateHandler) Get(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	state := &models.TFPState{}
-
-	err := h.us.Get(ctx, tfpstate.ID, state)
-
-	if err != nil {
+	if err := h.us.Get(ctx, tfpstate.ID, state); err != nil {
 		log.Errorf("Error when get tfp_state: %s", err.Error())
-
-		return c.JSON(500, models.JSONAPI{
-			Errors: []models.JSONAPIError{
-				{
-					Status: "500",
-					Title:  "Error when get tfp_state",
-					Detail: err.Error(),
-				},
+		c.Response().WriteHeader(http.StatusInternalServerError)
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusInternalServerError),
+				Title:  "Error when get tfp_state",
+				Detail: err.Error(),
 			},
 		})
 	}
 
-	return c.JSON(http.StatusOK, models.JSONAPI{
-		Data: models.JSONAPIData{
-			Type:       "tfp-states",
-			Id:         strconv.Itoa(int(state.ID)),
-			Attributes: state,
-		},
-	})
+	c.Response().WriteHeader(http.StatusOK)
+	return jsonapi.MarshalOnePayloadEmbedded(c.Response(), state)
 }
 
-// Update permit to update the current TFP state
-func (h *TFPStateHandler) Update(c echo.Context) error {
-	jsonData := models.NewJSONAPIData(&models.TFPState{})
-	err := c.Bind(jsonData)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, err.Error())
-	}
-
-	log.Debugf("Data: %+v", jsonData)
-
+// UpdateOld permit to update the current TFP state
+func (h *TFPStateHandler) UpdateOld(c echo.Context) error {
+	var err error
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
-	state := jsonData.Data.(*models.JSONAPIData).Attributes.(*models.TFPState)
+	state := &models.TFPState{}
+	if err = jsonapi.UnmarshalPayload(c.Request().Body, state); err != nil {
+		c.Response().WriteHeader(http.StatusBadRequest)
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusBadRequest),
+				Title:  "Error when update tfp_state",
+				Detail: err.Error(),
+			},
+		})
+	}
 	state.ID = tfpstate.ID
 
-	err = h.us.Update(ctx, state)
+	log.Debugf("Data: %+v", state)
 
-	if err != nil {
+	if err = h.us.Update(ctx, state); err != nil {
 		log.Errorf("Error when update tfp_state: %s", err.Error())
-		return c.JSON(500, models.ResponseError{Code: http.StatusInternalServerError, Message: err.Error()})
+		c.Response().WriteHeader(http.StatusInternalServerError)
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusInternalServerError),
+				Title:  "Error when update tfp_state",
+				Detail: err.Error(),
+			},
+		})
 	}
 
-	return c.JSON(http.StatusCreated, models.JSONAPI{
-		Data: models.JSONAPIData{
-			Type:       "tfp-states",
-			Id:         strconv.Itoa(int(state.ID)),
-			Attributes: state,
-		},
-	})
+	c.Response().WriteHeader(http.StatusCreated)
+	return jsonapi.MarshalOnePayloadEmbedded(c.Response(), state)
 }

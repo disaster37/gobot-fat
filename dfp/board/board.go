@@ -323,7 +323,9 @@ func (h *DFPBoard) Config() (state models.DFPConfig) {
 
 // IO return current IO state
 func (h *DFPBoard) IO() models.DFPIO {
-	io := models.DFPIO{}
+	io := models.DFPIO{
+		ID: h.name,
+	}
 
 	// Led state
 	io.GreenLed = h.ledGreen.State()

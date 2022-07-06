@@ -7,6 +7,7 @@ require (
 	github.com/disaster37/gobot-arest v1.0.9
 	github.com/elastic/go-elasticsearch/v7 v7.17.1
 	github.com/golang-jwt/jwt v3.2.2+incompatible
+	github.com/google/jsonapi v1.0.0
 	github.com/jinzhu/gorm v1.9.16
 	github.com/labstack/echo/v4 v4.7.2
 	github.com/olivere/elastic/v7 v7.0.32
