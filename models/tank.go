@@ -14,4 +14,7 @@ type Tank struct {
 
 	// The ratio of water
 	Percent float64 `json:"percent" jsonapi:"attr,percent"`
+
+	// The current distance in cm
+	Distance int `json:"distance" jsonapi:"attr,distance"`
 }
