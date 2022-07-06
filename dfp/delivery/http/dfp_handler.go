@@ -2,10 +2,11 @@ package http
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/disaster37/gobot-fat/dfp"
-	"github.com/disaster37/gobot-fat/models"
+	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
 )
@@ -44,26 +45,22 @@ func (h DFPHandler) GetState(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	state, err := h.dUsecase.GetState(ctx)
-
 	if err != nil {
 		log.Errorf("Error when get DFP state: %s", err.Error())
-		return c.JSON(http.StatusInternalServerError, models.NewJSONAPIerror(
-			"500",
-			"Error when get DFP state",
-			err.Error(),
-			nil,
-		))
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusInternalServerError),
+				Title:  "Error when get DFP state",
+				Detail: err.Error(),
+			},
+		})
 	}
 
-	return c.JSON(http.StatusOK, models.JSONAPI{
-		Data: models.JSONAPIData{
-			Type:       "dfps",
-			Id:         "state",
-			Attributes: state,
-		},
-	})
+	c.Response().WriteHeader(http.StatusOK)
+	return jsonapi.MarshalOnePayloadEmbedded(c.Response(), state)
 }
 
 // GetIO return the current IO of DFP
@@ -72,26 +69,22 @@ func (h DFPHandler) GetIO(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	io, err := h.dUsecase.GetIO(ctx)
-
 	if err != nil {
 		log.Errorf("Error when get DFP IO: %s", err.Error())
-		return c.JSON(http.StatusInternalServerError, models.NewJSONAPIerror(
-			"500",
-			"Error when get DFP IO",
-			err.Error(),
-			nil,
-		))
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusInternalServerError),
+				Title:  "Error when get DFP IO",
+				Detail: err.Error(),
+			},
+		})
 	}
 
-	return c.JSON(http.StatusOK, models.JSONAPI{
-		Data: models.JSONAPIData{
-			Type:       "dfps",
-			Id:         "io",
-			Attributes: io,
-		},
-	})
+	c.Response().WriteHeader(http.StatusOK)
+	return jsonapi.MarshalOnePayloadEmbedded(c.Response(), io)
 }
 
 // Start put DFP on auto mode
@@ -100,17 +93,19 @@ func (h DFPHandler) Start(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	err := h.dUsecase.Start(ctx)
 
 	if err != nil {
 		log.Errorf("Error when post start: %s", err.Error())
-		return c.JSON(500, models.NewJSONAPIerror(
-			"500",
-			"Error when start DFP",
-			err.Error(),
-			nil,
-		))
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusInternalServerError),
+				Title:  "Error when start DFP",
+				Detail: err.Error(),
+			},
+		})
 	}
 
 	return c.NoContent(http.StatusNoContent)
@@ -122,17 +117,19 @@ func (h DFPHandler) Stop(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	err := h.dUsecase.Stop(ctx)
 
 	if err != nil {
 		log.Errorf("Error when post stop: %s", err.Error())
-		return c.JSON(500, models.NewJSONAPIerror(
-			"500",
-			"Error when stop DFP",
-			err.Error(),
-			nil,
-		))
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusInternalServerError),
+				Title:  "Error when stop DFP",
+				Detail: err.Error(),
+			},
+		})
 	}
 
 	return c.NoContent(http.StatusNoContent)
@@ -144,17 +141,19 @@ func (h DFPHandler) Wash(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	err := h.dUsecase.Wash(ctx)
 
 	if err != nil {
 		log.Errorf("Error when post wash: %s", err.Error())
-		return c.JSON(500, models.NewJSONAPIerror(
-			"500",
-			"Error when force wash",
-			err.Error(),
-			nil,
-		))
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusInternalServerError),
+				Title:  "Error when force wash",
+				Detail: err.Error(),
+			},
+		})
 	}
 
 	return c.NoContent(http.StatusNoContent)
@@ -166,17 +165,19 @@ func (h DFPHandler) ManualStartDrum(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	err := h.dUsecase.ManualDrum(ctx, true)
 
 	if err != nil {
 		log.Errorf("Error when post manual_start_drum: %s", err.Error())
-		return c.JSON(500, models.NewJSONAPIerror(
-			"500",
-			"Error when start drum motor",
-			err.Error(),
-			nil,
-		))
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusInternalServerError),
+				Title:  "Error when start drum motor",
+				Detail: err.Error(),
+			},
+		})
 	}
 
 	return c.NoContent(http.StatusNoContent)
@@ -188,17 +189,19 @@ func (h DFPHandler) ManualStopDrum(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	err := h.dUsecase.ManualDrum(ctx, false)
 
 	if err != nil {
 		log.Errorf("Error when post manual_stop_drum: %s", err.Error())
-		return c.JSON(500, models.NewJSONAPIerror(
-			"500",
-			"Error when stop drum motor",
-			err.Error(),
-			nil,
-		))
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusInternalServerError),
+				Title:  "Error when stop drum motor",
+				Detail: err.Error(),
+			},
+		})
 	}
 
 	return c.NoContent(http.StatusNoContent)
@@ -207,21 +210,22 @@ func (h DFPHandler) ManualStopDrum(c echo.Context) error {
 // ManualStartPump start pump
 func (h DFPHandler) ManualStartPump(c echo.Context) error {
 	ctx := c.Request().Context()
-
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	err := h.dUsecase.ManualPump(ctx, true)
 
 	if err != nil {
 		log.Errorf("Error when post manual_start_pump: %s", err.Error())
-		return c.JSON(500, models.NewJSONAPIerror(
-			"500",
-			"Error when start pump",
-			err.Error(),
-			nil,
-		))
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusInternalServerError),
+				Title:  "Error when start pump",
+				Detail: err.Error(),
+			},
+		})
 	}
 
 	return c.NoContent(http.StatusNoContent)
@@ -233,17 +237,19 @@ func (h DFPHandler) ManualStopPump(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	err := h.dUsecase.ManualPump(ctx, false)
 
 	if err != nil {
 		log.Errorf("Error when post manual_stop_pump: %s", err.Error())
-		return c.JSON(500, models.NewJSONAPIerror(
-			"500",
-			"Error when stop pump",
-			err.Error(),
-			nil,
-		))
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusInternalServerError),
+				Title:  "Error when stop pump",
+				Detail: err.Error(),
+			},
+		})
 	}
 
 	return c.NoContent(http.StatusNoContent)
@@ -255,17 +261,19 @@ func (h DFPHandler) SetSecurity(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	err := h.dUsecase.Security(ctx, true)
 
 	if err != nil {
 		log.Errorf("Error when post set_security: %s", err.Error())
-		return c.JSON(500, models.NewJSONAPIerror(
-			"500",
-			"Error when set security",
-			err.Error(),
-			nil,
-		))
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusInternalServerError),
+				Title:  "Error when set security",
+				Detail: err.Error(),
+			},
+		})
 	}
 
 	return c.NoContent(http.StatusNoContent)
@@ -277,17 +285,19 @@ func (h DFPHandler) UnsetSecurity(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	err := h.dUsecase.Security(ctx, false)
 
 	if err != nil {
 		log.Errorf("Error when post unset_security: %s", err.Error())
-		return c.JSON(500, models.NewJSONAPIerror(
-			"500",
-			"Error when unset security",
-			err.Error(),
-			nil,
-		))
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusInternalServerError),
+				Title:  "Error when unset security",
+				Detail: err.Error(),
+			},
+		})
 	}
 
 	return c.NoContent(http.StatusNoContent)
@@ -299,17 +309,19 @@ func (h DFPHandler) SetEmergencyStop(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	err := h.dUsecase.EmergencyStop(ctx, true)
 
 	if err != nil {
 		log.Errorf("Error when post set_emergency_stop: %s", err.Error())
-		return c.JSON(500, models.NewJSONAPIerror(
-			"500",
-			"Error when set emergency stop",
-			err.Error(),
-			nil,
-		))
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusInternalServerError),
+				Title:  "Error when set emergency stop",
+				Detail: err.Error(),
+			},
+		})
 	}
 
 	return c.NoContent(http.StatusNoContent)
@@ -321,17 +333,19 @@ func (h DFPHandler) UnsetEmergencyStop(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	err := h.dUsecase.EmergencyStop(ctx, false)
 
 	if err != nil {
 		log.Errorf("Error when post unset_emergency_stop: %s", err.Error())
-		return c.JSON(500, models.NewJSONAPIerror(
-			"500",
-			"Error when unset emergency stop",
-			err.Error(),
-			nil,
-		))
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusInternalServerError),
+				Title:  "Error when unset emergency stop",
+				Detail: err.Error(),
+			},
+		})
 	}
 
 	return c.NoContent(http.StatusNoContent)
@@ -343,17 +357,19 @@ func (h DFPHandler) SetDisableSecurity(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	err := h.dUsecase.DisableSecurity(ctx, true)
 
 	if err != nil {
 		log.Errorf("Error when post set_disable_security: %s", err.Error())
-		return c.JSON(500, models.NewJSONAPIerror(
-			"500",
-			"Error when disable security",
-			err.Error(),
-			nil,
-		))
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusInternalServerError),
+				Title:  "Error when disable security",
+				Detail: err.Error(),
+			},
+		})
 	}
 
 	return c.NoContent(http.StatusNoContent)
@@ -365,17 +381,19 @@ func (h DFPHandler) UnsetDisableSecurity(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	err := h.dUsecase.DisableSecurity(ctx, false)
 
 	if err != nil {
 		log.Errorf("Error when post unset_disable_security: %s", err.Error())
-		return c.JSON(500, models.NewJSONAPIerror(
-			"500",
-			"Error when enable security",
-			err.Error(),
-			nil,
-		))
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusInternalServerError),
+				Title:  "Error when enable security",
+				Detail: err.Error(),
+			},
+		})
 	}
 
 	return c.NoContent(http.StatusNoContent)

@@ -2,10 +2,11 @@ package http
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
-	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/tfp"
+	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
 )
@@ -49,26 +50,23 @@ func (h TFPHandler) GetState(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	state, err := h.dUsecase.GetState(ctx)
-
 	if err != nil {
 		log.Errorf("Error when get TFP state: %s", err.Error())
-		return c.JSON(http.StatusInternalServerError, models.NewJSONAPIerror(
-			"500",
-			"Error when get TFP state",
-			err.Error(),
-			nil,
-		))
+		c.Response().WriteHeader(http.StatusBadRequest)
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusBadRequest),
+				Title:  "Error when get TFP state",
+				Detail: err.Error(),
+			},
+		})
 	}
 
-	return c.JSON(http.StatusOK, models.JSONAPI{
-		Data: models.JSONAPIData{
-			Type:       "tfps",
-			Id:         "state",
-			Attributes: state,
-		},
-	})
+	c.Response().WriteHeader(http.StatusOK)
+	return jsonapi.MarshalOnePayloadEmbedded(c.Response(), state)
 }
 
 // GetIO return the current IO of DFP
@@ -77,26 +75,22 @@ func (h TFPHandler) GetIO(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	io, err := h.dUsecase.GetIO(ctx)
-
 	if err != nil {
 		log.Errorf("Error when get TFP IO: %s", err.Error())
-		return c.JSON(http.StatusInternalServerError, models.NewJSONAPIerror(
-			"500",
-			"Error when get TFP IO",
-			err.Error(),
-			nil,
-		))
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusBadRequest),
+				Title:  "Error when get TFP IO",
+				Detail: err.Error(),
+			},
+		})
 	}
 
-	return c.JSON(http.StatusOK, models.JSONAPI{
-		Data: models.JSONAPIData{
-			Type:       "tfps",
-			Id:         "io",
-			Attributes: io,
-		},
-	})
+	c.Response().WriteHeader(http.StatusOK)
+	return jsonapi.MarshalOnePayloadEmbedded(c.Response(), io)
 }
 
 // StartPondPump start pond pump
@@ -105,17 +99,19 @@ func (h TFPHandler) StartPondPump(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	err := h.dUsecase.PondPump(ctx, true)
 
 	if err != nil {
 		log.Errorf("Error when post start_pond_pump: %s", err.Error())
-		return c.JSON(500, models.NewJSONAPIerror(
-			"500",
-			"Error when start pond pump",
-			err.Error(),
-			nil,
-		))
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusBadRequest),
+				Title:  "Error when start pond pump",
+				Detail: err.Error(),
+			},
+		})
 	}
 
 	return c.NoContent(http.StatusNoContent)
@@ -127,39 +123,43 @@ func (h TFPHandler) StartPondPumpWithUVC(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	err := h.dUsecase.PondPump(ctx, true)
 
 	if err != nil {
 		log.Errorf("Error when post start_pond_pump: %s", err.Error())
-		return c.JSON(500, models.NewJSONAPIerror(
-			"500",
-			"Error when start pond pump",
-			err.Error(),
-			nil,
-		))
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusBadRequest),
+				Title:  "Error when start pond pump",
+				Detail: err.Error(),
+			},
+		})
 	}
 
 	err = h.dUsecase.UVC1(ctx, true)
 	if err != nil {
 		log.Errorf("Error when post start_uvc1: %s", err.Error())
-		return c.JSON(500, models.NewJSONAPIerror(
-			"500",
-			"Error when start uvc1",
-			err.Error(),
-			nil,
-		))
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusBadRequest),
+				Title:  "Error when start uvc1",
+				Detail: err.Error(),
+			},
+		})
 	}
 
 	err = h.dUsecase.UVC2(ctx, true)
 	if err != nil {
 		log.Errorf("Error when post start_uvc2: %s", err.Error())
-		return c.JSON(500, models.NewJSONAPIerror(
-			"500",
-			"Error when start uvc2",
-			err.Error(),
-			nil,
-		))
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusBadRequest),
+				Title:  "Error when start uvc2",
+				Detail: err.Error(),
+			},
+		})
 	}
 
 	return c.NoContent(http.StatusNoContent)
@@ -171,17 +171,19 @@ func (h TFPHandler) StopPondPump(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	err := h.dUsecase.PondPump(ctx, false)
 
 	if err != nil {
 		log.Errorf("Error when post stop_pond_pump: %s", err.Error())
-		return c.JSON(500, models.NewJSONAPIerror(
-			"500",
-			"Error when stop pond pomp",
-			err.Error(),
-			nil,
-		))
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusBadRequest),
+				Title:  "Error when stop pond pomp",
+				Detail: err.Error(),
+			},
+		})
 	}
 
 	return c.NoContent(http.StatusNoContent)
@@ -193,17 +195,19 @@ func (h TFPHandler) StartWaterfallPump(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	err := h.dUsecase.WaterfallPump(ctx, true)
 
 	if err != nil {
 		log.Errorf("Error when post start_waterfall_pump: %s", err.Error())
-		return c.JSON(500, models.NewJSONAPIerror(
-			"500",
-			"Error when start waterfall pump",
-			err.Error(),
-			nil,
-		))
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusBadRequest),
+				Title:  "Error when start waterfall pump",
+				Detail: err.Error(),
+			},
+		})
 	}
 
 	return c.NoContent(http.StatusNoContent)
@@ -215,17 +219,19 @@ func (h TFPHandler) StopWaterfallPump(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	err := h.dUsecase.WaterfallPump(ctx, false)
 
 	if err != nil {
 		log.Errorf("Error when post stop_waterfall_pump: %s", err.Error())
-		return c.JSON(500, models.NewJSONAPIerror(
-			"500",
-			"Error when stop waterfall pump",
-			err.Error(),
-			nil,
-		))
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusBadRequest),
+				Title:  "Error when stop waterfall pump",
+				Detail: err.Error(),
+			},
+		})
 	}
 
 	return c.NoContent(http.StatusNoContent)
@@ -234,21 +240,22 @@ func (h TFPHandler) StopWaterfallPump(c echo.Context) error {
 // StartUVC1 start UVC1
 func (h TFPHandler) StartUVC1(c echo.Context) error {
 	ctx := c.Request().Context()
-
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	err := h.dUsecase.UVC1(ctx, true)
 
 	if err != nil {
 		log.Errorf("Error when post start_uvc1: %s", err.Error())
-		return c.JSON(500, models.NewJSONAPIerror(
-			"500",
-			"Error when start uvc1",
-			err.Error(),
-			nil,
-		))
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusBadRequest),
+				Title:  "Error when start uvc1",
+				Detail: err.Error(),
+			},
+		})
 	}
 
 	return c.NoContent(http.StatusNoContent)
@@ -260,17 +267,19 @@ func (h TFPHandler) StopUVC1(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	err := h.dUsecase.UVC1(ctx, false)
 
 	if err != nil {
 		log.Errorf("Error when post stop_uvc1: %s", err.Error())
-		return c.JSON(500, models.NewJSONAPIerror(
-			"500",
-			"Error when stop uvc1",
-			err.Error(),
-			nil,
-		))
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusBadRequest),
+				Title:  "Error when stop uvc1",
+				Detail: err.Error(),
+			},
+		})
 	}
 
 	return c.NoContent(http.StatusNoContent)
@@ -282,17 +291,19 @@ func (h TFPHandler) StartUVC2(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	err := h.dUsecase.UVC2(ctx, true)
 
 	if err != nil {
 		log.Errorf("Error when post start_uvc2: %s", err.Error())
-		return c.JSON(500, models.NewJSONAPIerror(
-			"500",
-			"Error when start uvc2",
-			err.Error(),
-			nil,
-		))
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusBadRequest),
+				Title:  "Error when start uvc2",
+				Detail: err.Error(),
+			},
+		})
 	}
 
 	return c.NoContent(http.StatusNoContent)
@@ -304,17 +315,19 @@ func (h TFPHandler) StopUVC2(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	err := h.dUsecase.UVC2(ctx, false)
 
 	if err != nil {
 		log.Errorf("Error when post stop_uvc2: %s", err.Error())
-		return c.JSON(500, models.NewJSONAPIerror(
-			"500",
-			"Error when stop uvc2",
-			err.Error(),
-			nil,
-		))
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusBadRequest),
+				Title:  "Error when stop uvc2",
+				Detail: err.Error(),
+			},
+		})
 	}
 
 	return c.NoContent(http.StatusNoContent)
@@ -326,17 +339,19 @@ func (h TFPHandler) StartPondBubble(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	err := h.dUsecase.PondBubble(ctx, true)
 
 	if err != nil {
 		log.Errorf("Error when post start_pond_bubble: %s", err.Error())
-		return c.JSON(500, models.NewJSONAPIerror(
-			"500",
-			"Error when start pond bubble",
-			err.Error(),
-			nil,
-		))
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusBadRequest),
+				Title:  "Error when start pond bubble",
+				Detail: err.Error(),
+			},
+		})
 	}
 
 	return c.NoContent(http.StatusNoContent)
@@ -348,17 +363,19 @@ func (h TFPHandler) StopPondBubble(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	err := h.dUsecase.PondBubble(ctx, false)
 
 	if err != nil {
 		log.Errorf("Error when post stop_pond_bubble: %s", err.Error())
-		return c.JSON(500, models.NewJSONAPIerror(
-			"500",
-			"Error when stop pond bubble",
-			err.Error(),
-			nil,
-		))
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusBadRequest),
+				Title:  "Error when stop pond bubble",
+				Detail: err.Error(),
+			},
+		})
 	}
 
 	return c.NoContent(http.StatusNoContent)
@@ -370,17 +387,19 @@ func (h TFPHandler) StartFilterBubble(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	err := h.dUsecase.FilterBubble(ctx, true)
 
 	if err != nil {
 		log.Errorf("Error when post start_filter_bubble: %s", err.Error())
-		return c.JSON(500, models.NewJSONAPIerror(
-			"500",
-			"Error when start filter bubble",
-			err.Error(),
-			nil,
-		))
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusBadRequest),
+				Title:  "Error when start filter bubble",
+				Detail: err.Error(),
+			},
+		})
 	}
 
 	return c.NoContent(http.StatusNoContent)
@@ -392,17 +411,19 @@ func (h TFPHandler) StopFilterBubble(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	err := h.dUsecase.FilterBubble(ctx, false)
 
 	if err != nil {
 		log.Errorf("Error when post stop_filter_bubble: %s", err.Error())
-		return c.JSON(500, models.NewJSONAPIerror(
-			"500",
-			"Error when stop filter bubble",
-			err.Error(),
-			nil,
-		))
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusBadRequest),
+				Title:  "Error when stop filter bubble",
+				Detail: err.Error(),
+			},
+		})
 	}
 
 	return c.NoContent(http.StatusNoContent)
@@ -414,17 +435,19 @@ func (h TFPHandler) ChangeUVC1Blister(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	err := h.dUsecase.UVC1BlisterNew(ctx)
 
 	if err != nil {
 		log.Errorf("Error when post change_uvc1_blister: %s", err.Error())
-		return c.JSON(500, models.NewJSONAPIerror(
-			"500",
-			"Error when change UVC1 blister",
-			err.Error(),
-			nil,
-		))
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusBadRequest),
+				Title:  "Error when change UVC1 blister",
+				Detail: err.Error(),
+			},
+		})
 	}
 
 	return c.NoContent(http.StatusNoContent)
@@ -436,17 +459,19 @@ func (h TFPHandler) ChangeUVC2Blister(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	err := h.dUsecase.UVC2BlisterNew(ctx)
 
 	if err != nil {
 		log.Errorf("Error when post change_uvc2_blister: %s", err.Error())
-		return c.JSON(500, models.NewJSONAPIerror(
-			"500",
-			"Error when change UVC2 blister",
-			err.Error(),
-			nil,
-		))
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusBadRequest),
+				Title:  "Error when change UVC2 blister",
+				Detail: err.Error(),
+			},
+		})
 	}
 
 	return c.NoContent(http.StatusNoContent)
@@ -458,17 +483,19 @@ func (h TFPHandler) ChangeOzoneBlister(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	err := h.dUsecase.OzoneBlisterNew(ctx)
 
 	if err != nil {
 		log.Errorf("Error when post change_ozone_blister: %s", err.Error())
-		return c.JSON(500, models.NewJSONAPIerror(
-			"500",
-			"Error when change ozone blister",
-			err.Error(),
-			nil,
-		))
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusBadRequest),
+				Title:  "Error when change ozone blister",
+				Detail: err.Error(),
+			},
+		})
 	}
 
 	return c.NoContent(http.StatusNoContent)
@@ -480,17 +507,19 @@ func (h TFPHandler) EnableWaterfallAuto(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	err := h.dUsecase.WaterfallAuto(ctx, true)
 
 	if err != nil {
 		log.Errorf("Error when post enable_waterfall_auto: %s", err.Error())
-		return c.JSON(500, models.NewJSONAPIerror(
-			"500",
-			"Error when enable waterfall auto",
-			err.Error(),
-			nil,
-		))
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusBadRequest),
+				Title:  "Error when enable waterfall auto",
+				Detail: err.Error(),
+			},
+		})
 	}
 
 	return c.NoContent(http.StatusNoContent)
@@ -502,17 +531,19 @@ func (h TFPHandler) DisableWaterfallAuto(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
 	err := h.dUsecase.WaterfallAuto(ctx, false)
 
 	if err != nil {
 		log.Errorf("Error when post disable_waterfall_auto: %s", err.Error())
-		return c.JSON(500, models.NewJSONAPIerror(
-			"500",
-			"Error when disable waterfall auto",
-			err.Error(),
-			nil,
-		))
+		return jsonapi.MarshalErrors(c.Response(), []*jsonapi.ErrorObject{
+			{
+				Status: fmt.Sprintf("%d", http.StatusBadRequest),
+				Title:  "Error when disable waterfall auto",
+				Detail: err.Error(),
+			},
+		})
 	}
 
 	return c.NoContent(http.StatusNoContent)
