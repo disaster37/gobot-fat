@@ -66,7 +66,7 @@ func (h TFPHandler) GetState(c echo.Context) error {
 	}
 
 	c.Response().WriteHeader(http.StatusOK)
-	return jsonapi.MarshalOnePayloadEmbedded(c.Response(), state)
+	return jsonapi.MarshalOnePayloadEmbedded(c.Response(), &state)
 }
 
 // GetIO return the current IO of DFP
