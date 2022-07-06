@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/disaster37/gobot-fat/dfp"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
@@ -59,6 +60,8 @@ func (h DFPHandler) GetState(c echo.Context) error {
 		})
 	}
 
+	log.Infof("DFPState: %s", spew.Sdump(&state))
+
 	c.Response().WriteHeader(http.StatusOK)
 	return jsonapi.MarshalOnePayloadEmbedded(c.Response(), &state)
 }
@@ -82,6 +85,8 @@ func (h DFPHandler) GetIO(c echo.Context) error {
 			},
 		})
 	}
+
+	log.Infof("DFPIO: %s", spew.Sdump(&io))
 
 	c.Response().WriteHeader(http.StatusOK)
 	return jsonapi.MarshalOnePayloadEmbedded(c.Response(), &io)
