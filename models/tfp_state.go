@@ -56,7 +56,7 @@ type TFPState struct {
 
 	// IsWaterfallAuto is managed by tfpConfig
 	// It's here only to reflect state
-	IsWaterfallAuto bool `json:"is_waterfall_auto" jsonapi:"attr,enable" gorm:"column:is_waterfall_auto" validate:"required"`
+	IsWaterfallAuto bool `json:"is_waterfall_auto" jsonapi:"attr,is_waterfall_auto" gorm:"column:is_waterfall_auto" validate:"required"`
 }
 
 func (h TFPState) TableName() string {
