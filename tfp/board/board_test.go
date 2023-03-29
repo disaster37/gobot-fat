@@ -76,7 +76,8 @@ func (s *TFPBoardTestSuite) TestStartStopIsOnline() {
 	assert.Equal(s.T(), 1, adaptor.GetDigitalPinState(board.relayBubblePond.Pin()))
 	assert.Equal(s.T(), 1, adaptor.GetDigitalPinState(board.relayBubbleFilter.Pin()))
 	assert.Equal(s.T(), 0, adaptor.GetDigitalPinState(board.relayPompWaterfall.Pin()))
-	board.Stop(context.Background())
+	err = board.Stop(context.Background())
+	assert.NoError(s.T(), err)
 
 	// Start with all started on state
 	board, adaptor = initTestBoard()

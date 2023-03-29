@@ -230,15 +230,12 @@ func (h *tfpUsecase) blisterNew(ctx context.Context, blisterName string) error {
 	case blisterUVC1:
 		config.UVC1BlisterTime = time.Now()
 		state.UVC1BlisterNbHour = 0
-		break
 	case blisterUVC2:
 		config.UVC2BlisterTime = time.Now()
 		state.UVC2BlisterNbHour = 0
-		break
 	case blisterOzone:
 		config.OzoneBlisterTime = time.Now()
 		state.OzoneBlisterNbHour = 0
-		break
 	default:
 		return errors.Errorf("Blister %s not found", blisterName)
 

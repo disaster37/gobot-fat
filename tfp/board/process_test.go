@@ -140,10 +140,22 @@ func (s *TFPBoardTestSuite) TestHandleSetUnsetEmergencyStop() {
 	waitDuration := 100 * time.Millisecond
 
 	// Set emergency stop
-	s.board.StartPondPumpWithUVC(context.Background())
-	s.board.StartFilterBubble(context.Background())
-	s.board.StartPondBubble(context.Background())
-	s.board.StartWaterfallPump(context.Background())
+	err := s.board.StartPondPumpWithUVC(context.Background())
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	err = s.board.StartFilterBubble(context.Background())
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	err = s.board.StartPondBubble(context.Background())
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	err = s.board.StartWaterfallPump(context.Background())
+	if err != nil {
+		s.T().Fatal(err)
+	}
 	status := mock.WaitEvent(s.board, EventSetEmergencyStop, waitDuration)
 	s.board.globalEventer.Publish(helper.SetEmergencyStop, nil)
 	assert.True(s.T(), <-status)
@@ -172,10 +184,22 @@ func (s *TFPBoardTestSuite) TestHandleSetUnsetSecurity() {
 	waitDuration := 100 * time.Millisecond
 
 	// Set security
-	s.board.StartPondPumpWithUVC(context.Background())
-	s.board.StartFilterBubble(context.Background())
-	s.board.StartPondBubble(context.Background())
-	s.board.StartWaterfallPump(context.Background())
+	err := s.board.StartPondPumpWithUVC(context.Background())
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	err = s.board.StartFilterBubble(context.Background())
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	err = s.board.StartPondBubble(context.Background())
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	err = s.board.StartWaterfallPump(context.Background())
+	if err != nil {
+		s.T().Fatal(err)
+	}
 	status := mock.WaitEvent(s.board, EventSetSecurity, waitDuration)
 	s.board.globalEventer.Publish(helper.SetSecurity, nil)
 	assert.True(s.T(), <-status)

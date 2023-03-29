@@ -62,7 +62,7 @@ func main() {
 	// Init backend connexion
 	isConnected := false
 	var db *gorm.DB
-	for isConnected == false {
+	for !isConnected {
 		conStr := fmt.Sprintf("host=%s port=5432 user=%s dbname=%s password=%s sslmode=disable", configHandler.GetString("db.host"), configHandler.GetString("db.user"), configHandler.GetString("db.name"), configHandler.GetString("db.password"))
 		log.Debug(conStr)
 		db, err = gorm.Open("postgres", conStr)
@@ -164,7 +164,9 @@ func main() {
 	boardU.Starts(ctx)
 
 	// Run web server
-	e.Start(configHandler.GetString("server.address"))
+	if err = e.Start(configHandler.GetString("server.address")); err != nil {
+		panic(err)
+	}
 
 	log.Info("End of program")
 

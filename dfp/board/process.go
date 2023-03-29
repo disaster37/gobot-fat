@@ -49,7 +49,6 @@ func (h *DFPBoard) wash() {
 		} else {
 			h.turnOffGreenLed()
 		}
-		return
 	}
 
 	// Check stop event
@@ -157,7 +156,6 @@ func (h *DFPBoard) wash() {
 		wg.Wait()
 
 		h.Publish(EventWash, h.state)
-		return
 	}()
 
 }
@@ -384,13 +382,11 @@ func (h *DFPBoard) runWashInactivity() {
 		out := h.Subscribe()
 
 		for {
-			select {
-			case evt := <-out:
-				if evt.Name == EventBoardStop {
-					chStop <- true
-					h.Unsubscribe(out)
-					return
-				}
+			evt := <-out
+			if evt.Name == EventBoardStop {
+				chStop <- true
+				h.Unsubscribe(out)
+				return
 			}
 		}
 	}()
@@ -436,13 +432,11 @@ func (h *DFPBoard) on(driver gobot.Eventer, event string, f func(data interface{
 		out := h.Subscribe()
 
 		for {
-			select {
-			case evt := <-out:
-				if evt.Name == EventBoardStop {
-					halt <- true
-					h.Unsubscribe(out)
-					return
-				}
+			evt := <-out
+			if evt.Name == EventBoardStop {
+				halt <- true
+				h.Unsubscribe(out)
+				return
 			}
 		}
 	}()

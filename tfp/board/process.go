@@ -295,7 +295,7 @@ func (h *TFPBoard) handleWaterfallAuto() {
 		isUpdated := false
 
 		if startDate.Before(currentDate) && endDate.After(currentDate) {
-			if h.state.AcknoledgeWaterfallAuto != true {
+			if !h.state.AcknoledgeWaterfallAuto {
 				log.Debug("Waterfall must be running")
 				err := h.StartWaterfallPump(ctx)
 				if err != nil {
@@ -347,13 +347,11 @@ func (h *TFPBoard) on(driver gobot.Eventer, event string, f func(data interface{
 		out := h.Subscribe()
 
 		for {
-			select {
-			case evt := <-out:
-				if evt.Name == EventBoardStop {
-					halt <- true
-					h.Unsubscribe(out)
-					return
-				}
+			evt := <-out
+			if evt.Name == EventBoardStop {
+				halt <- true
+				h.Unsubscribe(out)
+				return
 			}
 		}
 	}()

@@ -141,6 +141,7 @@ func (s *DFPBoardTestSuite) TestSetUnsetEmergencyStop() {
 	s.board.state.IsEmergencyStopped = true
 	status = mock.WaitEvent(s.board.Eventer, EventSetEmergencyStop, 1*time.Second)
 	err = s.board.SetEmergencyStop(context.Background())
+	assert.NoError(s.T(), err)
 	assert.False(s.T(), <-status)
 	assert.True(s.T(), s.board.state.IsEmergencyStopped)
 

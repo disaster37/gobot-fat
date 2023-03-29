@@ -12,7 +12,7 @@ func (m *GoMiddleware) IsAdmin(next echo.HandlerFunc) echo.HandlerFunc {
 			user := c.Get("user").(*jwt.Token)
 			claims := user.Claims.(*usecase.JwtCustomClaims)
 			isAdmin := claims.Admin
-			if isAdmin == false {
+			if !isAdmin {
 				return echo.ErrUnauthorized
 			}
 			return next(c)
