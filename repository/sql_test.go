@@ -76,7 +76,7 @@ func TestListSQL(t *testing.T) {
 	db, _ := gorm.Open("sqlite3", dbMock)
 	repository := NewSQLRepository(db)
 
-	listDfpConfig := make([]*models.DFPConfig, 0, 0)
+	listDfpConfig := make([]*models.DFPConfig, 0)
 
 	err = repository.List(context.Background(), &listDfpConfig)
 	assert.NoError(t, err)
@@ -105,7 +105,7 @@ func TestListSQL(t *testing.T) {
 	db, _ = gorm.Open("sqlite3", dbMock)
 	repository = NewSQLRepository(db)
 
-	listDfpConfig = make([]*models.DFPConfig, 0, 0)
+	listDfpConfig = make([]*models.DFPConfig, 0)
 
 	err = repository.List(context.Background(), &listDfpConfig)
 	assert.NoError(t, err)

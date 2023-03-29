@@ -26,7 +26,7 @@ func (l *LedControl) Wait() {
 // newLedControl return new ledControl
 func newLedControl() *LedControl {
 	return &LedControl{
-		chStop: make(chan bool, 0),
+		chStop: make(chan bool),
 		wait:   &sync.WaitGroup{},
 	}
 }

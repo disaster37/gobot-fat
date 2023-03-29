@@ -107,13 +107,11 @@ func (h *TankBoard) on(driver gobot.Eventer, event string, f func(data interface
 		out := h.Subscribe()
 
 		for {
-			select {
-			case evt := <-out:
-				if evt.Name == EventBoardStop {
-					halt <- true
-					h.Unsubscribe(out)
-					return
-				}
+			evt := <-out
+			if evt.Name == EventBoardStop {
+				halt <- true
+				h.Unsubscribe(out)
+				return
 			}
 		}
 	}()

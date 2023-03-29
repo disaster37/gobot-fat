@@ -92,7 +92,6 @@ type DFPBoard struct {
 	captorSecurityUpper     *gpio.ButtonDriver
 	captorSecurityUnder     *gpio.ButtonDriver
 	globalEventer           gobot.Eventer
-	isRunning               bool
 	name                    string
 	timeBetweenWash         *time.Ticker
 	waitTimeForceWash       *time.Ticker

@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/disaster37/gobot-fat/login"
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v4"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -19,7 +19,7 @@ type loginUsecase struct {
 type JwtCustomClaims struct {
 	Name  string `json:"name"`
 	Admin bool   `json:"admin"`
-	jwt.StandardClaims
+	jwt.RegisteredClaims
 }
 
 // NewLoginUsecase will create new loginUsecase object of login.Usecase interface
@@ -42,8 +42,8 @@ func (h *loginUsecase) Login(c context.Context, user string, password string) (s
 	claims := &JwtCustomClaims{
 		user,
 		true,
-		jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Hour * 72).Unix(),
+		jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 72)),
 		},
 	}
 

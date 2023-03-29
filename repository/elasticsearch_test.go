@@ -79,7 +79,7 @@ func TestListElasticsearch(t *testing.T) {
 	repository := NewElasticsearchRepository(conn, "test")
 
 	// When use slice of pointer
-	listDfpConfig := make([]*models.DFPConfig, 0, 0)
+	listDfpConfig := make([]*models.DFPConfig, 0)
 	err := repository.List(context.Background(), &listDfpConfig)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, listDfpConfig)
@@ -107,7 +107,7 @@ func TestListElasticsearch(t *testing.T) {
 	mocktrans.RoundTripFn = func(req *http.Request) (*http.Response, error) { return mocktrans.Response, nil }
 	conn, _ = elastic.NewClient(elastic.Config{Transport: mocktrans})
 	repository = NewElasticsearchRepository(conn, "test")
-	listDfpConfig2 := make([]models.DFPConfig, 0, 0)
+	listDfpConfig2 := make([]models.DFPConfig, 0)
 	err = repository.List(context.Background(), &listDfpConfig2)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, listDfpConfig2)
@@ -137,7 +137,7 @@ func TestListElasticsearch(t *testing.T) {
 	repository = NewElasticsearchRepository(conn, "test")
 
 	// When use slice of pointer
-	listDfpConfig = make([]*models.DFPConfig, 0, 0)
+	listDfpConfig = make([]*models.DFPConfig, 0)
 	err = repository.List(context.Background(), &listDfpConfig)
 	assert.NoError(t, err)
 	assert.Empty(t, listDfpConfig)

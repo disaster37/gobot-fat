@@ -192,10 +192,8 @@ func (h *UsecaseCRUDGeneric) Init(ctx context.Context, data interface{}) error {
 		}
 
 	} else if sqlData != nil && esData != nil {
-		sqlDataModel := sqlData.(models.Model)
-		esDataModel := esData.(models.Model)
 
-		if sqlDataModel.GetVersion() < esDataModel.GetVersion() {
+		if sqlData.GetVersion() < esData.GetVersion() {
 			// Config found and last version found on Elastic
 			err = h.SQLRepo.Update(ctx, esData)
 			if err != nil {
@@ -204,7 +202,7 @@ func (h *UsecaseCRUDGeneric) Init(ctx context.Context, data interface{}) error {
 				return err
 			}
 			log.Info("Update data on SQL from elastic data")
-		} else if sqlDataModel.GetVersion() > esDataModel.GetVersion() {
+		} else if sqlData.GetVersion() > esData.GetVersion() {
 			// Config found and last version found on SQL
 			err = h.ElasticRepo.Update(ctx, sqlData)
 			if err != nil {

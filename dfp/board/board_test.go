@@ -52,12 +52,24 @@ func (s *DFPBoardTestSuite) SetupTest() {
 	s.adaptor.SetDigitalPinState(s.board.captorWaterUnder.Pin(), 1)
 
 	// Relay
-	s.board.relayDrum.Off()
-	s.board.relayPump.Off()
+	err := s.board.relayDrum.Off()
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	err = s.board.relayPump.Off()
+	if err != nil {
+		s.T().Fatal(err)
+	}
 
 	// Led
-	s.board.ledGreen.On()
-	s.board.ledRed.Off()
+	err = s.board.ledGreen.On()
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	err = s.board.ledRed.Off()
+	if err != nil {
+		s.T().Fatal(err)
+	}
 
 	// State
 	s.board.state = &models.DFPState{
@@ -121,10 +133,13 @@ func (s *DFPBoardTestSuite) TestStartStopIsOnline() {
 	assert.Equal(s.T(), 0, adaptor.GetDigitalPinState(board.relayPump.Pin()))
 	assert.Equal(s.T(), 0, adaptor.GetDigitalPinState(board.ledGreen.Pin()))
 	assert.Equal(s.T(), 0, adaptor.GetDigitalPinState(board.ledRed.Pin()))
-	board.Stop(context.Background())
+	err = board.Stop(context.Background())
+	if err != nil {
+		s.T().Fatal(err)
+	}
 
 	// Start with wash and running)
-	board, adaptor = initTestBoard()
+	board, _ = initTestBoard()
 	board.state.IsWashed = true
 	status := mock.WaitEvent(board.Eventer, EventWash, 5*time.Second)
 	err = board.Start(context.Background())

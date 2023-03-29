@@ -9,7 +9,6 @@ import (
 )
 
 type MockPlateform struct {
-	name                    string
 	mtx                     sync.Mutex
 	testAdaptorReconnect    func() error
 	testAdaptorDigitalWrite func(pin string, val byte) (err error)
@@ -31,7 +30,7 @@ func (m *MockPlateform) SetInvertInitialPinState(pin string) { m.invertedInitial
 
 // Adaptor interface
 func (m *MockPlateform) Name() string     { return "test" }
-func (m *MockPlateform) SetName(n string) { return }
+func (m *MockPlateform) SetName(n string) {  }
 func (m *MockPlateform) Connect() error   { return nil }
 func (m *MockPlateform) Finalize() error  { return nil }
 func (m *MockPlateform) SetInputPullup(listPins []*gpio.ButtonDriver) (err error) {
@@ -272,7 +271,7 @@ func NewMockPlateform() *MockPlateform {
 
 func WaitEvent(e gobot.Eventer, eventName string, timeout time.Duration) chan bool {
 	out := e.Subscribe()
-	status := make(chan bool, 0)
+	status := make(chan bool)
 
 	go func() {
 	loop:

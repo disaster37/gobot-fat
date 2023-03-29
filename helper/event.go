@@ -43,7 +43,6 @@ func SendEvent(ctx context.Context, esUsecase usecase.UsecaseCRUD, sourceName st
 		switch kind {
 		case KindEventTemperature:
 			event.Temperature = args[0].(float64)
-			break
 		case KindEventTankLevel:
 			event.Level = args[0].(int64)
 		}

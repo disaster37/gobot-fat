@@ -36,7 +36,7 @@ func (h *TankConfigHandler) List(c echo.Context) error {
 	}
 	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
 
-	data := make([]*models.TankConfig, 0, 0)
+	data := make([]*models.TankConfig, 0)
 	if err := h.us.List(ctx, &data); err != nil {
 		log.Errorf("Error when list tank_config: %s", err.Error())
 		c.Response().WriteHeader(http.StatusInternalServerError)

@@ -59,7 +59,9 @@ func TestGet(t *testing.T) {
 	sqlMock.SetData(result)
 	elasticMock.SetData(result)
 
-	err = us.Get(ctx, 1, dfpConfig)
+	if err = us.Get(ctx, 1, dfpConfig); err != nil {
+		t.Fatal(err)
+	}
 	isCalled, reason = sqlMock.ExpectCall("Get", uint(1))
 	assert.True(t, isCalled)
 	if reason != "" {
@@ -90,7 +92,7 @@ func TestList(t *testing.T) {
 	eventer.AddEvent("test")
 
 	us := NewUsecase(sqlMock, elasticMock, time.Duration(10*time.Second), eventer, "test")
-	listDFPc := make([]*models.DFPConfig, 0, 0)
+	listDFPc := make([]*models.DFPConfig, 0)
 
 	// When no data in ES and in SQL
 	sqlMock.SetData(nil)
@@ -113,7 +115,7 @@ func TestList(t *testing.T) {
 		WashingDuration:                10,
 		StartWashingPumpBeforeWashing:  5,
 	}
-	listResult := make([]*models.DFPConfig, 0, 0)
+	listResult := make([]*models.DFPConfig, 0)
 	listResult = append(listResult, result)
 	sqlMock.SetData(listResult)
 	elasticMock.SetData(nil)
@@ -133,7 +135,7 @@ func TestList(t *testing.T) {
 	// When data on SQL and on ES
 	sqlMock.SetData(listResult)
 	elasticMock.SetData(listResult)
-	listDFPc = make([]*models.DFPConfig, 0, 0)
+	listDFPc = make([]*models.DFPConfig, 0)
 	err = us.List(context.Background(), &listDFPc)
 	assert.NoError(t, err)
 	isCalled, reason = sqlMock.ExpectCall("List")
@@ -149,7 +151,7 @@ func TestList(t *testing.T) {
 	// When data only on Elastic
 	sqlMock.SetData(nil)
 	elasticMock.SetData(listResult)
-	listDFPc = make([]*models.DFPConfig, 0, 0)
+	listDFPc = make([]*models.DFPConfig, 0)
 	err = us.List(context.Background(), &listDFPc)
 	assert.NoError(t, err)
 	isCalled, reason = sqlMock.ExpectCall("List")
@@ -175,7 +177,7 @@ func TestUpdate(t *testing.T) {
 	elasticMock.SetData(nil)
 	err := us.Update(context.Background(), nil)
 	assert.Error(t, err)
-	isCalled, reason := sqlMock.ExpectCall("Update")
+	isCalled, _ := sqlMock.ExpectCall("Update")
 	assert.False(t, isCalled)
 
 	// When data
@@ -191,7 +193,7 @@ func TestUpdate(t *testing.T) {
 
 	err = us.Update(context.Background(), result)
 	assert.NoError(t, err)
-	isCalled, reason = sqlMock.ExpectCall("Update")
+	isCalled, reason := sqlMock.ExpectCall("Update")
 	assert.True(t, isCalled)
 	if reason != "" {
 		t.Error(reason)
@@ -244,7 +246,7 @@ func TestCreate(t *testing.T) {
 	// When no data
 	err := us.Create(context.Background(), nil)
 	assert.Error(t, err)
-	isCalled, reason := sqlMock.ExpectCall("Create")
+	isCalled, _ := sqlMock.ExpectCall("Create")
 	assert.False(t, isCalled)
 
 	// When data
@@ -260,7 +262,7 @@ func TestCreate(t *testing.T) {
 
 	err = us.Create(context.Background(), result)
 	assert.NoError(t, err)
-	isCalled, reason = sqlMock.ExpectCall("Create")
+	isCalled, reason := sqlMock.ExpectCall("Create")
 	assert.True(t, isCalled)
 	if reason != "" {
 		t.Error(reason)
@@ -372,13 +374,13 @@ func TestInit(t *testing.T) {
 	elasticMock.SetData(elasticDFPc)
 	err = us.Init(context.Background(), initDFPc)
 	assert.NoError(t, err)
-	isCalled, reason = sqlMock.ExpectCall("Create")
+	isCalled, _ = sqlMock.ExpectCall("Create")
 	assert.False(t, isCalled)
-	isCalled, reason = elasticMock.ExpectCall("Create")
+	isCalled, _ = elasticMock.ExpectCall("Create")
 	assert.False(t, isCalled)
-	isCalled, reason = sqlMock.ExpectCall("Update")
+	isCalled, _ = sqlMock.ExpectCall("Update")
 	assert.False(t, isCalled)
-	isCalled, reason = elasticMock.ExpectCall("Update")
+	isCalled, _ = elasticMock.ExpectCall("Update")
 	assert.False(t, isCalled)
 
 	// When data only exist on SQL repo
@@ -393,9 +395,9 @@ func TestInit(t *testing.T) {
 	if reason != "" {
 		t.Error(reason)
 	}
-	isCalled, reason = sqlMock.ExpectCall("Update")
+	isCalled, _ = sqlMock.ExpectCall("Update")
 	assert.False(t, isCalled)
-	isCalled, reason = sqlMock.ExpectCall("Create")
+	isCalled, _ = sqlMock.ExpectCall("Create")
 	assert.False(t, isCalled)
 
 	// When data is more up to date on SQL repo
@@ -410,9 +412,9 @@ func TestInit(t *testing.T) {
 	if reason != "" {
 		t.Error(reason)
 	}
-	isCalled, reason = sqlMock.ExpectCall("Update")
+	isCalled, _ = sqlMock.ExpectCall("Update")
 	assert.False(t, isCalled)
-	isCalled, reason = sqlMock.ExpectCall("Create")
+	isCalled, _ = sqlMock.ExpectCall("Create")
 	assert.False(t, isCalled)
 
 	// When data only exist on elastic repo
@@ -428,9 +430,9 @@ func TestInit(t *testing.T) {
 	if reason != "" {
 		t.Error(reason)
 	}
-	isCalled, reason = elasticMock.ExpectCall("Update")
+	isCalled, _ = elasticMock.ExpectCall("Update")
 	assert.False(t, isCalled)
-	isCalled, reason = elasticMock.ExpectCall("Create")
+	isCalled, _ = elasticMock.ExpectCall("Create")
 	assert.False(t, isCalled)
 
 	// When data is more up to date on elastic repo
@@ -446,9 +448,9 @@ func TestInit(t *testing.T) {
 	if reason != "" {
 		t.Error(reason)
 	}
-	isCalled, reason = elasticMock.ExpectCall("Update")
+	isCalled, _ = elasticMock.ExpectCall("Update")
 	assert.False(t, isCalled)
-	isCalled, reason = elasticMock.ExpectCall("Create")
+	isCalled, _ = elasticMock.ExpectCall("Create")
 	assert.False(t, isCalled)
 
 	// When data only exist on sql with error on elastic repo
@@ -458,13 +460,13 @@ func TestInit(t *testing.T) {
 
 	err = us.Init(context.Background(), initDFPc)
 	assert.NoError(t, err)
-	isCalled, reason = sqlMock.ExpectCall("Update")
+	isCalled, _ = sqlMock.ExpectCall("Update")
 	assert.False(t, isCalled)
-	isCalled, reason = sqlMock.ExpectCall("Create")
+	isCalled, _ = sqlMock.ExpectCall("Create")
 	assert.False(t, isCalled)
-	isCalled, reason = elasticMock.ExpectCall("Update")
+	isCalled, _ = elasticMock.ExpectCall("Update")
 	assert.False(t, isCalled)
-	isCalled, reason = elasticMock.ExpectCall("Create")
+	isCalled, _ = elasticMock.ExpectCall("Create")
 	assert.False(t, isCalled)
 
 	// When data is more up to date on SQL repo with error on elastic repo
@@ -476,12 +478,12 @@ func TestInit(t *testing.T) {
 
 	err = us.Init(context.Background(), initDFPc)
 	assert.NoError(t, err)
-	isCalled, reason = sqlMock.ExpectCall("Update")
+	isCalled, _ = sqlMock.ExpectCall("Update")
 	assert.False(t, isCalled)
-	isCalled, reason = sqlMock.ExpectCall("Create")
+	isCalled, _ = sqlMock.ExpectCall("Create")
 	assert.False(t, isCalled)
-	isCalled, reason = elasticMock.ExpectCall("Update")
+	isCalled, _ = elasticMock.ExpectCall("Update")
 	assert.False(t, isCalled)
-	isCalled, reason = elasticMock.ExpectCall("Create")
+	isCalled, _ = elasticMock.ExpectCall("Create")
 	assert.False(t, isCalled)
 }

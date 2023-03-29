@@ -19,8 +19,5 @@ type Repository interface {
 
 // IsRecordNotFoundError return true if current error is because of record not found on repository
 func IsRecordNotFoundError(err error) bool {
-	if err == ErrRecordNotFoundError {
-		return true
-	}
-	return false
+	return err == ErrRecordNotFoundError
 }

@@ -24,8 +24,10 @@ import (
 	"github.com/disaster37/gobot-fat/tfpstate"
 	"github.com/disaster37/gobot-fat/usecase"
 	elastic "github.com/elastic/go-elasticsearch/v7"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	log "github.com/sirupsen/logrus"
@@ -62,7 +64,7 @@ func main() {
 	// Init backend connexion
 	isConnected := false
 	var db *gorm.DB
-	for isConnected == false {
+	for !isConnected {
 		conStr := fmt.Sprintf("host=%s port=5432 user=%s dbname=%s password=%s sslmode=disable", configHandler.GetString("db.host"), configHandler.GetString("db.user"), configHandler.GetString("db.name"), configHandler.GetString("db.password"))
 		log.Debug(conStr)
 		db, err = gorm.Open("postgres", conStr)
@@ -105,8 +107,10 @@ func main() {
 	}
 	e.Use(middleware.Recover())
 	api := e.Group("/api")
-	api.Use(middleware.JWTWithConfig(middleware.JWTConfig{
-		Claims:     &loginUsecase.JwtCustomClaims{},
+	api.Use(echojwt.WithConfig(echojwt.Config{
+		NewClaimsFunc: func(c echo.Context) jwt.Claims {
+			return new(loginUsecase.JwtCustomClaims)
+		},
 		SigningKey: []byte(configHandler.GetString("jwt.secret")),
 	}))
 	api.Use(middL.IsAdmin)
@@ -164,7 +168,9 @@ func main() {
 	boardU.Starts(ctx)
 
 	// Run web server
-	e.Start(configHandler.GetString("server.address"))
+	if err = e.Start(configHandler.GetString("server.address")); err != nil {
+		panic(err)
+	}
 
 	log.Info("End of program")
 

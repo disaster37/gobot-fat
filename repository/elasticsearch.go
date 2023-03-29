@@ -34,9 +34,9 @@ func NewElasticsearchRepository(conn *elastic.Client, index string, args ...inte
 	}
 
 	for _, arg := range args {
-		switch arg.(type) {
+		switch argTmp := arg.(type) {
 		case bool:
-			repo.IsManageID = arg.(bool)
+			repo.IsManageID = argTmp
 		}
 	}
 

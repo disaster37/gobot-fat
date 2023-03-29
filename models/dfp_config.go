@@ -26,7 +26,7 @@ type DFPConfig struct {
 	WaitTimeBetweenWashing int `json:"wait_time_between_washing" jsonapi:"attr,wait_time_between_washing" gorm:"column:wait_time_between_washing;type:bigint" validate:"required"`
 
 	// WashingDuration is the time in seconds of washing cycle
-	WashingDuration int `json:"washing_duration" jsonapi:"attr,washing_duration" validate:"required" gorm:"column:washing_duration;type:bigint" validate:"required"`
+	WashingDuration int `json:"washing_duration" jsonapi:"attr,washing_duration" gorm:"column:washing_duration;type:bigint" validate:"required"`
 
 	// StartWashingPumpBeforeWashing is the time in seconds witch we start washing pump before run washing cycle
 	StartWashingPumpBeforeWashing int `json:"start_washing_pump_before_washing" jsonapi:"attr,start_washing_pump_before_washing" gorm:"column:start_washing_pump_before_washing;type:bigint" validate:"required"`

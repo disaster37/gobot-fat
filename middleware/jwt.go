@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"github.com/disaster37/gobot-fat/login/usecase"
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/labstack/echo/v4"
 )
 
@@ -12,7 +12,7 @@ func (m *GoMiddleware) IsAdmin(next echo.HandlerFunc) echo.HandlerFunc {
 			user := c.Get("user").(*jwt.Token)
 			claims := user.Claims.(*usecase.JwtCustomClaims)
 			isAdmin := claims.Admin
-			if isAdmin == false {
+			if !isAdmin {
 				return echo.ErrUnauthorized
 			}
 			return next(c)
