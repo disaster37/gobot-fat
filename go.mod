@@ -1,6 +1,6 @@
 module github.com/disaster37/gobot-fat
 
-go 1.18
+go 1.20
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
