@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"github.com/disaster37/gobot-fat/login/usecase"
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/labstack/echo/v4"
 )
 
