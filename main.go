@@ -24,7 +24,7 @@ import (
 	"github.com/disaster37/gobot-fat/tfpstate"
 	"github.com/disaster37/gobot-fat/usecase"
 	elastic "github.com/elastic/go-elasticsearch/v7"
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	echojwt "github.com/labstack/echo-jwt/v4"

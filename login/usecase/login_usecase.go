@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/disaster37/gobot-fat/login"
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
