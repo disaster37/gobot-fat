@@ -25,8 +25,6 @@ import (
 	"github.com/disaster37/gobot-fat/usecase"
 	elastic "github.com/elastic/go-elasticsearch/v8"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
 	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -34,6 +32,8 @@ import (
 	"github.com/spf13/viper"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 	"gobot.io/x/gobot"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 func main() {
@@ -65,9 +65,9 @@ func main() {
 	isConnected := false
 	var db *gorm.DB
 	for !isConnected {
-		conStr := fmt.Sprintf("host=%s port=5432 user=%s dbname=%s password=%s sslmode=disable", configHandler.GetString("db.host"), configHandler.GetString("db.user"), configHandler.GetString("db.name"), configHandler.GetString("db.password"))
-		log.Debug(conStr)
-		db, err = gorm.Open("postgres", conStr)
+		dsn := fmt.Sprintf("host=%s port=5432 user=%s dbname=%s password=%s sslmode=disable", configHandler.GetString("db.host"), configHandler.GetString("db.user"), configHandler.GetString("db.name"), configHandler.GetString("db.password"))
+		log.Debug(dsn)
+		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 		if err != nil {
 			log.Errorf("failed to connect on postgresql: %s", err.Error())
 			time.Sleep(10 * time.Second)
@@ -75,7 +75,12 @@ func main() {
 			isConnected = true
 		}
 	}
-	defer func() { _ = db.Close() }()
+	sqlDB, err := db.DB()
+	if err != nil {
+		log.Errorf("failed to connect on Postgres DB: %s", err.Error())
+		panic("failed to connect on Postgres DB")
+	}
+	defer func() { _ = sqlDB.Close() }()
 
 	cfg := elastic.Config{
 		Addresses: configHandler.GetStringSlice("elasticsearch.urls"),

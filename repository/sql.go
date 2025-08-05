@@ -4,9 +4,9 @@ import (
 	"context"
 	"reflect"
 
-	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 // SQLRepositoryGen represent generic repository to request SQL database
@@ -33,7 +33,7 @@ func (h *SQLRepositoryGen) Get(ctx context.Context, id uint, data interface{}) e
 
 	err := h.Conn.First(data, id).Error
 	if err != nil {
-		if gorm.IsRecordNotFoundError(err) {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return ErrRecordNotFoundError
 		}
 		return err
@@ -56,7 +56,7 @@ func (h *SQLRepositoryGen) List(ctx context.Context, listData interface{}) error
 
 	err := h.Conn.Find(listData).Error
 	if err != nil {
-		if gorm.IsRecordNotFoundError(err) {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil
 		}
 		return err
