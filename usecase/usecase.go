@@ -63,7 +63,7 @@ func (h *UsecaseCRUDGeneric) List(ctx context.Context, listData interface{}) err
 func (h *UsecaseCRUDGeneric) Create(ctx context.Context, data interface{}) error {
 
 	if data == nil {
-		return errors.New("Data can't be null")
+		return errors.New("data can't be null")
 	}
 
 	// Init version
@@ -94,7 +94,7 @@ func (h *UsecaseCRUDGeneric) Create(ctx context.Context, data interface{}) error
 func (h *UsecaseCRUDGeneric) Update(ctx context.Context, data interface{}) error {
 
 	if data == nil {
-		return errors.New("Data can't be null")
+		return errors.New("data can't be null")
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, h.contextTimeout)
@@ -125,7 +125,7 @@ func (h *UsecaseCRUDGeneric) Update(ctx context.Context, data interface{}) error
 func (h *UsecaseCRUDGeneric) Init(ctx context.Context, data interface{}) error {
 
 	if data == nil {
-		return errors.New("Data can't be null")
+		return errors.New("data can't be null")
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, h.contextTimeout)

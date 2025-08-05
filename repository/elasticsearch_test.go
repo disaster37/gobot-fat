@@ -8,7 +8,7 @@ import (
 
 	"github.com/disaster37/gobot-fat/mock"
 	"github.com/disaster37/gobot-fat/models"
-	elastic "github.com/elastic/go-elasticsearch/v7"
+	elastic "github.com/elastic/go-elasticsearch/v8"
 	"github.com/stretchr/testify/assert"
 )
 

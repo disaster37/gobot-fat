@@ -8,7 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var ErrRelayCanNotStart = errors.New("Relay can't start because of current state")
+var ErrRelayCanNotStart = errors.New("relay can't start because of current state")
 
 func (h *TFPBoard) canStartRelay() bool {
 	if !h.state.IsEmergencyStopped && (!h.state.IsSecurity || h.state.IsDisableSecurity) {

@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/disaster37/gobot-fat/models"
-	elastic "github.com/elastic/go-elasticsearch/v7"
-	"github.com/elastic/go-elasticsearch/v7/esapi"
+	elastic "github.com/elastic/go-elasticsearch/v8"
+	"github.com/elastic/go-elasticsearch/v8/esapi"
 	olivere "github.com/olivere/elastic/v7"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -65,7 +65,7 @@ func (h *ElasticsearchRepositoryGen) Get(ctx context.Context, id uint, data inte
 		return err
 	}
 
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	// Check if query found
 	if res.IsError() && res.StatusCode != 404 {
@@ -121,7 +121,7 @@ func (h *ElasticsearchRepositoryGen) List(ctx context.Context, listData interfac
 		return err
 	}
 
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	// Check if query found
 	if res.IsError() {
@@ -202,7 +202,7 @@ func (h *ElasticsearchRepositoryGen) Update(ctx context.Context, data interface{
 		return err
 	}
 
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	// Check if query found
 	if res.IsError() {
