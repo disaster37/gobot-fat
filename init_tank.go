@@ -14,7 +14,7 @@ import (
 	"github.com/disaster37/gobot-fat/tankconfig"
 	tankConfigHttpDeliver "github.com/disaster37/gobot-fat/tankconfig/delivery/http"
 	"github.com/disaster37/gobot-fat/usecase"
-	"github.com/elastic/go-elasticsearch/v7"
+	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/jinzhu/gorm"
 	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"

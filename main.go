@@ -23,7 +23,7 @@ import (
 	"github.com/disaster37/gobot-fat/tfpconfig"
 	"github.com/disaster37/gobot-fat/tfpstate"
 	"github.com/disaster37/gobot-fat/usecase"
-	elastic "github.com/elastic/go-elasticsearch/v7"
+	elastic "github.com/elastic/go-elasticsearch/v8"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
