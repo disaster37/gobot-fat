@@ -65,7 +65,7 @@ func (h *ElasticsearchRepositoryGen) Get(ctx context.Context, id uint, data inte
 		return err
 	}
 
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	// Check if query found
 	if res.IsError() && res.StatusCode != 404 {
@@ -121,7 +121,7 @@ func (h *ElasticsearchRepositoryGen) List(ctx context.Context, listData interfac
 		return err
 	}
 
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	// Check if query found
 	if res.IsError() {
@@ -202,7 +202,7 @@ func (h *ElasticsearchRepositoryGen) Update(ctx context.Context, data interface{
 		return err
 	}
 
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	// Check if query found
 	if res.IsError() {

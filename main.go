@@ -75,7 +75,7 @@ func main() {
 			isConnected = true
 		}
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	cfg := elastic.Config{
 		Addresses: configHandler.GetStringSlice("elasticsearch.urls"),

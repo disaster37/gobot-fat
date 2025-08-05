@@ -95,7 +95,7 @@ func translatePin(pin string, revision string) (i int, err error) {
 	} else if val, ok := pins[pin]["*"]; ok {
 		i = val
 	} else {
-		err = errors.New("Not a valid pin")
+		err = errors.New("not a valid pin")
 		return
 	}
 	return

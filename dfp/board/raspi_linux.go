@@ -24,7 +24,7 @@ func (h *RaspiAdaptor) SetInputPullup(listPins []*gpio.ButtonDriver) (err error)
 		log.Errorf("Error when open rpio: %s", err.Error())
 		return err
 	}
-	defer rpio.Close()
+	defer func() { _ = rpio.Close() }()
 
 	for _, button := range listPins {
 
