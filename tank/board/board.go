@@ -4,16 +4,17 @@ import (
 	"context"
 	"time"
 
-	"github.com/disaster37/gobot-arest/drivers/extra"
-	"github.com/disaster37/gobot-arest/plateforms/arest"
+	"github.com/disaster37/gobot-arest/v2/drivers/extra"
+	"github.com/disaster37/gobot-arest/v2/plateforms/arest"
 	"github.com/disaster37/gobot-fat/helper"
+	"github.com/disaster37/gobot-fat/mock"
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/tank"
 	"github.com/disaster37/gobot-fat/usecase"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"gobot.io/x/gobot"
-	"gobot.io/x/gobot/drivers/gpio"
+	"gobot.io/x/gobot/v2"
+	"gobot.io/x/gobot/v2/drivers/gpio"
 )
 
 const (
@@ -53,7 +54,15 @@ type TankBoard struct {
 func NewTank(configHandler *viper.Viper, config *models.TankConfig, eventUsecase usecase.UsecaseCRUD, eventer gobot.Eventer) (tankHandler tank.Board) {
 
 	//Create client
-	c := arest.NewHTTPAdaptor(configHandler.GetString("url"))
+	var c TankAdaptor
+	if configHandler.GetBool("fake-board") {
+		mockBoard := mock.NewMockPlateform()
+		mockBoard.SetValueReadState("isRebooted", false)
+		mockBoard.SetValueReadState("distance", float64(0))
+		c = mockBoard
+	} else {
+		c = arest.NewHTTPAdaptor(configHandler.GetString("url"))
+	}
 
 	return newTank(c, configHandler, config, eventUsecase, eventer, 10*time.Second)
 

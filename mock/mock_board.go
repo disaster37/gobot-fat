@@ -4,8 +4,8 @@ import (
 	"sync"
 	"time"
 
-	"gobot.io/x/gobot"
-	"gobot.io/x/gobot/drivers/gpio"
+	"gobot.io/x/gobot/v2"
+	"gobot.io/x/gobot/v2/drivers/gpio"
 )
 
 type MockPlateform struct {
@@ -30,7 +30,7 @@ func (m *MockPlateform) SetInvertInitialPinState(pin string) { m.invertedInitial
 
 // Adaptor interface
 func (m *MockPlateform) Name() string     { return "test" }
-func (m *MockPlateform) SetName(n string) {  }
+func (m *MockPlateform) SetName(n string) {}
 func (m *MockPlateform) Connect() error   { return nil }
 func (m *MockPlateform) Finalize() error  { return nil }
 func (m *MockPlateform) SetInputPullup(listPins []*gpio.ButtonDriver) (err error) {
@@ -40,7 +40,7 @@ func (m *MockPlateform) SetInputPullup(listPins []*gpio.ButtonDriver) (err error
 	for _, button := range listPins {
 
 		if !m.invertedInitialState[button.Pin()] {
-			button.DefaultState = 1
+			button.SetDefaultState(1)
 
 			// When InputPullup, the default button state is 1
 			m.digitalPinState[button.Pin()] = 1

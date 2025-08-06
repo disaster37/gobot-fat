@@ -3,12 +3,12 @@ package tankboard
 import (
 	"context"
 
-	"github.com/disaster37/gobot-arest/drivers/extra"
+	"github.com/disaster37/gobot-arest/v2/drivers/extra"
 	"github.com/disaster37/gobot-fat/helper"
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/tankconfig"
 	log "github.com/sirupsen/logrus"
-	"gobot.io/x/gobot"
+	"gobot.io/x/gobot/v2"
 )
 
 func (h *TankBoard) work() {

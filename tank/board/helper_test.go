@@ -7,7 +7,7 @@ import (
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/usecase"
 	"github.com/spf13/viper"
-	"gobot.io/x/gobot"
+	"gobot.io/x/gobot/v2"
 )
 
 func initTestBoard() (*TankBoard, *mock.MockPlateform) {

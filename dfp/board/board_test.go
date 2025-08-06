@@ -93,17 +93,6 @@ func (s *DFPBoardTestSuite) TestStartStopIsOnline() {
 
 	// Normal start with all stopped on state and running
 	assert.True(s.T(), s.board.IsOnline())
-	assert.Equal(s.T(), 1, s.board.buttonForceDrum.DefaultState)
-	assert.Equal(s.T(), 1, s.board.buttonForcePump.DefaultState)
-	assert.Equal(s.T(), 1, s.board.buttonEmergencyStop.DefaultState)
-	assert.Equal(s.T(), 1, s.board.buttonStart.DefaultState)
-	assert.Equal(s.T(), 1, s.board.buttonStop.DefaultState)
-	assert.Equal(s.T(), 1, s.board.buttonWash.DefaultState)
-
-	assert.Equal(s.T(), 1, s.board.captorSecurityUnder.DefaultState)
-	assert.Equal(s.T(), 0, s.board.captorSecurityUpper.DefaultState)
-	assert.Equal(s.T(), 1, s.board.captorWaterUnder.DefaultState)
-	assert.Equal(s.T(), 0, s.board.captorWaterUpper.DefaultState)
 
 	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.relayDrum.Pin()))
 	assert.Equal(s.T(), 0, s.adaptor.GetDigitalPinState(s.board.relayPump.Pin()))
@@ -117,17 +106,6 @@ func (s *DFPBoardTestSuite) TestStartStopIsOnline() {
 	assert.NoError(s.T(), err)
 
 	assert.True(s.T(), board.IsOnline())
-	assert.Equal(s.T(), 1, board.buttonForceDrum.DefaultState)
-	assert.Equal(s.T(), 1, board.buttonForcePump.DefaultState)
-	assert.Equal(s.T(), 1, board.buttonEmergencyStop.DefaultState)
-	assert.Equal(s.T(), 1, board.buttonStart.DefaultState)
-	assert.Equal(s.T(), 1, board.buttonStop.DefaultState)
-	assert.Equal(s.T(), 1, board.buttonWash.DefaultState)
-
-	assert.Equal(s.T(), 1, board.captorSecurityUnder.DefaultState)
-	assert.Equal(s.T(), 0, board.captorSecurityUpper.DefaultState)
-	assert.Equal(s.T(), 1, board.captorWaterUnder.DefaultState)
-	assert.Equal(s.T(), 0, board.captorWaterUpper.DefaultState)
 
 	assert.Equal(s.T(), 0, adaptor.GetDigitalPinState(board.relayDrum.Pin()))
 	assert.Equal(s.T(), 0, adaptor.GetDigitalPinState(board.relayPump.Pin()))

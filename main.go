@@ -31,7 +31,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
-	"gobot.io/x/gobot"
+	"gobot.io/x/gobot/v2"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )

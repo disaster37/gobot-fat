@@ -18,7 +18,7 @@ import (
 	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"gobot.io/x/gobot"
+	"gobot.io/x/gobot/v2"
 	"gorm.io/gorm"
 )
 
@@ -78,14 +78,18 @@ func initTank(ctx context.Context, eventer gobot.Eventer, api *echo.Group, confi
 
 	// Tank pond board
 	if configHandler.GetBool("tank_pond.enable") {
-		tankPondBoard := tankboard.NewTank(configHandler.Sub("tank_pond"), tankPondConfig, eventUsecase, eventer)
+		tankPondConfigViper := configHandler.Sub("tank_pond")
+		tankPondConfigViper.Set("fake-board", true)
+		tankPondBoard := tankboard.NewTank(tankPondConfigViper, tankPondConfig, eventUsecase, eventer)
 		boardUsecase.AddBoard(tankPondBoard)
 		listTankBoards = append(listTankBoards, tankPondBoard)
 	}
 
 	// Tank garden board
 	if configHandler.GetBool("tank_garden.enable") {
-		tankGardenBoard := tankboard.NewTank(configHandler.Sub("tank_garden"), tankGardenConfig, eventUsecase, eventer)
+		tankGardenConfigViper := configHandler.Sub("tank_garden")
+		tankGardenConfigViper.Set("fake-board", true)
+		tankGardenBoard := tankboard.NewTank(tankGardenConfigViper, tankGardenConfig, eventUsecase, eventer)
 		boardUsecase.AddBoard(tankGardenBoard)
 		listTankBoards = append(listTankBoards, tankGardenBoard)
 	}

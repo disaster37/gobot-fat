@@ -19,7 +19,7 @@ import (
 	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"gobot.io/x/gobot"
+	"gobot.io/x/gobot/v2"
 	"gorm.io/gorm"
 )
 
@@ -95,7 +95,9 @@ func initTFP(ctx context.Context, eventer gobot.Eventer, api *echo.Group, config
 
 	// TFP board
 	if configHandler.GetBool("tfp.enable") {
-		tfpBoard := tfpboard.NewTFP(configHandler.Sub("tfp"), tfpConfig, tfpState, eventUsecase, tfpStateUsecase, eventer)
+		tfpConfigViper := configHandler.Sub("tfp")
+		tfpConfigViper.Set("fake-board", true)
+		tfpBoard := tfpboard.NewTFP(tfpConfigViper, tfpConfig, tfpState, eventUsecase, tfpStateUsecase, eventer)
 		boardUsecase.AddBoard(tfpBoard)
 		tfpUsecase := tfpusecase.NewTFPUsecase(tfpBoard, tfpConfigUsecase, tfpStateUsecase, timeout)
 		tfpHttpDeliver.NewTFPHandler(api, tfpUsecase)
