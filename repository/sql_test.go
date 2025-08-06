@@ -7,8 +7,9 @@ import (
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/disaster37/gobot-fat/models"
-	"github.com/jinzhu/gorm"
 	"github.com/stretchr/testify/assert"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 func TestGetSQL(t *testing.T) {
@@ -23,7 +24,10 @@ func TestGetSQL(t *testing.T) {
 		AddRow(1, 180, 60, -5, 300, 10, 5, 1, currentTime)
 	mock.ExpectQuery("^SELECT (.+) FROM \"dfpconfig\" (.+)$").WillReturnRows(configMock)
 
-	db, _ := gorm.Open("sqlite3", dbMock)
+	db, err := gorm.Open(postgres.New(postgres.Config{Conn: dbMock}), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
 	repository := NewSQLRepository(db)
 
 	dfpConfig := &models.DFPConfig{}
@@ -48,7 +52,10 @@ func TestGetSQL(t *testing.T) {
 	configMock = sqlmock.NewRows([]string{"id", "force_washing_duration", "force_washing_duration_when_frozen", "temperature_threshold_when_frozen", "wait_time_between_washing", "washing_duration", "start_washing_pump_before_washing", "version", "updated_at"})
 	mock.ExpectQuery("^SELECT (.+) FROM \"dfpconfig\" (.+)$").WillReturnRows(configMock)
 
-	db, _ = gorm.Open("sqlite3", dbMock)
+	db, err = gorm.Open(postgres.New(postgres.Config{Conn: dbMock}), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
 	repository = NewSQLRepository(db)
 
 	dfpConfig = &models.DFPConfig{}
@@ -71,9 +78,12 @@ func TestListSQL(t *testing.T) {
 	currentTime := time.Now()
 	configMock := sqlmock.NewRows([]string{"id", "force_washing_duration", "force_washing_duration_when_frozen", "temperature_threshold_when_frozen", "wait_time_between_washing", "washing_duration", "start_washing_pump_before_washing", "version", "updated_at"}).
 		AddRow(1, 180, 60, -5, 300, 10, 5, 1, currentTime)
-	mock.ExpectQuery("^SELECT (.+) FROM \"dfpconfig\" (.+)$").WillReturnRows(configMock)
+	mock.ExpectQuery("^SELECT (.+) FROM \"dfpconfig\"").WillReturnRows(configMock)
 
-	db, _ := gorm.Open("sqlite3", dbMock)
+	db, err := gorm.Open(postgres.New(postgres.Config{Conn: dbMock}), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
 	repository := NewSQLRepository(db)
 
 	listDfpConfig := make([]*models.DFPConfig, 0)
@@ -100,9 +110,12 @@ func TestListSQL(t *testing.T) {
 		panic(err)
 	}
 	configMock = sqlmock.NewRows([]string{"id", "force_washing_duration", "force_washing_duration_when_frozen", "temperature_threshold_when_frozen", "wait_time_between_washing", "washing_duration", "start_washing_pump_before_washing", "version", "updated_at"})
-	mock.ExpectQuery("^SELECT (.+) FROM \"dfpconfig\" (.+)$").WillReturnRows(configMock)
+	mock.ExpectQuery("^SELECT (.+) FROM \"dfpconfig\"").WillReturnRows(configMock)
 
-	db, _ = gorm.Open("sqlite3", dbMock)
+	db, err = gorm.Open(postgres.New(postgres.Config{Conn: dbMock}), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
 	repository = NewSQLRepository(db)
 
 	listDfpConfig = make([]*models.DFPConfig, 0)
@@ -126,7 +139,10 @@ func TestUpdateSQL(t *testing.T) {
 	mock.ExpectBegin()
 	mock.ExpectExec("UPDATE \"dfpconfig\"").WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
-	db, _ := gorm.Open("sqlite3", dbMock)
+	db, err := gorm.Open(postgres.New(postgres.Config{Conn: dbMock}), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
 	repository := NewSQLRepository(db)
 
 	dfpConfig := &models.DFPConfig{
@@ -162,9 +178,12 @@ func TestCreateSQL(t *testing.T) {
 		panic(err)
 	}
 	mock.ExpectBegin()
-	mock.ExpectExec("INSERT INTO \"dfpconfig\"").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectQuery(`INSERT INTO "dfpconfig".*`).WillReturnRows(sqlmock.NewRows([]string{"id", "force_washing_duration", "force_washing_duration_when_frozen", "temperature_threshold_when_frozen", "wait_time_between_washing", "washing_duration", "start_washing_pump_before_washing", "version", "updated_at"}))
 	mock.ExpectCommit()
-	db, _ := gorm.Open("sqlite3", dbMock)
+	db, err := gorm.Open(postgres.New(postgres.Config{Conn: dbMock}), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
 	repository := NewSQLRepository(db)
 
 	dfpConfig := &models.DFPConfig{
