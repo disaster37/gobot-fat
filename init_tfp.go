@@ -96,7 +96,7 @@ func initTFP(ctx context.Context, eventer gobot.Eventer, api *echo.Group, config
 	// TFP board
 	if configHandler.GetBool("tfp.enable") {
 		tfpConfigViper := configHandler.Sub("tfp")
-		tfpConfigViper.Set("fake-board", true)
+		tfpConfigViper.Set("fake-board", configHandler.GetBool("fake-board"))
 		tfpBoard := tfpboard.NewTFP(tfpConfigViper, tfpConfig, tfpState, eventUsecase, tfpStateUsecase, eventer)
 		boardUsecase.AddBoard(tfpBoard)
 		tfpUsecase := tfpusecase.NewTFPUsecase(tfpBoard, tfpConfigUsecase, tfpStateUsecase, timeout)

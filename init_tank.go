@@ -79,7 +79,7 @@ func initTank(ctx context.Context, eventer gobot.Eventer, api *echo.Group, confi
 	// Tank pond board
 	if configHandler.GetBool("tank_pond.enable") {
 		tankPondConfigViper := configHandler.Sub("tank_pond")
-		tankPondConfigViper.Set("fake-board", true)
+		tankPondConfigViper.Set("fake-board", configHandler.GetBool("fake-board"))
 		tankPondBoard := tankboard.NewTank(tankPondConfigViper, tankPondConfig, eventUsecase, eventer)
 		boardUsecase.AddBoard(tankPondBoard)
 		listTankBoards = append(listTankBoards, tankPondBoard)
@@ -88,7 +88,7 @@ func initTank(ctx context.Context, eventer gobot.Eventer, api *echo.Group, confi
 	// Tank garden board
 	if configHandler.GetBool("tank_garden.enable") {
 		tankGardenConfigViper := configHandler.Sub("tank_garden")
-		tankGardenConfigViper.Set("fake-board", true)
+		tankGardenConfigViper.Set("fake-board", configHandler.GetBool("fake-board"))
 		tankGardenBoard := tankboard.NewTank(tankGardenConfigViper, tankGardenConfig, eventUsecase, eventer)
 		boardUsecase.AddBoard(tankGardenBoard)
 		listTankBoards = append(listTankBoards, tankGardenBoard)

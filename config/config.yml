@@ -1,0 +1,78 @@
+log:
+  level: 'DEBUG'
+  access: false
+server:
+  address: ':4040'
+jwt:
+  secret: 'WXjf6{S8Nl8*'
+  user: 'admin'
+  password: 'admin'
+context:
+  timeout: 10
+elasticsearch:
+  urls:
+    - 'http://127.0.0.1:9200'
+  username: 'elastic'
+  password: 'changeme'
+  index:
+    dfp_config: 'dfp-dfpconfig-alias'
+    dfp_state: 'dfp-dfpstate-alias'
+    tfp_config: 'dfp-tfpconfig-alias'
+    tfp_state: 'dfp-tfpstate-alias'
+    tank_config: 'dfp-tank-alias'
+    event: 'dfp-event-alias'
+db:
+  host: '127.0.0.1'
+  user: 'dfp'
+  password: 'changeme'
+  name: 'dfp'
+mail:
+  server: 'ssl0.ovh.net'
+  port: 587
+  user: 'no-reply@no.no'
+  password: ''
+  to: ''
+fake-board: true
+dfp:
+  name: 'dfp'
+  enable: true
+  button_polling: 200
+  pin:
+    captor:
+      security_upper: '33'
+      security_under: '35'
+      water_upper: '12'
+      water_under: '31'
+    relay:
+      drum: '7'
+      pomp: '11'
+    led:
+      green: '3'
+      red: '5'
+    button:
+      start: '13'
+      stop: '15'
+      emergency_stop: '38'
+      wash: '19'
+      force_drum: '21'
+      force_pump: '23'
+tfp:
+  name: 'tfp'
+  url: 'http://192.168.0.191'
+  enable: true
+  pin:
+    relay:
+      pond_pomp: 2
+      waterfall_pomp: 3 
+      pond_bubble: 6
+      filter_bubble: 7 
+      uvc1: 0
+      uvc2: 1
+tank_pond:
+  name: 'tank_pond'
+  url: 'http://192.168.0.190'
+  enable: true
+tank_garden:
+  name: 'tank_garden'
+  url: 'http://192.168.0.192'
+  enable: true

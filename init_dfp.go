@@ -88,7 +88,7 @@ func initDFP(ctx context.Context, eventer gobot.Eventer, api *echo.Group, config
 	// DFP board
 	if configHandler.GetBool("dfp.enable") {
 		dfpConfigViper := configHandler.Sub("dfp")
-		dfpConfigViper.Set("fake-board", true)
+		dfpConfigViper.Set("fake-board", configHandler.GetBool("fake-board"))
 		dfpBoard := dfpboard.NewDFP(dfpConfigViper, dfpConfig, dfpState, eventUsecase, dfpStateUsecase, eventer, mailClient)
 		boardUsecase.AddBoard(dfpBoard)
 		dfpUsecase := dfpusecase.NewDFPUsecase(dfpBoard, timeout)
