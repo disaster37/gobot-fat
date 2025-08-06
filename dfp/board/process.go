@@ -11,8 +11,8 @@ import (
 	"github.com/disaster37/gobot-fat/models"
 	log "github.com/sirupsen/logrus"
 	"github.com/yryz/ds18b20"
-	"gobot.io/x/gobot"
-	"gobot.io/x/gobot/drivers/gpio"
+	"gobot.io/x/gobot/v2"
+	"gobot.io/x/gobot/v2/drivers/gpio"
 )
 
 // Wash  run on routine for no blocking.
@@ -326,7 +326,7 @@ func (h *DFPBoard) work() {
 			return
 		}
 
-		if h.captorSecurityUpper.Active || h.captorSecurityUnder.Active {
+		if h.captorSecurityUpper.Active() || h.captorSecurityUnder.Active() {
 
 			if err := h.SetSecurity(ctx); err != nil {
 				log.Errorf("When set security for DFP: %s", err.Error())

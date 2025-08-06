@@ -9,7 +9,7 @@ import (
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/repository"
 	"github.com/stretchr/testify/assert"
-	"gobot.io/x/gobot"
+	"gobot.io/x/gobot/v2"
 )
 
 func TestGet(t *testing.T) {

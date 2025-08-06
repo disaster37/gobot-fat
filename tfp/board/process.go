@@ -6,9 +6,9 @@ import (
 
 	"github.com/disaster37/gobot-fat/helper"
 	"github.com/disaster37/gobot-fat/tfpstate"
-	"gobot.io/x/gobot"
+	"gobot.io/x/gobot/v2"
 
-	"github.com/disaster37/gobot-arest/drivers/extra"
+	"github.com/disaster37/gobot-arest/v2/drivers/extra"
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/tfpconfig"
 	log "github.com/sirupsen/logrus"

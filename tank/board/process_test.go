@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/disaster37/gobot-arest/drivers/extra"
+	"github.com/disaster37/gobot-arest/v2/drivers/extra"
 	"github.com/disaster37/gobot-fat/mock"
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/tankconfig"

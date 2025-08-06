@@ -4,16 +4,17 @@ import (
 	"context"
 	"time"
 
-	"github.com/disaster37/gobot-arest/drivers/extra"
-	"github.com/disaster37/gobot-arest/plateforms/arest"
+	"github.com/disaster37/gobot-arest/v2/drivers/extra"
+	"github.com/disaster37/gobot-arest/v2/plateforms/arest"
 	"github.com/disaster37/gobot-fat/helper"
+	"github.com/disaster37/gobot-fat/mock"
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/tfp"
 	"github.com/disaster37/gobot-fat/usecase"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"gobot.io/x/gobot"
-	"gobot.io/x/gobot/drivers/gpio"
+	"gobot.io/x/gobot/v2"
+	"gobot.io/x/gobot/v2/drivers/gpio"
 )
 
 const (
@@ -68,7 +69,14 @@ type TFPBoard struct {
 func NewTFP(configHandler *viper.Viper, config *models.TFPConfig, state *models.TFPState, eventUsecase usecase.UsecaseCRUD, tfpStateUsecase usecase.UsecaseCRUD, eventer gobot.Eventer) (tfpBoard tfp.Board) {
 
 	//Create client
-	c := arest.NewHTTPAdaptor(configHandler.GetString("url"))
+	var c TFPAdaptor
+	if configHandler.GetBool("fake-board") {
+		mockBoard := mock.NewMockPlateform()
+		mockBoard.SetValueReadState("isRebooted", false)
+		c = mockBoard
+	} else {
+		c = arest.NewHTTPAdaptor(configHandler.GetString("url"))
+	}
 
 	return newTFP(c, configHandler, config, state, eventUsecase, tfpStateUsecase, eventer, 1*time.Second)
 
@@ -88,12 +96,12 @@ func newTFP(board TFPAdaptor, configHandler *viper.Viper, config *models.TFPConf
 		isOnline:           false,
 		isInitialized:      false,
 		globalEventer:      eventer,
-		relayPompPond:      gpio.NewRelayDriver(board, configHandler.GetString("pin.relay.pond_pomp")),
+		relayPompPond:      gpio.NewRelayDriver(board, configHandler.GetString("pin.relay.pond_pomp"), gpio.WithRelayInverted()),
 		relayPompWaterfall: gpio.NewRelayDriver(board, configHandler.GetString("pin.relay.waterfall_pomp")),
-		relayUVC1:          gpio.NewRelayDriver(board, configHandler.GetString("pin.relay.uvc1")),
-		relayUVC2:          gpio.NewRelayDriver(board, configHandler.GetString("pin.relay.uvc2")),
-		relayBubbleFilter:  gpio.NewRelayDriver(board, configHandler.GetString("pin.relay.filter_bubble")),
-		relayBubblePond:    gpio.NewRelayDriver(board, configHandler.GetString("pin.relay.pond_bubble")),
+		relayUVC1:          gpio.NewRelayDriver(board, configHandler.GetString("pin.relay.uvc1"), gpio.WithRelayInverted()),
+		relayUVC2:          gpio.NewRelayDriver(board, configHandler.GetString("pin.relay.uvc2"), gpio.WithRelayInverted()),
+		relayBubbleFilter:  gpio.NewRelayDriver(board, configHandler.GetString("pin.relay.filter_bubble"), gpio.WithRelayInverted()),
+		relayBubblePond:    gpio.NewRelayDriver(board, configHandler.GetString("pin.relay.pond_bubble"), gpio.WithRelayInverted()),
 		valueRebooted:      extra.NewValueDriver(board, "isRebooted", wait),
 		functionRebooted:   extra.NewFunctionDriver(board, "acknoledgeRebooted", ""),
 		Eventer:            gobot.NewEventer(),
@@ -164,7 +172,6 @@ func (h *TFPBoard) Start(ctx context.Context) (err error) {
 	}
 
 	// Relay relayPompPond is Normaly Close
-	h.relayPompPond.Inverted = true
 	if h.state.PondPumpRunning {
 		err = h.relayPompPond.On()
 	} else {
@@ -175,7 +182,6 @@ func (h *TFPBoard) Start(ctx context.Context) (err error) {
 	}
 
 	// Relay relayUVC1 is Normaly Close
-	h.relayUVC1.Inverted = true
 	if h.state.UVC1Running {
 		err = h.relayUVC1.On()
 	} else {
@@ -186,7 +192,6 @@ func (h *TFPBoard) Start(ctx context.Context) (err error) {
 	}
 
 	// Relay relayUVC2 is Normaly Close
-	h.relayUVC2.Inverted = true
 	if h.state.UVC2Running {
 		err = h.relayUVC2.On()
 	} else {
@@ -197,7 +202,6 @@ func (h *TFPBoard) Start(ctx context.Context) (err error) {
 	}
 
 	// Relay relayBubblePond  is Normaly Close
-	h.relayBubblePond.Inverted = true
 	if h.state.PondBubbleRunning {
 		err = h.relayBubblePond.On()
 	} else {
@@ -208,7 +212,6 @@ func (h *TFPBoard) Start(ctx context.Context) (err error) {
 	}
 
 	// Relay relayBubbleFilter is Normaly Close
-	h.relayBubbleFilter.Inverted = true
 	if h.state.FilterBubbleRunning {
 		err = h.relayBubbleFilter.On()
 	} else {

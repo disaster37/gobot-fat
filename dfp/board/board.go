@@ -8,12 +8,13 @@ import (
 	"github.com/disaster37/gobot-fat/dfp"
 	"github.com/disaster37/gobot-fat/helper"
 	"github.com/disaster37/gobot-fat/mail"
+	"github.com/disaster37/gobot-fat/mock"
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/usecase"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"gobot.io/x/gobot"
-	"gobot.io/x/gobot/drivers/gpio"
+	"gobot.io/x/gobot/v2"
+	"gobot.io/x/gobot/v2/drivers/gpio"
 )
 
 const (
@@ -106,7 +107,15 @@ type DFPBoard struct {
 func NewDFP(configHandler *viper.Viper, config *models.DFPConfig, state *models.DFPState, eventUsecase usecase.UsecaseCRUD, dfpStateUsecase usecase.UsecaseCRUD, eventer gobot.Eventer, mailClient mail.Mail) (dfpBoard dfp.Board) {
 
 	//Create client
-	c := NewRaspiAdaptor()
+	var c DFPAdaptor
+	if configHandler.GetBool("fake-board") {
+		mockBoard := mock.NewMockPlateform()
+		mockBoard.SetInvertInitialPinState(configHandler.GetString("pin.captor.security_upper"))
+		mockBoard.SetInvertInitialPinState(configHandler.GetString("pin.captor.water_upper"))
+		c = mockBoard
+	} else {
+		c = NewRaspiAdaptor()
+	}
 
 	return newDFP(c, configHandler, config, state, eventUsecase, dfpStateUsecase, eventer, mailClient)
 
@@ -216,8 +225,8 @@ func (h *DFPBoard) Start(ctx context.Context) (err error) {
 	if err = h.board.SetInputPullup(listPins); err != nil {
 		return err
 	}
-	h.captorSecurityUpper.DefaultState = 0
-	h.captorWaterUpper.DefaultState = 0
+	h.captorSecurityUpper.SetDefaultState(0)
+	h.captorWaterUpper.SetDefaultState(0)
 
 	/****
 	 * Init state
@@ -335,18 +344,18 @@ func (h *DFPBoard) IO() models.DFPIO {
 	io.PumpRelay = h.relayPump.State()
 
 	// Captor
-	io.SecurityCaptorUnder = h.captorSecurityUnder.Active
-	io.SecurityCaptorUpper = h.captorSecurityUpper.Active
-	io.WaterCaptorUpper = h.captorWaterUpper.Active
-	io.WaterCaptorUnder = h.captorWaterUnder.Active
+	io.SecurityCaptorUnder = h.captorSecurityUnder.Active()
+	io.SecurityCaptorUpper = h.captorSecurityUpper.Active()
+	io.WaterCaptorUpper = h.captorWaterUpper.Active()
+	io.WaterCaptorUnder = h.captorWaterUnder.Active()
 
 	// Button
-	io.EmergencyButton = h.buttonEmergencyStop.Active
-	io.ForceDrumButton = h.buttonForceDrum.Active
-	io.ForcePumpButton = h.buttonForcePump.Active
-	io.StartButton = h.buttonStart.Active
-	io.StopButton = h.buttonStop.Active
-	io.WashButton = h.buttonWash.Active
+	io.EmergencyButton = h.buttonEmergencyStop.Active()
+	io.ForceDrumButton = h.buttonForceDrum.Active()
+	io.ForcePumpButton = h.buttonForcePump.Active()
+	io.StartButton = h.buttonStart.Active()
+	io.StopButton = h.buttonStop.Active()
+	io.WashButton = h.buttonWash.Active()
 
 	return io
 }

@@ -3,8 +3,8 @@ package dfpboard
 import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stianeikeland/go-rpio/v4"
-	"gobot.io/x/gobot/drivers/gpio"
-	"gobot.io/x/gobot/platforms/raspi"
+	"gobot.io/x/gobot/v2/drivers/gpio"
+	"gobot.io/x/gobot/v2/platforms/raspi"
 )
 
 type RaspiAdaptor struct {
@@ -37,7 +37,7 @@ func (h *RaspiAdaptor) SetInputPullup(listPins []*gpio.ButtonDriver) (err error)
 		pin.Input()
 		pin.PullUp()
 
-		button.DefaultState = 1
+		button.SetDefaultState(1)
 	}
 
 	log.Infof("GPIO initialized")

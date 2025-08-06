@@ -9,7 +9,7 @@ import (
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/repository"
 	log "github.com/sirupsen/logrus"
-	"gobot.io/x/gobot"
+	"gobot.io/x/gobot/v2"
 )
 
 // UsecaseCRUD represent usecase CRUD interface

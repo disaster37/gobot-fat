@@ -20,7 +20,7 @@ import (
 	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"gobot.io/x/gobot"
+	"gobot.io/x/gobot/v2"
 	"gorm.io/gorm"
 )
 
@@ -87,7 +87,9 @@ func initDFP(ctx context.Context, eventer gobot.Eventer, api *echo.Group, config
 
 	// DFP board
 	if configHandler.GetBool("dfp.enable") {
-		dfpBoard := dfpboard.NewDFP(configHandler.Sub("dfp"), dfpConfig, dfpState, eventUsecase, dfpStateUsecase, eventer, mailClient)
+		dfpConfigViper := configHandler.Sub("dfp")
+		dfpConfigViper.Set("fake-board", true)
+		dfpBoard := dfpboard.NewDFP(dfpConfigViper, dfpConfig, dfpState, eventUsecase, dfpStateUsecase, eventer, mailClient)
 		boardUsecase.AddBoard(dfpBoard)
 		dfpUsecase := dfpusecase.NewDFPUsecase(dfpBoard, timeout)
 		dfpHttpDeliver.NewDFPHandler(api, dfpUsecase)
