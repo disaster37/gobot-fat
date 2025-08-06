@@ -97,11 +97,21 @@ func main() {
 	}
 
 	// Create Schema
-	db.AutoMigrate(&models.DFPConfig{})
-	db.AutoMigrate(&models.DFPState{})
-	db.AutoMigrate(&models.TFPConfig{})
-	db.AutoMigrate(&models.TFPState{})
-	db.AutoMigrate(&models.TankConfig{})
+	if err = db.AutoMigrate(&models.DFPConfig{}); err != nil {
+		log.Errorf("Failed to auto migrate schema 'dfpconfig': %s", err.Error())
+	}
+	if err = db.AutoMigrate(&models.DFPState{}); err != nil {
+		log.Errorf("Failed to auto migrate schema 'dfpstate': %s", err.Error())
+	}
+	if err = db.AutoMigrate(&models.TFPConfig{}); err != nil {
+		log.Errorf("Failed to auto migrate schema 'tfpconfig': %s", err.Error())
+	}
+	if err = db.AutoMigrate(&models.TFPState{}); err != nil {
+		log.Errorf("Failed to auto migrate schema 'tfpstate': %s", err.Error())
+	}
+	if err = db.AutoMigrate(&models.TankConfig{}); err != nil {
+		log.Errorf("Failed to auto migrate schema 'tankconfig': %s", err.Error())
+	}
 
 	// Init web server
 	e := echo.New()
