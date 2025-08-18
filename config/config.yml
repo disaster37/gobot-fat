@@ -1,6 +1,6 @@
 log:
   level: 'DEBUG'
-  access: false
+  access: true
 server:
   address: ':4040'
 jwt:
