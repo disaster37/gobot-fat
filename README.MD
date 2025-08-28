@@ -1,5 +1,11 @@
 # gobot-fat
 
+## Upgrade postgresql
+
+```bash
+docker exec postgres-old pg_dumpall -U postgres | docker exec -i postgres-new psql -U postgres
+```
+
 ## Build
 
 ```bash
