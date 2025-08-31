@@ -47,7 +47,7 @@ func (h *RaspiAdaptor) SetInputPullup(listPins []*gpio.ButtonDriver) (err error)
 		// Need to translate pin
 		translatedPin, err := translatePin(button.Pin(), "3")
 		if err != nil {
-			return errors.Wrapf(err, "Error when configure pin %d as Input Pullup", button.Pin())
+			return errors.Wrapf(err, "Error when configure pin %s as Input Pullup", button.Pin())
 		}
 		pin := rpio.Pin(translatedPin)
 		pin.Input()
