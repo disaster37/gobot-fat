@@ -112,6 +112,7 @@ func NewDFP(configHandler *viper.Viper, config *models.DFPConfig, state *models.
 		mockBoard := mock.NewMockPlateform()
 		mockBoard.SetInvertInitialPinState(configHandler.GetString("pin.captor.security_upper"))
 		mockBoard.SetInvertInitialPinState(configHandler.GetString("pin.captor.water_upper"))
+		
 		c = mockBoard
 	} else {
 		c = NewRaspiAdaptor(configHandler)
