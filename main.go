@@ -30,7 +30,6 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 	"gobot.io/x/gobot/v2"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -39,11 +38,13 @@ import (
 func main() {
 
 	// Logger setting
-	formatter := new(logrus.JSONFormatter)
+	formatter := new(log.JSONFormatter)
+	/*
 	formatter.FullTimestamp = true
 	formatter.ForceFormatting = true
+	*/
 	log.SetFormatter(formatter)
-    log.SetReportCaller(true)
+	log.SetReportCaller(true)
 	log.SetOutput(os.Stdout)
 	log.SetLevel(log.InfoLevel)
 
