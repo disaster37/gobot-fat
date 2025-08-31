@@ -112,7 +112,7 @@ func NewDFP(configHandler *viper.Viper, config *models.DFPConfig, state *models.
 		mockBoard := mock.NewMockPlateform()
 		mockBoard.SetInvertInitialPinState(configHandler.GetString("pin.captor.security_upper"))
 		mockBoard.SetInvertInitialPinState(configHandler.GetString("pin.captor.water_upper"))
-		
+
 		c = mockBoard
 	} else {
 		c = NewRaspiAdaptor(configHandler)
@@ -206,9 +206,10 @@ func newDFP(board DFPAdaptor, configHandler *viper.Viper, config *models.DFPConf
 func (h *DFPBoard) Start(ctx context.Context) (err error) {
 
 	// Start connexion to set some initial state on I/O
-	if err = h.board.Connect(); err != nil {
-		return err
-	}
+	/*
+		if err = h.board.Connect(); err != nil {
+			return err
+		}*/
 
 	/*
 		// Set all input as INPUT_PULLUP and set default state as 1
