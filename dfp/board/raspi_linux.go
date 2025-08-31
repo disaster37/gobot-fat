@@ -1,6 +1,7 @@
 package dfpboard
 
 import (
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/stianeikeland/go-rpio/v4"
 	"gobot.io/x/gobot/v2/drivers/gpio"
@@ -31,13 +32,11 @@ func (h *RaspiAdaptor) SetInputPullup(listPins []*gpio.ButtonDriver) (err error)
 		// Need to translate pin
 		translatedPin, err := translatePin(button.Pin(), "3")
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Error when configure pin %d as Input Pullup", button.Pin())
 		}
 		pin := rpio.Pin(translatedPin)
 		pin.Input()
 		pin.PullUp()
-
-		button.SetDefaultState(1)
 	}
 
 	log.Infof("GPIO initialized")
