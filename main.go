@@ -39,10 +39,11 @@ import (
 func main() {
 
 	// Logger setting
-	formatter := new(prefixed.TextFormatter)
+	formatter := new(logrus.JSONFormatter)
 	formatter.FullTimestamp = true
 	formatter.ForceFormatting = true
 	log.SetFormatter(formatter)
+    log.SetReportCaller(true)
 	log.SetOutput(os.Stdout)
 	log.SetLevel(log.InfoLevel)
 
