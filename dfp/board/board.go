@@ -114,7 +114,7 @@ func NewDFP(configHandler *viper.Viper, config *models.DFPConfig, state *models.
 		mockBoard.SetInvertInitialPinState(configHandler.GetString("pin.captor.water_upper"))
 		c = mockBoard
 	} else {
-		c = NewRaspiAdaptor()
+		c = NewRaspiAdaptor(configHandler)
 	}
 
 	return newDFP(c, configHandler, config, state, eventUsecase, dfpStateUsecase, eventer, mailClient)
@@ -209,22 +209,24 @@ func (h *DFPBoard) Start(ctx context.Context) (err error) {
 		return err
 	}
 
-	// Set all input as INPUT_PULLUP and set default state as 1
-	listPins := []*gpio.ButtonDriver{
-		h.buttonEmergencyStop,
-		h.buttonForceDrum,
-		h.buttonForcePump,
-		h.buttonStart,
-		h.buttonStop,
-		h.buttonWash,
-		h.captorSecurityUnder,
-		h.captorSecurityUpper,
-		h.captorWaterUnder,
-		h.captorWaterUpper,
-	}
-	if err = h.board.SetInputPullup(listPins); err != nil {
-		return err
-	}
+	/*
+		// Set all input as INPUT_PULLUP and set default state as 1
+		listPins := []*gpio.ButtonDriver{
+			h.buttonEmergencyStop,
+			h.buttonForceDrum,
+			h.buttonForcePump,
+			h.buttonStart,
+			h.buttonStop,
+			h.buttonWash,
+			h.captorSecurityUnder,
+			h.captorSecurityUpper,
+			h.captorWaterUnder,
+			h.captorWaterUpper,
+		}
+		if err = h.board.SetInputPullup(listPins); err != nil {
+			return err
+		}
+	*/
 
 	/****
 	 * Init state

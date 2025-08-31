@@ -3,8 +3,10 @@ package dfpboard
 import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"github.com/stianeikeland/go-rpio/v4"
 	"gobot.io/x/gobot/v2/drivers/gpio"
+	"gobot.io/x/gobot/v2/platforms/adaptors"
 	"gobot.io/x/gobot/v2/platforms/raspi"
 )
 
@@ -12,9 +14,22 @@ type RaspiAdaptor struct {
 	raspi.Adaptor
 }
 
-func NewRaspiAdaptor() *RaspiAdaptor {
+func NewRaspiAdaptor(configHandler *viper.Viper) *RaspiAdaptor {
 	return &RaspiAdaptor{
-		Adaptor: *raspi.NewAdaptor(),
+		Adaptor: *raspi.NewAdaptor(
+			adaptors.WithGpiosPullUp(
+				configHandler.GetString("pin.button.emergency_stop"),
+				configHandler.GetString("pin.button.start"),
+				configHandler.GetString("pin.button.stop"),
+				configHandler.GetString("pin.button.wash"),
+				configHandler.GetString("pin.button.force_drum"),
+				configHandler.GetString("pin.button.force_pump"),
+				configHandler.GetString("pin.captor.security_upper"),
+				configHandler.GetString("pin.captor.security_under"),
+				configHandler.GetString("pin.captor.water_upper"),
+				configHandler.GetString("pin.captor.water_under"),
+			),
+		),
 	}
 }
 
