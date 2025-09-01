@@ -174,11 +174,10 @@ func (s *DFPBoardTestSuite) TestForceWashing() {
 
 	// When is already on wash cycle, skip
 	s.board.state.IsWashed = true
-	//status = mock.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
+	status = mock.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
 	err = s.board.ForceWashing(context.Background())
 	assert.NoError(s.T(), err)
-	// Temp delete test
-	//assert.False(s.T(), <-status)
+	assert.False(s.T(), <-status)
 
 	// When emergency stop
 	s.board.state.IsEmergencyStopped = true
