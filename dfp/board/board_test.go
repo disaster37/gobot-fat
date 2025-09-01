@@ -2,11 +2,13 @@ package dfpboard
 
 import (
 	"context"
+	"reflect"
 	"testing"
 	"time"
 
 	"github.com/disaster37/gobot-fat/mock"
 	"github.com/disaster37/gobot-fat/models"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -87,8 +89,6 @@ func (s *DFPBoardTestSuite) SetupTest() {
 
 }
 
-/*
-
 func (s *DFPBoardTestSuite) TestStartStopIsOnline() {
 
 	// Normal start with all stopped on state and running
@@ -122,8 +122,7 @@ func (s *DFPBoardTestSuite) TestStartStopIsOnline() {
 	status := mock.WaitEvent(board.Eventer, EventWash, 5*time.Second)
 	err = board.Start(context.Background())
 	assert.NoError(s.T(), err)
-	// Temp delete test
-	//assert.True(s.T(), <-status)
+	assert.True(s.T(), <-status)
 
 	// Stop
 	// It emit event
@@ -146,5 +145,3 @@ func (s *DFPBoardTestSuite) TestName() {
 func (s *DFPBoardTestSuite) TestState() {
 	assert.True(s.T(), reflect.DeepEqual(models.DFPState{IsRunning: true}, s.board.State()))
 }
-
-*/

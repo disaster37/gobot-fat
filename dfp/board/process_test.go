@@ -1,7 +1,5 @@
 package dfpboard
 
-/*
-
 import (
 	"context"
 	"time"
@@ -133,32 +131,28 @@ func (s *DFPBoardTestSuite) TestSecurityCaptor() {
 
 func (s *DFPBoardTestSuite) TestWaterCaptor() {
 	// Test water upper captor ON
-	//status := mock.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
+	status := mock.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
 	s.adaptor.SetDigitalPinState(s.board.captorWaterUpper.Pin(), 1)
-	// Temp delete test
-	//assert.True(s.T(), <-status)
+	assert.True(s.T(), <-status)
 	s.adaptor.SetDigitalPinState(s.board.captorWaterUpper.Pin(), 0)
 
 	// Test water under captor ON
-	//status = mock.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
+	status = mock.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
 	s.adaptor.SetDigitalPinState(s.board.captorWaterUnder.Pin(), 0)
-	// Temp delete test
-	//assert.True(s.T(), <-status)
+	assert.True(s.T(), <-status)
 
 	// Don't run more wash after some time
 	// First, run wash to update timer
 	// Then control other wash not run
 	s.board.config.WaitTimeBetweenWashing = 60
-	//status = mock.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
+	status = mock.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
 	s.adaptor.SetDigitalPinState(s.board.captorWaterUpper.Pin(), 1)
-	//// Temp delete test
-	// assert.True(s.T(), <-status)
+	assert.True(s.T(), <-status)
 	s.adaptor.SetDigitalPinState(s.board.captorWaterUpper.Pin(), 0)
 	time.Sleep(5 * time.Second)
-	//status = mock.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
+	status = mock.WaitEvent(s.board.Eventer, EventWash, 5*time.Second)
 	s.adaptor.SetDigitalPinState(s.board.captorWaterUpper.Pin(), 1)
-	// Temp delete test
-	//assert.False(s.T(), <-status)
+	assert.False(s.T(), <-status)
 
 	// Sorry for that, it's just to be sure is not broke other tests.
 	time.Sleep(10 * time.Second)
@@ -246,4 +240,3 @@ func (s *DFPBoardTestSuite) TestWash() {
 	assert.Equal(s.T(), 1, s.adaptor.GetDigitalPinState(s.board.ledGreen.Pin()))
 
 }
-*/

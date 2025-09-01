@@ -50,6 +50,18 @@ func initTestBoard() (*DFPBoard, *mock.MockPlateform) {
 
 	mockBoard.SetInvertInitialPinState(configHandler.GetString("pin.captor.security_upper"))
 	mockBoard.SetInvertInitialPinState(configHandler.GetString("pin.captor.water_upper"))
+	mockBoard.SetInputPullup(
+		configHandler.GetString("pin.button.emergency_stop"),
+		configHandler.GetString("pin.button.start"),
+		configHandler.GetString("pin.button.stop"),
+		configHandler.GetString("pin.button.wash"),
+		configHandler.GetString("pin.button.force_drum"),
+		configHandler.GetString("pin.button.force_pump"),
+		configHandler.GetString("pin.captor.security_upper"),
+		configHandler.GetString("pin.captor.security_under"),
+		configHandler.GetString("pin.captor.water_upper"),
+		configHandler.GetString("pin.captor.water_under"),
+	)
 
 	eventer.AddEvent(dfpconfig.NewDFPConfig)
 	eventer.AddEvent(dfpstate.NewDFPState)

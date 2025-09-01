@@ -64,7 +64,6 @@ type DFPAdaptor interface {
 	gobot.Adaptor
 	gpio.DigitalReader
 	gpio.DigitalWriter
-	SetInputPullup(listPins []*gpio.ButtonDriver) (err error)
 }
 
 // DFPBoard is the DFP board
@@ -113,6 +112,18 @@ func NewDFP(configHandler *viper.Viper, config *models.DFPConfig, state *models.
 		mockBoard := mock.NewMockPlateform()
 		mockBoard.SetInvertInitialPinState(configHandler.GetString("pin.captor.security_upper"))
 		mockBoard.SetInvertInitialPinState(configHandler.GetString("pin.captor.water_upper"))
+		mockBoard.SetInputPullup(
+			configHandler.GetString("pin.button.emergency_stop"),
+			configHandler.GetString("pin.button.start"),
+			configHandler.GetString("pin.button.stop"),
+			configHandler.GetString("pin.button.wash"),
+			configHandler.GetString("pin.button.force_drum"),
+			configHandler.GetString("pin.button.force_pump"),
+			configHandler.GetString("pin.captor.security_upper"),
+			configHandler.GetString("pin.captor.security_under"),
+			configHandler.GetString("pin.captor.water_upper"),
+			configHandler.GetString("pin.captor.water_under"),
+		)
 
 		c = mockBoard
 	} else {
@@ -205,31 +216,6 @@ func newDFP(board DFPAdaptor, configHandler *viper.Viper, config *models.DFPConf
 
 // Start will init some item, like INPUT_PULLUP button, then start gobot
 func (h *DFPBoard) Start(ctx context.Context) (err error) {
-
-	// Start connexion to set some initial state on I/O
-	/*
-		if err = h.board.Connect(); err != nil {
-			return err
-		}*/
-
-	/*
-		// Set all input as INPUT_PULLUP and set default state as 1
-		listPins := []*gpio.ButtonDriver{
-			h.buttonEmergencyStop,
-			h.buttonForceDrum,
-			h.buttonForcePump,
-			h.buttonStart,
-			h.buttonStop,
-			h.buttonWash,
-			h.captorSecurityUnder,
-			h.captorSecurityUpper,
-			h.captorWaterUnder,
-			h.captorWaterUpper,
-		}
-		if err = h.board.SetInputPullup(listPins); err != nil {
-			return err
-		}
-	*/
 
 	if err = h.gobot.Start(false); err != nil {
 		return errors.Wrap(err, "Error when start DFP board")
