@@ -11,6 +11,7 @@ import (
 	"github.com/disaster37/gobot-fat/mock"
 	"github.com/disaster37/gobot-fat/models"
 	"github.com/disaster37/gobot-fat/usecase"
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"gobot.io/x/gobot/v2"
@@ -230,31 +231,8 @@ func (h *DFPBoard) Start(ctx context.Context) (err error) {
 		}
 	*/
 
-	/****
-	 * Init state
-	 */
-	// Stop relais
-	h.forceStopRelais()
-
-	// Led and relay
-	if h.state.IsRunning {
-		h.turnOnGreenLed()
-	} else {
-		h.turnOffGreenLed()
-	}
-	if h.state.IsSecurity || h.state.IsEmergencyStopped {
-		h.turnOnRedLed()
-	} else {
-		h.turnOffRedLed()
-	}
-
-	// If on current wash
-	if h.state.IsWashed {
-		h.wash()
-	}
-
 	if err = h.gobot.Start(false); err != nil {
-		return err
+		return errors.Wrap(err, "Error when start DFP board")
 	}
 
 	log.Infof("Board initialized")

@@ -164,6 +164,30 @@ func (h *DFPBoard) work() {
 
 	ctx := context.TODO()
 
+	/****
+	 * Init state
+	 */
+	// Stop relais
+	h.forceStopRelais()
+
+	// Led and relay
+	if h.state.IsRunning {
+		h.turnOnGreenLed()
+	} else {
+		h.turnOffGreenLed()
+	}
+	if h.state.IsSecurity || h.state.IsEmergencyStopped {
+		h.turnOnRedLed()
+	} else {
+		h.turnOffRedLed()
+	}
+
+	// If on current wash
+	if h.state.IsWashed {
+		h.wash()
+	}
+
+
 	/*******
 	 * Process external events
 	 */
