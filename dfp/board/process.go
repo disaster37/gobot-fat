@@ -175,6 +175,7 @@ func (h *DFPBoard) work() {
 		h.turnOnGreenLed()
 	} else {
 		h.turnOffGreenLed()
+		log.Infof("DFP state is stopped")
 	}
 	if h.state.IsSecurity || h.state.IsEmergencyStopped {
 		h.turnOnRedLed()
@@ -388,6 +389,13 @@ func (h *DFPBoard) work() {
 
 	log.Debugf("DFP IO:\n %s", h.IO().String())
 	log.Debugf("DFP state: %s", h.state.String())
+
+	// Publish start events after handlers are registered
+	if h.state.IsRunning {
+		log.Infof("DFP state is running, publishing start events")
+		h.Publish(EventStartDFP, nil)
+		h.globalEventer.Publish(EventStartDFP, nil)
+	}
 
 	h.isInitialized = true
 

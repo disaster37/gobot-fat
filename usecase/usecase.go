@@ -136,15 +136,20 @@ func (h *UsecaseCRUDGeneric) Init(ctx context.Context, data interface{}) error {
 	esData := reflect.New(reflect.TypeOf(data).Elem()).Interface().(models.Model)
 	isElasticError := false
 
+	log.Debugf("[Init] Starting Init for event: %s, ID: %d", h.eventName, dataModel.GetID())
+
 	err := h.SQLRepo.Get(ctx, dataModel.GetID(), sqlData)
 	if err != nil {
 		if repository.IsRecordNotFoundError(err) {
 			sqlData = nil
+			log.Debugf("[Init] No data found in SQL")
 		} else {
 			log.Errorf("Failed to retrive data from sql: %s", err.Error())
 			return err
 		}
 
+	} else {
+		log.Debugf("[Init] SQL data found - Version: %d, Data: %+v", sqlData.GetVersion(), sqlData)
 	}
 	err = h.ElasticRepo.Get(ctx, dataModel.GetID(), esData)
 	if err != nil {
@@ -153,9 +158,13 @@ func (h *UsecaseCRUDGeneric) Init(ctx context.Context, data interface{}) error {
 			log.Errorf("Failed to retrive data from elastic: %s", err.Error())
 			isElasticError = true
 
+		} else {
+			log.Debugf("[Init] No data found in Elasticsearch")
 		}
 
 		esData = nil
+	} else {
+		log.Debugf("[Init] ES data found - Version: %d, Data: %+v", esData.GetVersion(), esData)
 	}
 
 	if sqlData == nil && esData == nil {
@@ -171,6 +180,13 @@ func (h *UsecaseCRUDGeneric) Init(ctx context.Context, data interface{}) error {
 
 	// Skip
 	if isElasticError {
+		// Copy sqlData to data before returning
+		if sqlData != nil {
+			reflect.ValueOf(data).Elem().Set(reflect.ValueOf(sqlData).Elem())
+			log.Debugf("[Init] Copied sqlData to data parameter: %+v", data)
+		} else {
+			log.Warnf("[Init] Elasticsearch error and no SQL data available, keeping default values")
+		}
 		return nil
 	}
 
@@ -182,6 +198,9 @@ func (h *UsecaseCRUDGeneric) Init(ctx context.Context, data interface{}) error {
 			return err
 		}
 		log.Info("Create new data on SQL from elastic data")
+		// Copy esData to data
+		reflect.ValueOf(data).Elem().Set(reflect.ValueOf(esData).Elem())
+		log.Debugf("[Init] Copied esData to data parameter: %+v", data)
 	} else if sqlData != nil && esData == nil {
 		// Config found only on SQL
 		err = h.ElasticRepo.Create(ctx, sqlData)
@@ -190,6 +209,9 @@ func (h *UsecaseCRUDGeneric) Init(ctx context.Context, data interface{}) error {
 		} else {
 			log.Info("Create new data on Elastic from SQL data")
 		}
+		// Copy sqlData to data
+		reflect.ValueOf(data).Elem().Set(reflect.ValueOf(sqlData).Elem())
+		log.Debugf("[Init] Copied sqlData to data parameter: %+v", data)
 
 	} else if sqlData != nil && esData != nil {
 
@@ -202,14 +224,27 @@ func (h *UsecaseCRUDGeneric) Init(ctx context.Context, data interface{}) error {
 				return err
 			}
 			log.Info("Update data on SQL from elastic data")
+			// Copy esData to data
+			reflect.ValueOf(data).Elem().Set(reflect.ValueOf(esData).Elem())
+			log.Debugf("[Init] Copied esData to data parameter: %+v", data)
 		} else if sqlData.GetVersion() > esData.GetVersion() {
 			// Config found and last version found on SQL
 			err = h.ElasticRepo.Update(ctx, sqlData)
 			if err != nil {
 				log.Errorf("Failed to update data on elastic: %s", err.Error())
+				// Copy sqlData to data even if ES update failed
+				reflect.ValueOf(data).Elem().Set(reflect.ValueOf(sqlData).Elem())
+				log.Debugf("[Init] Copied sqlData to data parameter: %+v", data)
 				return nil
 			}
 			log.Info("Update data on elastic from SQL data")
+			// Copy sqlData to data
+			reflect.ValueOf(data).Elem().Set(reflect.ValueOf(sqlData).Elem())
+			log.Debugf("[Init] Copied sqlData to data parameter: %+v", data)
+		} else {
+			// Versions are equal, copy sqlData to data
+			reflect.ValueOf(data).Elem().Set(reflect.ValueOf(sqlData).Elem())
+			log.Debugf("[Init] Versions equal, copied sqlData to data parameter: %+v", data)
 		}
 	}
 
