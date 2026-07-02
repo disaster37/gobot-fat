@@ -223,8 +223,11 @@ func (h *DFPBoard) work() {
 	 * Process on button events
 	 */
 	// When button start
-
 	h.on(h.buttonStart, gpio.ButtonPush, func(s interface{}) {
+		if !h.isInitialized {
+			log.Debug("Button start pushed but board not initialized yet, ignoring")
+			return
+		}
 		log.Debug("Button start pushed")
 
 		if err := h.StartDFP(ctx); err != nil {
@@ -234,7 +237,10 @@ func (h *DFPBoard) work() {
 
 	// When button stop
 	h.on(h.buttonStop, gpio.ButtonPush, func(s interface{}) {
-
+		if !h.isInitialized {
+			log.Debug("Button stop pushed but board not initialized yet, ignoring")
+			return
+		}
 		log.Debug("Button stop pushed")
 
 		if err := h.StopDFP(ctx); err != nil {
@@ -246,6 +252,11 @@ func (h *DFPBoard) work() {
 	// When button wash
 	h.on(h.buttonWash, gpio.ButtonPush, func(s interface{}) {
 
+		if !h.isInitialized {
+			log.Debug("Button wash pushed but board not initialized yet, ignoring")
+			return
+		}
+
 		log.Debug("Button wash pushed")
 
 		if err := h.ForceWashing(ctx); err != nil {
@@ -255,7 +266,12 @@ func (h *DFPBoard) work() {
 
 	// Manual drum
 	h.on(h.buttonForceDrum, gpio.ButtonPush, func(s interface{}) {
-		// Start
+		// start drum
+		if !h.isInitialized {
+			log.Debug("Button drum pushed but board not initialized yet, ignoring")
+			return
+		}
+
 		log.Debug("Button force drum pushed")
 
 		if err := h.StartManualDrum(ctx); err != nil {
@@ -266,7 +282,7 @@ func (h *DFPBoard) work() {
 
 	})
 	h.on(h.buttonForceDrum, gpio.ButtonRelease, func(s interface{}) {
-		// Stop
+		//stop drum
 		log.Debug("Button force drum released")
 
 		if err := h.StopManualDrum(ctx); err != nil {
@@ -279,7 +295,13 @@ func (h *DFPBoard) work() {
 
 	// Manual pump
 	h.on(h.buttonForcePump, gpio.ButtonPush, func(s interface{}) {
-		// Start
+		// Start pump
+
+		if !h.isInitialized {
+			log.Debug("Button pump pushed but board not initialized yet, ignoring")
+			return
+		}
+
 		log.Debug("Button force pump pushed")
 
 		if err := h.StartManualPump(ctx); err != nil {
@@ -290,7 +312,7 @@ func (h *DFPBoard) work() {
 
 	})
 	h.on(h.buttonForcePump, gpio.ButtonRelease, func(s interface{}) {
-		// Stop
+		// Stop pump
 		log.Debug("Button force pump released")
 
 		if err := h.StopManualPump(ctx); err != nil {
@@ -303,6 +325,12 @@ func (h *DFPBoard) work() {
 
 	// When button emergency stop
 	h.on(h.buttonEmergencyStop, gpio.ButtonPush, func(s interface{}) {
+
+		if !h.isInitialized {
+			log.Debug("Button start pushed but board not initialized yet, ignoring")
+			return
+		}
+		
 		log.Debug("Button emergency stop pushed")
 
 		if err := h.SetEmergencyStop(ctx); err != nil {
